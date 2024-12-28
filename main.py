@@ -40,9 +40,11 @@ VALID_MODLELS_STR = "\n".join(VALID_MODELS)
 VALID_ENCODINGS_STR = "\n".join(VALID_ENCODINGS)
 
 
-def GetTokenStr(
-    string: str, model: str | None = None, encoding: str | None = None
-) -> int:
+def GetEncoding(
+    model: str | None = None, encodingName: str | None = None
+) -> tiktoken.Encoding:
+
+    _encodingName = None
 
     if model is not None:
 
@@ -52,17 +54,19 @@ def GetTokenStr(
                 f"Invalid model: {model}\n\nValid models:\n{VALID_MODLELS_STR}"
             )
 
-        encodingName = tiktoken.encoding_name_for_model(model_name=model)
+        else:
 
-    if encoding is not None:
+            _encodingName = tiktoken.encoding_name_for_model(model_name=model)
 
-        if encoding not in VALID_ENCODINGS:
+    if encodingName is not None:
+
+        if encodingName not in VALID_ENCODINGS:
 
             raise ValueError(
-                f"Invalid encoding: {encoding}\n\nValid encodings:\n{VALID_ENCODINGS_STR}"
+                f"Invalid encoding name: {encodingName}\n\nValid encoding names:\n{VALID_ENCODINGS_STR}"
             )
 
-        if model is not None and encodingName != encoding:
+        if model is not None and _encodingName != encodingName:
 
             if model not in VALID_MODELS:
 
@@ -73,15 +77,111 @@ def GetTokenStr(
             else:
 
                 raise ValueError(
-                    f'Model {model} does not have encoding {encoding}\n\nValid encoding for model {model}: "{MODEL_MAPPINGS[model]}"'
+                    f'Model {model} does not have encoding name {encodingName}\n\nValid encoding names for model {model}: "{MODEL_MAPPINGS[model]}"'
                 )
 
         else:
 
-            encodingName = encoding
+            _encodingName = encodingName
 
-    if model is None and encoding is None:
+    if _encodingName is None:
 
         raise ValueError(
             "Either model or encoding must be provided. Valid models:\n{VALID_MODLELS_STR}\n\nValid encodings:\n{VALID_ENCODINGS_STR}"
         )
+
+    return tiktoken.get_encoding(encoding_name=_encodingName)
+
+
+def GetTokenStr(
+    string: str,
+    model: str | None = None,
+    encodingName: str | None = None,
+    encoding: tiktoken.Encoding | None = None,
+) -> int:
+
+    _encodingName = None
+
+    if model is not None:
+
+        if model not in VALID_MODELS:
+
+            raise ValueError(
+                f"Invalid model: {model}\n\nValid models:\n{VALID_MODLELS_STR}"
+            )
+
+        else:
+
+            _encodingName = tiktoken.encoding_name_for_model(model_name=model)
+
+    if encodingName is not None:
+
+        if encodingName not in VALID_ENCODINGS:
+
+            raise ValueError(
+                f"Invalid encoding name: {encodingName}\n\nValid encoding names:\n{VALID_ENCODINGS_STR}"
+            )
+
+        if model is not None and _encodingName != encodingName:
+
+            if model not in VALID_MODELS:
+
+                raise ValueError(
+                    f"Invalid model: {model}\n\nValid models:\n{VALID_MODLELS_STR}"
+                )
+
+            else:
+
+                raise ValueError(
+                    f'Model {model} does not have encoding name {encodingName}\n\nValid encoding names for model {model}: "{MODEL_MAPPINGS[model]}"'
+                )
+
+        else:
+
+            _encodingName = encodingName
+
+    _encoding = None
+
+    if _encodingName is not None:
+
+        _encoding = tiktoken.get_encoding(encoding_name=_encodingName)
+
+    if encoding is not None:
+
+        if _encodingName is not None and _encoding != encoding:
+
+            if encodingName is not None and model is not None:
+
+                raise ValueError(
+                    f"Model {model} does not have encoding {encoding}.\n\nValid encoding name for model {model}: \n{_encodingName}\n"
+                )
+
+            elif encodingName is not None:
+
+                raise ValueError(
+                    f'Encoding name {encodingName} does not match provided encoding "{encoding}"'
+                )
+
+            elif model is not None:
+
+                raise ValueError(
+                    f'Model {model} does not have provided encoding "{encoding}".\n\nValid encoding name for model {model}: \n{_encodingName}\n'
+                )
+
+            else:
+
+                raise RuntimeError(
+                    f'Unexpected error. Given model "{model}" and encoding name "{encodingName}" resulted in encoding "{_encoding}".\nFor unknown reasons, this encoding doesn\'t match given encoding "{encoding}".\nPlease report this error.'
+                )
+
+        else:
+
+            _encoding = encoding
+
+        if _encodingName is None and _encoding is None:
+
+            raise ValueError(
+                "Either model, encoding name, or encoding must be provided. Valid models:\n{VALID_MODLELS_STR}\n\nValid encodings:\n{VALID_ENCODINGS_STR}"
+            )
+
+    return _encoding.encode(text=string)
