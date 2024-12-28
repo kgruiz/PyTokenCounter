@@ -43,6 +43,41 @@ VALID_ENCODINGS_STR = "\n".join(VALID_ENCODINGS)
 def GetEncoding(
     model: str | None = None, encodingName: str | None = None
 ) -> tiktoken.Encoding:
+    """
+    Get the tiktoken Encoding based on the specified model or encoding name.
+
+    Parameters
+    ----------
+    model : str, optional
+        The name of the model to retrieve the encoding for. If provided,
+        the encoding associated with the model will be used.
+    encodingName : str, optional
+        The name of the encoding to use. If provided, it must match the encoding
+        associated with the specified model.
+
+    Returns
+    -------
+    tiktoken.Encoding
+        The encoding corresponding to the specified model or encoding name.
+
+    Raises
+    ------
+    TypeError
+        If the type of `model` or `encodingName` is not a string.
+    ValueError
+        If the provided `model` or `encodingName` is invalid, or if there
+        is a mismatch between the model and encoding name.
+    """
+
+    if model is not None and not isinstance(model, str):
+        raise TypeError(
+            f'Unexpected type for parameter "model". Expected type: str. Given type: {type(model)}'
+        )
+
+    if encodingName is not None and not isinstance(encodingName, str):
+        raise TypeError(
+            f'Unexpected type for parameter "encodingName". Expected type: str. Given type: {type(encodingName)}'
+        )
 
     _encodingName = None
 
@@ -93,12 +128,45 @@ def GetEncoding(
     return tiktoken.get_encoding(encoding_name=_encodingName)
 
 
-def GetTokenStr(
+def TokenizeStr(
     string: str,
     model: str | None = None,
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
-) -> int:
+) -> list[int]:
+    """
+    Tokenize a string into a list of token IDs using the specified model or encoding.
+
+    Parameters
+    ----------
+    string : str
+        The string to tokenize.
+    model : str, optional
+        The name of the model to use for encoding. If provided, the encoding
+        associated with the model will be used.
+    encodingName : str, optional
+        The name of the encoding to use. If provided, it must match the encoding
+        associated with the specified model.
+    encoding : tiktoken.Encoding, optional
+        An existing tiktoken.Encoding object to use for tokenization. If provided,
+        it must match the encoding derived from the model or encodingName.
+
+    Returns
+    -------
+    list[int]
+        A list of token IDs representing the tokenized string.
+
+    Raises
+    ------
+    TypeError
+        If the types of `string`, `model`, `encodingName`, or `encoding` are incorrect.
+    ValueError
+        If the provided `model` or `encodingName` is invalid, or if there is a
+        mismatch between the model and encoding name, or between the provided
+        encoding and the derived encoding.
+    RuntimeError
+        If an unexpected error occurs during encoding.
+    """
 
     if not isinstance(string, str):
 
@@ -217,5 +285,59 @@ def GetNumTokenStr(
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
 ) -> int:
+    """
+    Get the number of tokens in a string based on the specified model or encoding.
 
-    tokens = GetNumTokenStr(string=string, model=str)
+    Parameters
+    ----------
+    string : str
+        The string to count tokens for.
+    model : str, optional
+        The name of the model to use for encoding. If provided, the encoding
+        associated with the model will be used.
+    encodingName : str, optional
+        The name of the encoding to use. If provided, it must match the encoding
+        associated with the specified model.
+    encoding : tiktoken.Encoding, optional
+        An existing tiktoken.Encoding object to use for tokenization. If provided,
+        it must match the encoding derived from the model or encodingName.
+
+    Returns
+    -------
+    int
+        The number of tokens in the string.
+
+    Raises
+    ------
+    TypeError
+        If the types of `string`, `model`, `encodingName`, or `encoding` are incorrect.
+    ValueError
+        If the provided `model` or `encodingName` is invalid, or if there is a
+        mismatch between the model and encoding name, or between the provided
+        encoding and the derived encoding.
+    """
+    if not isinstance(string, str):
+        raise TypeError(
+            f'Unexpected type for parameter "string". Expected type: str. Given type: {type(string)}'
+        )
+
+    if model is not None and not isinstance(model, str):
+        raise TypeError(
+            f'Unexpected type for parameter "model". Expected type: str. Given type: {type(model)}'
+        )
+
+    if encodingName is not None and not isinstance(encodingName, str):
+        raise TypeError(
+            f'Unexpected type for parameter "encodingName". Expected type: str. Given type: {type(encodingName)}'
+        )
+
+    if encoding is not None and not isinstance(encoding, tiktoken.Encoding):
+        raise TypeError(
+            f'Unexpected type for parameter "encoding". Expected type: tiktoken.Encoding. Given type: {type(encoding)}'
+        )
+
+    tokens = TokenizeStr(
+        string=string, model=model, encodingName=encodingName, encoding=encoding
+    )
+
+    return len(tokens)
