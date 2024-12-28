@@ -100,6 +100,30 @@ def GetTokenStr(
     encoding: tiktoken.Encoding | None = None,
 ) -> int:
 
+    if not isinstance(string, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "string". Expected type: str. Given type: {type(string)}'
+        )
+
+    if model is not None and not isinstance(model, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "model". Expected type: str. Given type: {type(model)}'
+        )
+
+    if encodingName is not None and not isinstance(encodingName, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encodingName". Expected type: str. Given type: {type(encodingName)}'
+        )
+
+    if encoding is not None and not isinstance(encoding, tiktoken.Encoding):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encoding". Expected type: tiktoken.Encoding. Given type: {type(encoding)}'
+        )
+
     _encodingName = None
 
     if model is not None:
@@ -185,3 +209,13 @@ def GetTokenStr(
             )
 
     return _encoding.encode(text=string)
+
+
+def GetNumTokenStr(
+    string: str,
+    model: str | None = None,
+    encodingName: str | None = None,
+    encoding: tiktoken.Encoding | None = None,
+) -> int:
+
+    tokens = GetNumTokenStr(string=string, model=str)
