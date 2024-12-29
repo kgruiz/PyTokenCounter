@@ -1,4 +1,4 @@
-# TokenCounter/__init__.py
+# PyTokenCounter/__init__.py
 
 from .main import (
     GetEncoding,

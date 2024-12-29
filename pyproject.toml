@@ -1,5 +1,5 @@
 [project]
-name = "TokenCounter"
+name = "PyTokenCounter"
 version = "1.0.0"
 description = "A Python library for tokenizing text and counting tokens using various encoding schemes."
 readme = {file = "README.md", content-type = "text/markdown"}
@@ -43,13 +43,13 @@ keywords = [
 ]
 
 [project.urls]
-homepage = "https://github.com/kgruiz/TokenCounter"
-repository = "https://github.com/kgruiz/TokenCounter"
-documentation = "https://github.com/kgruiz/TokenCounter#readme"
-bug_tracker = "https://github.com/kgruiz/TokenCounter/issues"
+homepage = "https://github.com/kgruiz/PyTokenCounter"
+repository = "https://github.com/kgruiz/PyTokenCounter"
+documentation = "https://github.com/kgruiz/PyTokenCounter#readme"
+bug_tracker = "https://github.com/kgruiz/PyTokenCounter/issues"
 
 [project.scripts]
-tokencount = "TokenCounter.cli:main"
+tokencount = "PyTokenCounter.cli:main"
 
 [build-system]
 requires = ["setuptools>=43.0.0", "wheel"]

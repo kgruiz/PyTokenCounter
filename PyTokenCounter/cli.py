@@ -1,7 +1,7 @@
 # cli.py
 
 """
-CLI Module for TokenCounter
+CLI Module for PyTokenCounter
 =============================
 
 This module provides a Command-Line Interface (CLI) for tokenizing strings, files, and directories
