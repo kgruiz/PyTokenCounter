@@ -424,3 +424,349 @@ def GetNumTokenFile(
             filePath=filePath, model=model, encodingName=encodingName, encoding=encoding
         )
     )
+
+
+def TokenizeFiles(
+    filePaths: list[Path] | list[str],
+    model: str | None = None,
+    encodingName: str | None = None,
+    encoding: tiktoken.Encoding | None = None,
+) -> list[list[int]]:
+
+    if not isinstance(filePaths, list):
+
+        raise TypeError(
+            f'Unexpected type for parameter "filePaths". Expected type: list. Given type: {type(filePaths)}'
+        )
+
+    else:
+
+        if not all(
+            isinstance(filePath, str) or isinstance(filePath, Path)
+            for filePath in filePaths
+        ):
+
+            listTypes = set([type(path) for path in filePaths])
+
+            if len(listTypes) > 1:
+
+                raise TypeError(
+                    f'Unexpected type for parameter "filePaths". Expected type: list of str or pathlib.Path. Given list contains types: {listTypes}'
+                )
+
+            else:
+
+                raise TypeError(
+                    f'Unexpected type for parameter "filePaths". Expected type: list of str or pathlib.Path. Given list contains type: {listTypes}'
+                )
+
+    if model is not None and not isinstance(model, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "model". Expected type: str. Given type: {type(model)}'
+        )
+
+    if encodingName is not None and not isinstance(encodingName, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encodingName". Expected type: str. Given type: {type(encodingName)}'
+        )
+
+    if encoding is not None and not isinstance(encoding, tiktoken.Encoding):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encoding". Expected type: tiktoken.Encoding. Given type: {type(encoding)}'
+        )
+
+    tokenizedFiles = []
+
+    for filePath in filePaths:
+
+        tokenizedFiles.append(
+            TokenizeFile(
+                filePath=filePath,
+                model=model,
+                encodingName=encodingName,
+                encoding=encoding,
+            )
+        )
+
+    return tokenizedFiles
+
+
+def GetNumTokenFiles(
+    filePaths: list[Path] | list[str],
+    model: str | None = None,
+    encodingName: str | None = None,
+    encoding: tiktoken.Encoding | None = None,
+) -> list[list[int]]:
+
+    if not isinstance(filePaths, list):
+
+        raise TypeError(
+            f'Unexpected type for parameter "filePaths". Expected type: list. Given type: {type(filePaths)}'
+        )
+
+    else:
+
+        if not all(
+            isinstance(filePath, str) or isinstance(filePath, Path)
+            for filePath in filePaths
+        ):
+
+            listTypes = set([type(path) for path in filePaths])
+
+            if len(listTypes) > 1:
+
+                raise TypeError(
+                    f'Unexpected type for parameter "filePaths". Expected type: list of str or pathlib.Path. Given list contains types: {listTypes}'
+                )
+
+            else:
+
+                raise TypeError(
+                    f'Unexpected type for parameter "filePaths". Expected type: list of str or pathlib.Path. Given list contains type: {listTypes}'
+                )
+
+    if model is not None and not isinstance(model, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "model". Expected type: str. Given type: {type(model)}'
+        )
+
+    if encodingName is not None and not isinstance(encodingName, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encodingName". Expected type: str. Given type: {type(encodingName)}'
+        )
+
+    if encoding is not None and not isinstance(encoding, tiktoken.Encoding):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encoding". Expected type: tiktoken.Encoding. Given type: {type(encoding)}'
+        )
+
+    runningTokenCount = 0
+
+    for filePath in filePaths:
+
+        runningTokenCount += GetNumTokenFile(
+            filePath=filePath,
+            model=model,
+            encodingName=encodingName,
+            encoding=encoding,
+        )
+
+    return runningTokenCount
+
+
+def TokenizeDir(
+    dirPath: Path | str,
+    model: str | None = None,
+    encodingName: str | None = None,
+    encoding: tiktoken.Encoding | None = None,
+    recursive: bool = True,
+) -> list[int | list]:
+
+    if not isinstance(dirPath, str) and not isinstance(dirPath, Path):
+
+        raise TypeError(
+            f'Unexpected type for parameter "dirPath". Expected type: str or pathlib.Path. Given type: {type(dirPath)}'
+        )
+
+    if model is not None and not isinstance(model, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "model". Expected type: str. Given type: {type(model)}'
+        )
+
+    if encodingName is not None and not isinstance(encodingName, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encodingName". Expected type: str. Given type: {type(encodingName)}'
+        )
+
+    if encoding is not None and not isinstance(encoding, tiktoken.Encoding):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encoding". Expected type: tiktoken.Encoding. Given type: {type(encoding)}'
+        )
+
+    if not isinstance(recursive, bool):
+
+        raise TypeError(
+            f'Unexpected type for parameter "recursive". Expected type: bool. Given type: {type(recursive)}'
+        )
+
+    dirPath = Path(dirPath)
+
+    givenDirPath = dirPath
+
+    dirPath = dirPath.resolve()
+
+    if not dirPath.is_dir():
+
+        raise ValueError(f'Given directory path "{givenDirPath}" is not a directory.')
+
+    if recursive:
+
+        tokenizedDir = []
+
+        subDirPaths = []
+        dirFilePaths = []
+
+        for entry in dirPath.iterdir():
+
+            if entry.is_dir():
+
+                subDirPaths.append(entry)
+
+            else:
+
+                dirFilePaths.append(entry)
+
+        tokenizedDir.append(
+            TokenizeFiles(
+                filePaths=dirFilePaths,
+                model=model,
+                encodingName=encodingName,
+                encoding=encoding,
+            )
+        )
+
+        for subDirPath in subDirPaths:
+
+            tokenizedDir.append(
+                TokenizeDir(
+                    dirPath=subDirPath,
+                    model=model,
+                    encodingName=encodingName,
+                    encoding=encoding,
+                )
+            )
+
+        return tokenizedDir
+
+    else:
+
+        dirFilePaths = []
+
+        for entry in dirPath.iterdir():
+
+            if entry.is_dir():
+
+                continue
+
+            else:
+
+                dirFilePaths.append(entry)
+
+        return TokenizeFiles(
+            filePaths=dirFilePaths,
+            model=model,
+            encodingName=encodingName,
+            encoding=encoding,
+        )
+
+
+def GetNumTokenDir(
+    dirPath: Path | str,
+    model: str | None = None,
+    encodingName: str | None = None,
+    encoding: tiktoken.Encoding | None = None,
+    recursive: bool = True,
+) -> list[int | list]:
+
+    def FlattenTokenizedDir(tokenizedDir: list[int | list]) -> list[int]:
+
+        flattened = []
+
+        for item in tokenizedDir:
+
+            if isinstance(item, list):
+
+                flattened.extend(FlattenTokenizedDir(item))
+
+            else:
+
+                flattened.append(item)
+
+        return flattened
+
+    if not isinstance(dirPath, str) and not isinstance(dirPath, Path):
+
+        raise TypeError(
+            f'Unexpected type for parameter "dirPath". Expected type: str or pathlib.Path. Given type: {type(dirPath)}'
+        )
+
+    if model is not None and not isinstance(model, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "model". Expected type: str. Given type: {type(model)}'
+        )
+
+    if encodingName is not None and not isinstance(encodingName, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encodingName". Expected type: str. Given type: {type(encodingName)}'
+        )
+
+    if encoding is not None and not isinstance(encoding, tiktoken.Encoding):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encoding". Expected type: tiktoken.Encoding. Given type: {type(encoding)}'
+        )
+
+    if not isinstance(recursive, bool):
+
+        raise TypeError(
+            f'Unexpected type for parameter "recursive". Expected type: bool. Given type: {type(recursive)}'
+        )
+
+    dirPath = Path(dirPath)
+
+    givenDirPath = dirPath
+
+    dirPath = dirPath.resolve()
+
+    if not dirPath.is_dir():
+
+        raise ValueError(f'Given directory path "{givenDirPath}" is not a directory.')
+
+    tokenizedDir = TokenizeDir(
+        dirPath=dirPath,
+        model=model,
+        encodingName=encodingName,
+        encoding=encoding,
+        recursive=recursive,
+    )
+
+    if recursive:
+
+        flatTokenizedDir = FlattenTokenizedDir(tokenizedDir=tokenizedDir)
+
+        runningTokenCount = 0
+
+        for tokenizedFile in flatTokenizedDir:
+
+            runningTokenCount += len(tokenizedFile)
+
+        return runningTokenCount
+
+    else:
+
+        if not all([isinstance(item, int) for item in tokenizedDir]):
+
+            raise RuntimeError(
+                f"Unexpected error. Non-recursive tokenizedDir contains non-integer items. Contained types: {set([type(item) for item in tokenizedDir])}"
+            )
+
+        else:
+
+            runningTokenCount = 0
+
+            for tokenizedFile in tokenizedDir:
+
+                runningTokenCount += len(tokenizedFile)
+
+            return runningTokenCount
