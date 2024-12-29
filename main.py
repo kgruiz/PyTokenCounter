@@ -38,6 +38,110 @@ VALID_MODELS_STR = "\n".join(VALID_MODELS)
 VALID_ENCODINGS_STR = "\n".join(VALID_ENCODINGS)
 
 
+def GetModelMappings() -> dict:
+    """
+    Get the mappings between models and their encodings.
+
+    Returns
+    -------
+    dict
+        A dictionary where keys are model names and values are their corresponding encodings.
+    """
+
+    return MODEL_MAPPINGS
+
+
+def GetValidModels() -> list[str]:
+    """
+    Get a list of valid models.
+
+    Returns
+    -------
+    list of str
+        A list of valid model names.
+    """
+
+    return VALID_MODELS
+
+
+def GetValidEncodings() -> list[str]:
+    """
+    Get a list of valid encodings.
+
+    Returns
+    -------
+    list of str
+        A list of valid encoding names.
+    """
+
+    return VALID_ENCODINGS
+
+
+def GetModelForEncoding(encodingName: str) -> str:
+    """
+    Get the model name for a given encoding.
+
+    Parameters
+    ----------
+    encodingName : str
+        The name of the encoding.
+
+    Returns
+    -------
+    str
+        The model name corresponding to the given encoding.
+
+    Raises
+    ------
+    ValueError
+        If the encoding name is not valid.
+    """
+
+    if encodingName not in VALID_ENCODINGS:
+
+        raise ValueError(
+            f"Invalid encoding name: {encodingName}\n\nValid encoding names:\n{VALID_ENCODINGS_STR}"
+        )
+
+    else:
+
+        for model, encoding in MODEL_MAPPINGS.items():
+
+            if encoding == encodingName:
+
+                return model
+
+
+def GetEncodingForModel(modelName: str) -> str:
+    """
+    Get the encoding for a given model name.
+
+    Parameters
+    ----------
+    modelName : str
+        The name of the model.
+
+    Returns
+    -------
+    str
+        The encoding corresponding to the given model.
+
+    Raises
+    ------
+    ValueError
+        If the model name is not valid.
+    """
+
+    if modelName not in VALID_MODELS:
+
+        raise ValueError(
+            f"Invalid model: {modelName}\n\nValid models:\n{VALID_MODELS_STR}"
+        )
+    else:
+
+        return MODEL_MAPPINGS[modelName]
+
+
 def GetEncoding(
     model: str | None = None, encodingName: str | None = None
 ) -> tiktoken.Encoding:
