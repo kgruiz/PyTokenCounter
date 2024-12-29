@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import tiktoken
-from tqdm import tqdm
 
 MODEL_MAPPINGS = {
     "gpt-4o": "o200k_base",
@@ -17,7 +16,6 @@ MODEL_MAPPINGS = {
     "text-davinci-003": "p50k_base",
     "GPT-3 models like davinci": "r50k_base",
 }
-
 
 VALID_MODELS = [
     "gpt-4o",
@@ -802,6 +800,7 @@ def TokenizeDir(
                     model=model,
                     encodingName=encodingName,
                     encoding=encoding,
+                    recursive=recursive,
                 )
             )
 
