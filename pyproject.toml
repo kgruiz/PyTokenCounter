@@ -1,0 +1,19 @@
+[project]
+name = "TokenCounter"
+version = "1.0.0"
+description = "A Python library for tokenizing text and counting tokens using various encoding schemes."
+authors = [{name = "Kaden Gruizenga", email = "kgruiz@umich.edu"}]
+license = {file = "LICENSE"}
+dependencies = ["tiktoken> = 0.8.0"]
+requires-python = "> = 3.11"
+
+[project.urls]
+homepage = "https://github.com/kgruiz/TokenCounter"
+repository = "https://github.com/kgruiz/TokenCounter"
+
+[project.scripts]
+tokencount = "TokenCounter.cli:Main"
+
+[build-system]
+requires = ["setuptools> = 43.0.0", "wheel"]
+build-backend = "setuptools.build_meta"

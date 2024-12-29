@@ -1,5 +1,31 @@
 # main.py
 
+"""
+TokenCounter Main Module
+=============================
+
+Provides functions to tokenize and count tokens in strings, files, and directories using specified models or encodings.
+Includes utilities for managing model-encoding mappings and validating inputs.
+
+Key Functions
+-------------
+- "GetModelMappings": Retrieve model to encoding mappings.
+- "GetValidModels": List all valid model names.
+- "GetValidEncodings": List all valid encoding names.
+- "GetModelForEncoding": Get the model associated with a specific encoding.
+- "GetEncodingForModel": Get the encoding associated with a specific model.
+- "GetEncoding": Obtain the "tiktoken.Encoding" based on a model or encoding name.
+- "TokenizeStr": Tokenize a single string into token IDs.
+- "GetNumTokenStr": Count the number of tokens in a string.
+- "TokenizeFile": Tokenize the contents of a file into token IDs.
+- "GetNumTokenFile": Count the number of tokens in a file.
+- "TokenizeFiles": Tokenize multiple files into token IDs.
+- "GetNumTokenFiles": Count the number of tokens across multiple files.
+- "TokenizeDir": Tokenize all files within a directory.
+- "GetNumTokenDir": Count the number of tokens within a directory.
+
+"""
+
 from pathlib import Path
 
 import tiktoken
@@ -167,9 +193,9 @@ def GetEncoding(
     Raises
     ------
     TypeError
-        If the type of `model` or `encodingName` is not a string.
+        If the type of "model" or "encodingName" is not a string.
     ValueError
-        If the provided `model` or `encodingName` is invalid, or if there
+        If the provided "model" or "encodingName" is invalid, or if there
         is a mismatch between the model and encoding name.
     """
 
@@ -263,9 +289,9 @@ def TokenizeStr(
     Raises
     ------
     TypeError
-        If the types of `string`, `model`, `encodingName`, or `encoding` are incorrect.
+        If the types of "string", "model", "encodingName", or "encoding" are incorrect.
     ValueError
-        If the provided `model` or `encodingName` is invalid, or if there is a
+        If the provided "model" or "encodingName" is invalid, or if there is a
         mismatch between the model and encoding name, or between the provided
         encoding and the derived encoding.
     RuntimeError
@@ -414,9 +440,9 @@ def GetNumTokenStr(
     Raises
     ------
     TypeError
-        If the types of `string`, `model`, `encodingName`, or `encoding` are incorrect.
+        If the types of "string", "model", "encodingName", or "encoding" are incorrect.
     ValueError
-        If the provided `model` or `encodingName` is invalid, or if there is a
+        If the provided "model" or "encodingName" is invalid, or if there is a
         mismatch between the model and encoding name, or between the provided
         encoding and the derived encoding.
     """
@@ -483,9 +509,9 @@ def TokenizeFile(
     Raises
     ------
     TypeError
-        If the types of `filePath`, `model`, `encodingName`, or `encoding` are incorrect.
+        If the types of "filePath", "model", "encodingName", or "encoding" are incorrect.
     ValueError
-        If the provided `model` or `encodingName` is invalid, or if there is a
+        If the provided "model" or "encodingName" is invalid, or if there is a
         mismatch between the model and encoding name, or between the provided
         encoding and the derived encoding.
     """
@@ -554,9 +580,9 @@ def GetNumTokenFile(
     Raises
     ------
     TypeError
-        If the types of `filePath`, `model`, `encodingName`, or `encoding` are incorrect.
+        If the types of "filePath", "model", "encodingName", or "encoding" are incorrect.
     ValueError
-        If the provided `model` or `encodingName` is invalid, or if there is a
+        If the provided "model" or "encodingName" is invalid, or if there is a
         mismatch between the model and encoding name, or between the provided
         encoding and the derived encoding.
     """
@@ -625,9 +651,9 @@ def TokenizeFiles(
     Raises
     ------
     TypeError
-        If the types of `filePaths`, `model`, `encodingName`, or `encoding` are incorrect.
+        If the types of "filePaths", "model", "encodingName", or "encoding" are incorrect.
     ValueError
-        If the provided `model` or `encodingName` is invalid, or if there is a
+        If the provided "model" or "encodingName" is invalid, or if there is a
         mismatch between the model and encoding name, or between the provided
         encoding and the derived encoding.
     """
@@ -724,9 +750,9 @@ def GetNumTokenFiles(
     Raises
     ------
     TypeError
-        If the types of `filePaths`, `model`, `encodingName`, or `encoding` are incorrect.
+        If the types of "filePaths", "model", "encodingName", or "encoding" are incorrect.
     ValueError
-        If the provided `model` or `encodingName` is invalid, or if there is a
+        If the provided "model" or "encodingName" is invalid, or if there is a
         mismatch between the model and encoding name, or between the provided
         encoding and the derived encoding.
     """
@@ -825,9 +851,9 @@ def TokenizeDir(
     Raises
     ------
     TypeError
-        If the types of `dirPath`, `model`, `encodingName`, `encoding`, or `recursive` are incorrect.
+        If the types of "dirPath", "model", "encodingName", "encoding", or "recursive" are incorrect.
     ValueError
-        If the provided `dirPath` is not a directory.
+        If the provided "dirPath" is not a directory.
     RuntimeError
         If an unexpected error occurs during tokenization.
     """
@@ -968,9 +994,9 @@ def GetNumTokenDir(
     Raises
     ------
     TypeError
-        If the types of `dirPath`, `model`, `encodingName`, `encoding`, or `recursive` are incorrect.
+        If the types of "dirPath", "model", "encodingName", "encoding", or "recursive" are incorrect.
     ValueError
-        If the provided `dirPath` is not a directory.
+        If the provided "dirPath" is not a directory.
     RuntimeError
         If an unexpected error occurs during token counting.
     """
