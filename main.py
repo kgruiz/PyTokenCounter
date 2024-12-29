@@ -322,16 +322,19 @@ def GetNumTokenStr(
         )
 
     if model is not None and not isinstance(model, str):
+
         raise TypeError(
             f'Unexpected type for parameter "model". Expected type: str. Given type: {type(model)}'
         )
 
     if encodingName is not None and not isinstance(encodingName, str):
+
         raise TypeError(
             f'Unexpected type for parameter "encodingName". Expected type: str. Given type: {type(encodingName)}'
         )
 
     if encoding is not None and not isinstance(encoding, tiktoken.Encoding):
+
         raise TypeError(
             f'Unexpected type for parameter "encoding". Expected type: tiktoken.Encoding. Given type: {type(encoding)}'
         )
@@ -341,3 +344,83 @@ def GetNumTokenStr(
     )
 
     return len(tokens)
+
+
+def TokenizeFile(
+    filePath: Path | str,
+    model: str | None = None,
+    encodingName: str | None = None,
+    encoding: tiktoken.Encoding | None = None,
+) -> list[int]:
+
+    if not isinstance(filePath, str) and not isinstance(filePath, Path):
+
+        raise TypeError(
+            f'Unexpected type for parameter "filePath". Expected type: str or pathlib.Path. Given type: {type(filePath)}'
+        )
+
+    if model is not None and not isinstance(model, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "model". Expected type: str. Given type: {type(model)}'
+        )
+
+    if encodingName is not None and not isinstance(encodingName, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encodingName". Expected type: str. Given type: {type(encodingName)}'
+        )
+
+    if encoding is not None and not isinstance(encoding, tiktoken.Encoding):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encoding". Expected type: tiktoken.Encoding. Given type: {type(encoding)}'
+        )
+
+    filePath = Path(filePath)
+
+    fileContents = filePath.read_text()
+
+    return TokenizeStr(
+        string=fileContents, model=model, encodingName=encodingName, encoding=encoding
+    )
+
+
+def GetNumTokenFile(
+    filePath: Path | str,
+    model: str | None = None,
+    encodingName: str | None = None,
+    encoding: tiktoken.Encoding | None = None,
+) -> int:
+
+    if not isinstance(filePath, str) and not isinstance(filePath, Path):
+
+        raise TypeError(
+            f'Unexpected type for parameter "filePath". Expected type: str or pathlib.Path. Given type: {type(filePath)}'
+        )
+
+    if model is not None and not isinstance(model, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "model". Expected type: str. Given type: {type(model)}'
+        )
+
+    if encodingName is not None and not isinstance(encodingName, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encodingName". Expected type: str. Given type: {type(encodingName)}'
+        )
+
+    if encoding is not None and not isinstance(encoding, tiktoken.Encoding):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encoding". Expected type: tiktoken.Encoding. Given type: {type(encoding)}'
+        )
+
+    filePath = Path(filePath)
+
+    return len(
+        TokenizeFile(
+            filePath=filePath, model=model, encodingName=encodingName, encoding=encoding
+        )
+    )
