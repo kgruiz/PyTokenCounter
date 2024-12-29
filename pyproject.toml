@@ -2,18 +2,56 @@
 name = "TokenCounter"
 version = "1.0.0"
 description = "A Python library for tokenizing text and counting tokens using various encoding schemes."
-authors = [{name = "Kaden Gruizenga", email = "kgruiz@umich.edu"}]
+readme = "README.md"
+readme-content-type = "text/markdown"
+requires-python = ">=3.11"
 license = {file = "LICENSE"}
-dependencies = ["tiktoken> = 0.8.0"]
-requires-python = "> = 3.11"
+
+authors = [{name = "Kaden Gruizenga", email = "kgruiz@umich.edu"}]
+
+dependencies = ["tiktoken>=0.8.0"]
+
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Researchers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Linguistic",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Operating System :: OS Independent",
+]
+
+keywords = [
+    "tokenization",
+    "encoding",
+    "tiktoken",
+    "openai",
+    "gpt",
+    "language-model",
+    "llm",
+    "transformers",
+    "natural-language-processing",
+    "nlp",
+    "machine-learning",
+    "ai",
+    "text-processing",
+    "language-models",
+]
 
 [project.urls]
 homepage = "https://github.com/kgruiz/TokenCounter"
 repository = "https://github.com/kgruiz/TokenCounter"
+documentation = "https://github.com/kgruiz/TokenCounter#readme"
+bug_tracker = "https://github.com/kgruiz/TokenCounter/issues"
 
 [project.scripts]
-tokencount = "TokenCounter.cli:Main"
+tokencount = "TokenCounter.cli:main"
 
 [build-system]
-requires = ["setuptools> = 43.0.0", "wheel"]
+requires = ["setuptools>=43.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
