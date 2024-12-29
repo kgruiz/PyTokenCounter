@@ -316,7 +316,9 @@ def GetNumTokenStr(
         mismatch between the model and encoding name, or between the provided
         encoding and the derived encoding.
     """
+
     if not isinstance(string, str):
+
         raise TypeError(
             f'Unexpected type for parameter "string". Expected type: str. Given type: {type(string)}'
         )
@@ -352,6 +354,37 @@ def TokenizeFile(
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
 ) -> list[int]:
+    """
+    Tokenize the contents of a file into a list of token IDs using the specified model or encoding.
+
+    Parameters
+    ----------
+    filePath : Path or str
+        The path to the file to tokenize.
+    model : str, optional
+        The name of the model to use for encoding. If provided, the encoding
+        associated with the model will be used.
+    encodingName : str, optional
+        The name of the encoding to use. If provided, it must match the encoding
+        associated with the specified model.
+    encoding : tiktoken.Encoding, optional
+        An existing tiktoken.Encoding object to use for tokenization. If provided,
+        it must match the encoding derived from the model or encodingName.
+
+    Returns
+    -------
+    list[int]
+        A list of token IDs representing the tokenized file contents.
+
+    Raises
+    ------
+    TypeError
+        If the types of `filePath`, `model`, `encodingName`, or `encoding` are incorrect.
+    ValueError
+        If the provided `model` or `encodingName` is invalid, or if there is a
+        mismatch between the model and encoding name, or between the provided
+        encoding and the derived encoding.
+    """
 
     if not isinstance(filePath, str) and not isinstance(filePath, Path):
 
@@ -392,6 +425,37 @@ def GetNumTokenFile(
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
 ) -> int:
+    """
+    Get the number of tokens in a file based on the specified model or encoding.
+
+    Parameters
+    ----------
+    filePath : Path or str
+        The path to the file to count tokens for.
+    model : str, optional
+        The name of the model to use for encoding. If provided, the encoding
+        associated with the model will be used.
+    encodingName : str, optional
+        The name of the encoding to use. If provided, it must match the encoding
+        associated with the specified model.
+    encoding : tiktoken.Encoding, optional
+        An existing tiktoken.Encoding object to use for tokenization. If provided,
+        it must match the encoding derived from the model or encodingName.
+
+    Returns
+    -------
+    int
+        The number of tokens in the file.
+
+    Raises
+    ------
+    TypeError
+        If the types of `filePath`, `model`, `encodingName`, or `encoding` are incorrect.
+    ValueError
+        If the provided `model` or `encodingName` is invalid, or if there is a
+        mismatch between the model and encoding name, or between the provided
+        encoding and the derived encoding.
+    """
 
     if not isinstance(filePath, str) and not isinstance(filePath, Path):
 
@@ -432,6 +496,37 @@ def TokenizeFiles(
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
 ) -> list[list[int]]:
+    """
+    Tokenize multiple files into lists of token IDs using the specified model or encoding.
+
+    Parameters
+    ----------
+    filePaths : list of Path or str
+        A list of paths to the files to tokenize.
+    model : str, optional
+        The name of the model to use for encoding. If provided, the encoding
+        associated with the model will be used.
+    encodingName : str, optional
+        The name of the encoding to use. If provided, it must match the encoding
+        associated with the specified model.
+    encoding : tiktoken.Encoding, optional
+        An existing tiktoken.Encoding object to use for tokenization. If provided,
+        it must match the encoding derived from the model or encodingName.
+
+    Returns
+    -------
+    list of list of int
+        A list where each element is a list of token IDs representing a tokenized file.
+
+    Raises
+    ------
+    TypeError
+        If the types of `filePaths`, `model`, `encodingName`, or `encoding` are incorrect.
+    ValueError
+        If the provided `model` or `encodingName` is invalid, or if there is a
+        mismatch between the model and encoding name, or between the provided
+        encoding and the derived encoding.
+    """
 
     if not isinstance(filePaths, list):
 
@@ -499,7 +594,38 @@ def GetNumTokenFiles(
     model: str | None = None,
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
-) -> list[list[int]]:
+) -> list[int]:
+    """
+    Get the number of tokens in multiple files based on the specified model or encoding.
+
+    Parameters
+    ----------
+    filePaths : list of Path or str
+        A list of paths to the files to count tokens for.
+    model : str, optional
+        The name of the model to use for encoding. If provided, the encoding
+        associated with the model will be used.
+    encodingName : str, optional
+        The name of the encoding to use. If provided, it must match the encoding
+        associated with the specified model.
+    encoding : tiktoken.Encoding, optional
+        An existing tiktoken.Encoding object to use for tokenization. If provided,
+        it must match the encoding derived from the model or encodingName.
+
+    Returns
+    -------
+    list[int]
+        A list of integers where each integer represents the number of tokens in a file.
+
+    Raises
+    ------
+    TypeError
+        If the types of `filePaths`, `model`, `encodingName`, or `encoding` are incorrect.
+    ValueError
+        If the provided `model` or `encodingName` is invalid, or if there is a
+        mismatch between the model and encoding name, or between the provided
+        encoding and the derived encoding.
+    """
 
     if not isinstance(filePaths, list):
 
@@ -567,6 +693,40 @@ def TokenizeDir(
     encoding: tiktoken.Encoding | None = None,
     recursive: bool = True,
 ) -> list[int | list]:
+    """
+    Tokenize all files in a directory into lists of token IDs using the specified model or encoding.
+
+    Parameters
+    ----------
+    dirPath : Path or str
+        The path to the directory to tokenize.
+    model : str, optional
+        The name of the model to use for encoding. If provided, the encoding
+        associated with the model will be used.
+    encodingName : str, optional
+        The name of the encoding to use. If provided, it must match the encoding
+        associated with the specified model.
+    encoding : tiktoken.Encoding, optional
+        An existing tiktoken.Encoding object to use for tokenization. If provided,
+        it must match the encoding derived from the model or encodingName.
+    recursive : bool, default True
+        Whether to tokenize files in subdirectories recursively.
+
+    Returns
+    -------
+    list[int or list]
+        A nested list where each element is either a list of token IDs representing
+        a tokenized file or a sublist for a subdirectory.
+
+    Raises
+    ------
+    TypeError
+        If the types of `dirPath`, `model`, `encodingName`, `encoding`, or `recursive` are incorrect.
+    ValueError
+        If the provided `dirPath` is not a directory.
+    RuntimeError
+        If an unexpected error occurs during tokenization.
+    """
 
     if not isinstance(dirPath, str) and not isinstance(dirPath, Path):
 
@@ -676,8 +836,55 @@ def GetNumTokenDir(
     encoding: tiktoken.Encoding | None = None,
     recursive: bool = True,
 ) -> list[int | list]:
+    """
+    Get the number of tokens in all files within a directory based on the specified model or encoding.
+
+    Parameters
+    ----------
+    dirPath : Path or str
+        The path to the directory to count tokens for.
+    model : str, optional
+        The name of the model to use for encoding. If provided, the encoding
+        associated with the model will be used.
+    encodingName : str, optional
+        The name of the encoding to use. If provided, it must match the encoding
+        associated with the specified model.
+    encoding : tiktoken.Encoding, optional
+        An existing tiktoken.Encoding object to use for tokenization. If provided,
+        it must match the encoding derived from the model or encodingName.
+    recursive : bool, default True
+        Whether to count tokens in files in subdirectories recursively.
+
+    Returns
+    -------
+    list[int or list]
+        A nested list where each element is either an integer representing
+        the number of tokens in a file or a sublist for a subdirectory.
+
+    Raises
+    ------
+    TypeError
+        If the types of `dirPath`, `model`, `encodingName`, `encoding`, or `recursive` are incorrect.
+    ValueError
+        If the provided `dirPath` is not a directory.
+    RuntimeError
+        If an unexpected error occurs during token counting.
+    """
 
     def FlattenTokenizedDir(tokenizedDir: list[int | list]) -> list[int]:
+        """
+        Flatten a nested list of token counts.
+
+        Parameters
+        ----------
+        tokenizedDir : list[int or list]
+            The nested list of token counts.
+
+        Returns
+        -------
+        list[int]
+            A flattened list of token counts.
+        """
 
         flattened = []
 
