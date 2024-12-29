@@ -2,8 +2,7 @@
 name = "TokenCounter"
 version = "1.0.0"
 description = "A Python library for tokenizing text and counting tokens using various encoding schemes."
-readme = "README.md"
-readme-content-type = "text/markdown"
+readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.11"
 license = {file = "LICENSE"}
 
