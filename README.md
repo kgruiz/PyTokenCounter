@@ -1,6 +1,6 @@
 # PyTokenCounter
 
-PyTokenCounter is a Python library designed to simplify text tokenization and token counting. It supports various encoding schemes, with a focus on those used by **Large Language Models (LLMs)**, particularly those developed by OpenAI. Leveraging the `tiktoken` library for efficient processing, PyTokenCounter facilitates seamless integration with LLM workflows. This project is based on the `tiktoken` library created by [OpenAI](https://github.com/openai/tiktoken).
+PyTokenCounter is a Python library designed to simplify text tokenization and token counting. It supports various encoding schemes, with a focus on those used by **Large Language Models (LLMs)**, particularly those developed by OpenAI. Leveraging the `tiktoken` library for efficient processing, PyTokenCounter facilitates seamless integration with LLM workflows. This project is based on the [`tiktoken` library](https://github.com/openai/tiktoken) created by [OpenAI](https://github.com/openai/tiktoken).
 
 ## Table of Contents
 
@@ -35,32 +35,32 @@ Here are a few examples to get you started with PyTokenCounter, especially in th
 ```python
 from pathlib import Path
 
-import PyTokenCounter as ptc
+import PyTokenCounter as tc
 import tiktoken
 
 # Count tokens in a string for an LLM model
-numTokens = ptc.GetNumTokenStr(
+numTokens = tc.GetNumTokenStr(
     string="This is a test string.", model="gpt-3.5-turbo"
 )
 print(f"Number of tokens: {numTokens}")
 
 # Count tokens in a file intended for LLM processing
-numTokensFile = ptc.GetNumTokenFile(
+numTokensFile = tc.GetNumTokenFile(
     filePath=Path("./test_file.txt"), model="gpt-4"
 )
 print(f"Number of tokens in file: {numTokensFile}")
 
 # Count tokens in a directory of documents for batch processing with an LLM
-numTokensDir = ptc.GetNumTokenDir(
-    dirPath=Path("./test_dir"), model="gpt-4o", recursive=True
+numTokensDir = tc.GetNumTokenDir(
+    dirPath=Path("./test_dir"), model="gpt-4", recursive=True
 )
 print(f"Number of tokens in directory: {numTokensDir}")
 
 # Get the encoding for a specific LLM model
-encoding = ptc.GetEncoding(model="gpt-3.5-turbo")
+encoding = tc.GetEncoding(model="gpt-3.5-turbo")
 
 # Tokenize a string using a specific encoding for LLM input
-tokens = ptc.TokenizeStr(string="This is another test.", encoding=encoding)
+tokens = tc.TokenizeStr(string="This is another test.", encoding=encoding)
 print(f"Token IDs: {tokens}")
 ```
 
@@ -70,50 +70,50 @@ PyTokenCounter can also be used as a command-line tool, making it convenient to 
 
 ```bash
 # Example usage for tokenizing a string for an LLM
-ptc tokenize-str "This is a test string." --model gpt-3.5-turbo
+tokencount tokenize-str "This is a test string." --model gpt-3.5-turbo
 
 # Example usage for tokenizing a file for an LLM
-ptc tokenize-file test_file.txt --model gpt-4
+tokencount tokenize-file test_file.txt --model gpt-4
 
 # Example usage for tokenizing a directory of files for an LLM
-ptc tokenize-dir test_dir --model gpt-4o --no-recursive
+tokencount tokenize-dir test_dir --model gpt-4 --no-recursive
 
 # Example usage for counting tokens in a string for an LLM
-ptc count-str "This is a test string." --model gpt-3.5-turbo
+tokencount count-str "This is a test string." --model gpt-3.5-turbo
 
 # Example usage for counting tokens in a file for an LLM
-ptc count-file test_file.txt --model gpt-4
+tokencount count-file test_file.txt --model gpt-4
 
 # Example usage for counting tokens in a directory for an LLM
-ptc count-dir test_dir --model gpt-4o --no-recursive
+tokencount count-dir test_dir --model gpt-4 --no-recursive
 ```
 
 **CLI Usage Details:**
 
-The `ptc` CLI provides several subcommands for tokenizing and counting tokens in strings, files, and directories, tailored for use with **LLMs**.
+The `tokencount` CLI provides several subcommands for tokenizing and counting tokens in strings, files, and directories, tailored for use with **LLMs**.
 
 **Subcommands:**
 
--   `tokenize-str`: Tokenizes a provided string.
-    -   `ptc tokenize-str "Your string here" --model gpt-3.5-turbo`
--   `tokenize-file`: Tokenizes the contents of a file.
-    -   `ptc tokenize-file path/to/your/file.txt --model gpt-4`
--   `tokenize-dir`: Tokenizes all files in a directory.
-    -   `ptc tokenize-dir path/to/your/directory --model gpt-4o --no-recursive`
--   `count-str`: Counts the number of tokens in a provided string.
-    -   `ptc count-str "Your string here" --model gpt-3.5-turbo`
--   `count-file`: Counts the number of tokens in a file.
-    -   `ptc count-file path/to/your/file.txt --model gpt-4`
--   `count-dir`: Counts the total number of tokens in all files within a directory.
-    -   `ptc count-dir path/to/your/directory --model gpt-4o --no-recursive`
+- `tokenize-str`: Tokenizes a provided string.
+  - `tokencount tokenize-str "Your string here" --model gpt-3.5-turbo`
+- `tokenize-file`: Tokenizes the contents of a file.
+  - `tokencount tokenize-file path/to/your/file.txt --model gpt-4`
+- `tokenize-dir`: Tokenizes all files in a directory.
+  - `tokencount tokenize-dir path/to/your/directory --model gpt-4 --no-recursive`
+- `count-str`: Counts the number of tokens in a provided string.
+  - `tokencount count-str "Your string here" --model gpt-3.5-turbo`
+- `count-file`: Counts the number of tokens in a file.
+  - `tokencount count-file path/to/your/file.txt --model gpt-4`
+- `count-dir`: Counts the total number of tokens in all files within a directory.
+  - `tokencount count-dir path/to/your/directory --model gpt-4 --no-recursive`
 
 **Options:**
 
--   `-m`, `--model`: Specifies the model to use for encoding, aligning with **LLM** specifications.
--   `-e`, `--encoding`: Specifies the encoding to use directly.
--   `-nr`, `--no-recursive`: When used with `tokenize-dir` or `count-dir`, it prevents the tool from processing subdirectories recursively.
+- `-m`, `--model`: Specifies the model to use for encoding, aligning with **LLM** specifications.
+- `-e`, `--encoding`: Specifies the encoding to use directly.
+- `-nr`, `--no-recursive`: When used with `tokenize-dir` or `count-dir`, it prevents the tool from processing subdirectories recursively.
 
-**Note:** For detailed help on each subcommand, use `ptc <subcommand> -h`.
+**Note:** For detailed help on each subcommand, use `tokencount <subcommand> -h`.
 
 ## API
 
@@ -125,14 +125,14 @@ Retrieves the mappings between models and their corresponding encodings, essenti
 
 **Returns:**
 
--   `dict`: A dictionary where keys are model names and values are their corresponding encodings.
+- `dict`: A dictionary where keys are model names and values are their corresponding encodings.
 
 **Example:**
 
 ```python
-import PyTokenCounter as ptc
+import PyTokenCounter as tc
 
-modelMappings = ptc.GetModelMappings()
+modelMappings = tc.GetModelMappings()
 print(modelMappings)
 ```
 
@@ -144,14 +144,14 @@ Returns a list of valid model names supported by PyTokenCounter, primarily focus
 
 **Returns:**
 
--   `list[str]`: A list of valid model names.
+- `list[str]`: A list of valid model names.
 
 **Example:**
 
 ```python
-import PyTokenCounter as ptc
+import PyTokenCounter as tc
 
-validModels = ptc.GetValidModels()
+validModels = tc.GetValidModels()
 print(validModels)
 ```
 
@@ -163,14 +163,14 @@ Returns a list of valid encoding names, ensuring compatibility with various **LL
 
 **Returns:**
 
--   `list[str]`: A list of valid encoding names.
+- `list[str]`: A list of valid encoding names.
 
 **Example:**
 
 ```python
-import PyTokenCounter as ptc
+import PyTokenCounter as tc
 
-validEncodings = ptc.GetValidEncodings()
+validEncodings = tc.GetValidEncodings()
 print(validEncodings)
 ```
 
@@ -182,22 +182,22 @@ Determines the model name associated with a given encoding, facilitating the sel
 
 **Parameters:**
 
--   `encodingName` (`str`): The name of the encoding.
+- `encodingName` (`str`): The name of the encoding.
 
 **Returns:**
 
--   `str`: The model name corresponding to the given encoding.
+- `str`: The model name corresponding to the given encoding.
 
 **Raises:**
 
--   `ValueError`: If the encoding name is not valid.
+- `ValueError`: If the encoding name is not valid.
 
 **Example:**
 
 ```python
-import PyTokenCounter as ptc
+import PyTokenCounter as tc
 
-modelName = ptc.GetModelForEncoding(encodingName="cl100k_base")
+modelName = tc.GetModelForEncoding(encodingName="cl100k_base")
 print(modelName)
 ```
 
@@ -209,22 +209,22 @@ Retrieves the encoding associated with a given model name, ensuring accurate tok
 
 **Parameters:**
 
--   `modelName` (`str`): The name of the model.
+- `modelName` (`str`): The name of the model.
 
 **Returns:**
 
--   `str`: The encoding corresponding to the given model name.
+- `str`: The encoding corresponding to the given model name.
 
 **Raises:**
 
--   `ValueError`: If the model name is not valid.
+- `ValueError`: If the model name is not valid.
 
 **Example:**
 
 ```python
-import PyTokenCounter as ptc
+import PyTokenCounter as tc
 
-encodingName = ptc.GetEncodingForModel(modelName="gpt-3.5-turbo")
+encodingName = tc.GetEncodingForModel(modelName="gpt-3.5-turbo")
 print(encodingName)
 ```
 
@@ -236,27 +236,27 @@ Obtains the `tiktoken` encoding based on the specified model or encoding name, t
 
 **Parameters:**
 
--   `model` (`str`, optional): The name of the model.
--   `encodingName` (`str`, optional): The name of the encoding.
+- `model` (`str`, optional): The name of the model.
+- `encodingName` (`str`, optional): The name of the encoding.
 
 **Returns:**
 
--   `tiktoken.Encoding`: The `tiktoken` encoding object.
+- `tiktoken.Encoding`: The `tiktoken` encoding object.
 
 **Raises:**
 
--   `ValueError`: If neither model nor encoding is provided, or if the provided model or encoding is invalid.
+- `ValueError`: If neither model nor encoding is provided, or if the provided model or encoding is invalid.
 
 **Example:**
 
 ```python
-import PyTokenCounter as ptc
+import PyTokenCounter as tc
 import tiktoken
 
-encoding = ptc.GetEncoding(model="gpt-4")
+encoding = tc.GetEncoding(model="gpt-4")
 print(type(encoding))
 
-encoding = ptc.GetEncoding(encodingName="cl100k_base")
+encoding = tc.GetEncoding(encodingName="cl100k_base")
 print(type(encoding))
 ```
 
@@ -268,29 +268,29 @@ Tokenizes a string into a list of token IDs, preparing text for input into an **
 
 **Parameters:**
 
--   `string` (`str`): The string to tokenize.
--   `model` (`str`, optional): The name of the model.
--   `encodingName` (`str`, optional): The name of the encoding.
--   `encoding` (`tiktoken.Encoding`, optional): A `tiktoken` encoding object.
+- `string` (`str`): The string to tokenize.
+- `model` (`str`, optional): The name of the model.
+- `encodingName` (`str`, optional): The name of the encoding.
+- `encoding` (`tiktoken.Encoding`, optional): A `tiktoken` encoding object.
 
 **Returns:**
 
--   `list[int]`: A list of token IDs.
+- `list[int]`: A list of token IDs.
 
 **Raises:**
 
--   `ValueError`: If the provided model or encoding is invalid.
+- `ValueError`: If the provided model or encoding is invalid.
 
 **Example:**
 
 ```python
-import PyTokenCounter as ptc
+import PyTokenCounter as tc
 
-tokens = ptc.TokenizeStr(string="This is a test string.", model="gpt-3.5-turbo")
+tokens = tc.TokenizeStr(string="This is a test string.", model="gpt-3.5-turbo")
 print(tokens)
 
-encoding = ptc.GetEncoding(encodingName="cl100k_base")
-tokens = ptc.TokenizeStr(string="This is another test.", encoding=encoding)
+encoding = tc.GetEncoding(encodingName="cl100k_base")
+tokens = tc.TokenizeStr(string="This is another test.", encoding=encoding)
 print(tokens)
 ```
 
@@ -302,25 +302,25 @@ Counts the number of tokens in a string.
 
 **Parameters:**
 
--   `string` (`str`): The string to count tokens in.
--   `model` (`str`, optional): The name of the model.
--   `encodingName` (`str`, optional): The name of the encoding.
--   `encoding` (`tiktoken.Encoding`, optional): A `tiktoken` encoding object.
+- `string` (`str`): The string to count tokens in.
+- `model` (`str`, optional): The name of the model.
+- `encodingName` (`str`, optional): The name of the encoding.
+- `encoding` (`tiktoken.Encoding`, optional): A `tiktoken.Encoding` object.
 
 **Returns:**
 
--   `int`: The number of tokens in the string.
+- `int`: The number of tokens in the string.
 
 **Raises:**
 
--   `ValueError`: If the provided model or encoding is invalid.
+- `ValueError`: If the provided model or encoding is invalid.
 
 **Example:**
 
 ```python
-import PyTokenCounter as ptc
+import PyTokenCounter as tc
 
-numTokens = ptc.GetNumTokenStr(string="This is a test string.", model="gpt-4")
+numTokens = tc.GetNumTokenStr(string="This is a test string.", model="gpt-4")
 print(numTokens)
 ```
 
@@ -332,29 +332,29 @@ Tokenizes the contents of a file into a list of token IDs.
 
 **Parameters:**
 
--   `filePath` (`Path | str`): The path to the file to tokenize.
--   `model` (`str`, optional): The name of the model to use for encoding.
--   `encodingName` (`str`, optional): The name of the encoding to use.
--   `encoding` (`tiktoken.Encoding`, optional): An existing `tiktoken.Encoding` object to use for tokenization.
+- `filePath` (`Path | str`): The path to the file to tokenize.
+- `model` (`str`, optional): The name of the model to use for encoding.
+- `encodingName` (`str`, optional): The name of the encoding to use.
+- `encoding` (`tiktoken.Encoding`, optional): An existing `tiktoken.Encoding` object to use for tokenization.
 
 **Returns:**
 
--   `list[int]`: A list of token IDs representing the tokenized file contents.
+- `list[int]`: A list of token IDs representing the tokenized file contents.
 
 **Raises:**
 
--   `TypeError`: If the types of input parameters are incorrect.
--   `ValueError`: If the provided model or encoding is invalid.
+- `TypeError`: If the types of input parameters are incorrect.
+- `ValueError`: If the provided model or encoding is invalid.
 
 **Example:**
 
 ```python
-import PyTokenCounter as ptc
+import PyTokenCounter as tc
 from pathlib import Path
 
 # Assuming 'test_file.txt' exists with some content
 filePath = Path("./test_file.txt")
-tokens = ptc.TokenizeFile(filePath=filePath, model="gpt-3.5-turbo")
+tokens = tc.TokenizeFile(filePath=filePath, model="gpt-3.5-turbo")
 print(tokens)
 ```
 
@@ -366,29 +366,29 @@ Counts the number of tokens in a file based on the specified model or encoding.
 
 **Parameters:**
 
--   `filePath` (`Path | str`): The path to the file to count tokens for.
--   `model` (`str`, optional): The name of the model to use for encoding.
--   `encodingName` (`str`, optional): The name of the encoding to use.
--   `encoding` (`tiktoken.Encoding`, optional): An existing `tiktoken.Encoding` object to use for tokenization.
+- `filePath` (`Path | str`): The path to the file to count tokens for.
+- `model` (`str`, optional): The name of the model to use for encoding.
+- `encodingName` (`str`, optional): The name of the encoding to use.
+- `encoding` (`tiktoken.Encoding`, optional): An existing `tiktoken.Encoding` object to use for tokenization.
 
 **Returns:**
 
--   `int`: The number of tokens in the file.
+- `int`: The number of tokens in the file.
 
 **Raises:**
 
--   `TypeError`: If the types of input parameters are incorrect.
--   `ValueError`: If the provided model or encoding is invalid.
+- `TypeError`: If the types of input parameters are incorrect.
+- `ValueError`: If the provided model or encoding is invalid.
 
 **Example:**
 
 ```python
-import PyTokenCounter as ptc
+import PyTokenCounter as tc
 from pathlib import Path
 
 # Assuming 'test_file.txt' exists
 filePath = Path("./test_file.txt")
-numTokens = ptc.GetNumTokenFile(filePath=filePath, model="gpt-4")
+numTokens = tc.GetNumTokenFile(filePath=filePath, model="gpt-4")
 print(numTokens)
 ```
 
@@ -400,29 +400,29 @@ Tokenizes multiple files into lists of token IDs.
 
 **Parameters:**
 
--   `filePaths` (`list[Path] | list[str]`): A list of paths to the files to tokenize.
--   `model` (`str`, optional): The name of the model to use for encoding.
--   `encodingName` (`str`, optional): The name of the encoding to use.
--   `encoding` (`tiktoken.Encoding`, optional): An existing `tiktoken.Encoding` object to use for tokenization.
+- `filePaths` (`list[Path] | list[str]`): A list of paths to the files to tokenize.
+- `model` (`str`, optional): The name of the model to use for encoding.
+- `encodingName` (`str`, optional): The name of the encoding to use.
+- `encoding` (`tiktoken.Encoding`, optional): An existing `tiktoken.Encoding` object to use for tokenization.
 
 **Returns:**
 
--   `list[list[int]]`: A list where each element is a list of token IDs representing a tokenized file.
+- `list[list[int]]`: A list where each element is a list of token IDs representing a tokenized file.
 
 **Raises:**
 
--   `TypeError`: If the types of input parameters are incorrect.
--   `ValueError`: If the provided model or encoding is invalid.
+- `TypeError`: If the types of input parameters are incorrect.
+- `ValueError`: If the provided model or encoding is invalid.
 
 **Example:**
 
 ```python
-import PyTokenCounter as ptc
+import PyTokenCounter as tc
 from pathlib import Path
 
 # Assuming 'file1.txt' and 'file2.txt' exist
 filePaths = [Path("./file1.txt"), Path("./file2.txt")]
-tokenizedFiles = ptc.TokenizeFiles(filePaths=filePaths, model="gpt-3.5-turbo")
+tokenizedFiles = tc.TokenizeFiles(filePaths=filePaths, model="gpt-3.5-turbo")
 print(tokenizedFiles)
 ```
 
@@ -434,29 +434,29 @@ Counts the number of tokens across multiple files.
 
 **Parameters:**
 
--   `filePaths` (`list[Path] | list[str]`): A list of paths to the files.
--   `model` (`str`, optional): The name of the model.
--   `encodingName` (`str`, optional): The name of the encoding.
--   `encoding` (`tiktoken.Encoding`, optional): A `tiktoken.Encoding` object.
+- `filePaths` (`list[Path] | list[str]`): A list of paths to the files.
+- `model` (`str`, optional): The name of the model.
+- `encodingName` (`str`, optional): The name of the encoding.
+- `encoding` (`tiktoken.Encoding`, optional): A `tiktoken.Encoding` object.
 
 **Returns:**
 
--   `int`: The total number of tokens across all files.
+- `int`: The total number of tokens across all files.
 
 **Raises:**
 
--   `TypeError`: If the types of input parameters are incorrect.
--   `ValueError`: If the provided model or encoding is invalid.
+- `TypeError`: If the types of input parameters are incorrect.
+- `ValueError`: If the provided model or encoding is invalid.
 
 **Example:**
 
 ```python
-import PyTokenCounter as ptc
+import PyTokenCounter as tc
 from pathlib import Path
 
 # Assuming 'file1.txt' and 'file2.txt' exist
 filePaths = [Path("./file1.txt"), Path("./file2.txt")]
-numTokens = ptc.GetNumTokenFiles(filePaths=filePaths, model="gpt-3.5-turbo")
+numTokens = tc.GetNumTokenFiles(filePaths=filePaths, model="gpt-3.5-turbo")
 print(numTokens)
 ```
 
@@ -468,30 +468,30 @@ Tokenizes all files within a directory into lists of token IDs.
 
 **Parameters:**
 
--   `dirPath` (`Path | str`): The path to the directory.
--   `model` (`str`, optional): The name of the model.
--   `encodingName` (`str`, optional): The name of the encoding.
--   `encoding` (`tiktoken.Encoding`, optional): A `tiktoken.Encoding` object.
--   `recursive` (`bool`, optional): Whether to tokenize subdirectories recursively. Defaults to `True`.
+- `dirPath` (`Path | str`): The path to the directory.
+- `model` (`str`, optional): The name of the model.
+- `encodingName` (`str`, optional): The name of the encoding.
+- `encoding` (`tiktoken.Encoding`, optional): A `tiktoken.Encoding` object.
+- `recursive` (`bool`, optional): Whether to tokenize subdirectories recursively. Defaults to `True`.
 
 **Returns:**
 
--   `list[int | list] | list[int]`: A nested list of token IDs for each file (recursive) or a list of token IDs (non-recursive).
+- `list[int | list] | list[int]`: A nested list of token IDs for each file (recursive) or a list of token IDs (non-recursive).
 
 **Raises:**
 
--   `TypeError`: If the types of input parameters are incorrect.
--   `ValueError`: If the provided path is not a directory or if the model or encoding is invalid.
+- `TypeError`: If the types of input parameters are incorrect.
+- `ValueError`: If the provided path is not a directory or if the model or encoding is invalid.
 
 **Example:**
 
 ```python
-import PyTokenCounter as ptc
+import PyTokenCounter as tc
 from pathlib import Path
 
 # Assuming 'test_dir' exists and contains some files
 dirPath = Path("./test_dir")
-tokenizedDir = ptc.TokenizeDir(dirPath=dirPath, model="gpt-4o", recursive=False)
+tokenizedDir = tc.TokenizeDir(dirPath=dirPath, model="gpt-4", recursive=False)
 print(tokenizedDir)
 ```
 
@@ -503,30 +503,30 @@ Counts the number of tokens in all files within a directory.
 
 **Parameters:**
 
--   `dirPath` (`Path | str`): The path to the directory.
--   `model` (`str`, optional): The name of the model.
--   `encodingName` (`str`, optional): The name of the encoding.
--   `encoding` (`tiktoken.Encoding`, optional): A `tiktoken.Encoding` object.
--   `recursive` (`bool`, optional): Whether to count tokens in subdirectories recursively. Defaults to `True`.
+- `dirPath` (`Path | str`): The path to the directory.
+- `model` (`str`, optional): The name of the model.
+- `encodingName` (`str`, optional): The name of the encoding.
+- `encoding` (`tiktoken.Encoding`, optional): A `tiktoken.Encoding` object.
+- `recursive` (`bool`, optional): Whether to count tokens in subdirectories recursively. Defaults to `True`.
 
 **Returns:**
 
--   `int`: The total number of tokens in the directory.
+- `int`: The total number of tokens in the directory.
 
 **Raises:**
 
--   `TypeError`: If the types of input parameters are incorrect.
--   `ValueError`: If the provided path is not a directory or if the model or encoding is invalid.
+- `TypeError`: If the types of input parameters are incorrect.
+- `ValueError`: If the provided path is not a directory or if the model or encoding is invalid.
 
 **Example:**
 
 ```python
-import PyTokenCounter as ptc
+import PyTokenCounter as tc
 from pathlib import Path
 
 # Assuming 'test_dir' exists and contains some files
 dirPath = Path("./test_dir")
-numTokens = ptc.GetNumTokenDir(dirPath=dirPath, model="gpt-4o", recursive=False)
+numTokens = tc.GetNumTokenDir(dirPath=dirPath, model="gpt-4", recursive=False)
 print(numTokens)
 ```
 
