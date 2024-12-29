@@ -5,7 +5,7 @@ CLI Module for PyTokenCounter
 =============================
 
 This module provides a Command-Line Interface (CLI) for tokenizing strings, files, and directories
-using specified models or encodings. It leverages the functionality defined in the "main.py" module.
+using specified models or encodings. It leverages the functionality defined in the "core.py" module.
 
 Usage:
     After installing the package, use the "tokencount" command followed by the desired subcommand
@@ -14,9 +14,11 @@ Usage:
 Subcommands:
     tokenize-str   Tokenize a provided string.
     tokenize-file  Tokenize the contents of a file.
+    tokenize-files Tokenize the contents of multiple files or a directory.
     tokenize-dir   Tokenize all files in a directory.
     count-str      Count tokens in a provided string.
     count-file     Count tokens in a file.
+    count-files    Count tokens in multiple files or a directory.
     count-dir      Count tokens in all files within a directory.
 
 For detailed help on each subcommand, use:
@@ -24,21 +26,27 @@ For detailed help on each subcommand, use:
 
 Example:
     tokencount tokenize-str "Hello, world!" -m gpt-4
+    tokencount tokenize-files ./file1.txt ./file2.txt -m gpt-4
+    tokencount tokenize-files ./my_directory -m gpt-4 -nr
+    tokencount tokenize-dir ./my_directory -m gpt-4 -nr
+    tokencount count-files ./my_directory -m gpt-4
+    tokencount count-dir ./my_directory -m gpt-4
 """
 
 import argparse
 import logging
 import sys
+from pathlib import Path
 
 from .core import (
     VALID_ENCODINGS,
     VALID_MODELS,
     GetEncoding,
     GetNumTokenDir,
-    GetNumTokenFile,
+    GetNumTokenFiles,
     GetNumTokenStr,
     TokenizeDir,
-    TokenizeFile,
+    TokenizeFiles,
     TokenizeStr,
 )
 
@@ -101,35 +109,59 @@ def main() -> None:
         "tokenize-str",
         help="Tokenize a provided string.",
         description="Tokenize a given string into a list of token IDs using the specified model or encoding.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parserTokenizeStr.add_argument("string", type=str, help="The string to tokenize.")
     AddCommonArgs(parserTokenizeStr)
+    parserTokenizeStr.add_argument("string", type=str, help="The string to tokenize.")
 
     # Subparser for tokenizing a file
     parserTokenizeFile = subParsers.add_parser(
         "tokenize-file",
         help="Tokenize the contents of a file.",
         description="Tokenize the contents of a specified file into a list of token IDs using the given model or encoding.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    AddCommonArgs(parserTokenizeFile)
     parserTokenizeFile.add_argument(
         "file",
         type=str,
         help="Path to the file to tokenize.",
     )
-    AddCommonArgs(parserTokenizeFile)
+
+    # Subparser for tokenizing multiple files or a directory
+    parserTokenizeFiles = subParsers.add_parser(
+        "tokenize-files",
+        help="Tokenize the contents of multiple files or a directory.",
+        description="Tokenize the contents of multiple specified files or all files within a directory into lists of token IDs using the given model or encoding.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    AddCommonArgs(parserTokenizeFiles)
+    parserTokenizeFiles.add_argument(
+        "input",
+        type=str,
+        nargs="+",
+        help="Paths to the files to tokenize or a directory path.",
+    )
+    parserTokenizeFiles.add_argument(
+        "-nr",
+        "--no-recursive",
+        action="store_true",
+        help="Do not tokenize files in subdirectories if a directory is given.",
+    )
 
     # Subparser for tokenizing a directory
     parserTokenizeDir = subParsers.add_parser(
         "tokenize-dir",
         help="Tokenize all files in a directory.",
         description="Tokenize all files within a specified directory into lists of token IDs using the chosen model or encoding.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    AddCommonArgs(parserTokenizeDir)
     parserTokenizeDir.add_argument(
         "directory",
         type=str,
         help="Path to the directory to tokenize.",
     )
-    AddCommonArgs(parserTokenizeDir)
     parserTokenizeDir.add_argument(
         "-nr",
         "--no-recursive",
@@ -142,37 +174,61 @@ def main() -> None:
         "count-str",
         help="Count tokens in a provided string.",
         description="Count the number of tokens in a given string using the specified model or encoding.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    AddCommonArgs(parserCountStr)
     parserCountStr.add_argument(
         "string", type=str, help="The string to count tokens for."
     )
-    AddCommonArgs(parserCountStr)
 
     # Subparser for counting tokens in a file
     parserCountFile = subParsers.add_parser(
         "count-file",
         help="Count tokens in a file.",
         description="Count the number of tokens in a specified file using the given model or encoding.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    AddCommonArgs(parserCountFile)
     parserCountFile.add_argument(
         "file",
         type=str,
         help="Path to the file to count tokens for.",
     )
-    AddCommonArgs(parserCountFile)
+
+    # Subparser for counting tokens in multiple files or a directory
+    parserCountFiles = subParsers.add_parser(
+        "count-files",
+        help="Count tokens in multiple files or a directory.",
+        description="Count the number of tokens in multiple specified files or all files within a directory using the given model or encoding.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    AddCommonArgs(parserCountFiles)
+    parserCountFiles.add_argument(
+        "input",
+        type=str,
+        nargs="+",
+        help="Paths to the files to count tokens for or a directory path.",
+    )
+    parserCountFiles.add_argument(
+        "-nr",
+        "--no-recursive",
+        action="store_true",
+        help="Do not count tokens in subdirectories if a directory is given.",
+    )
 
     # Subparser for counting tokens in a directory
     parserCountDir = subParsers.add_parser(
         "count-dir",
         help="Count tokens in all files within a directory.",
         description="Count the total number of tokens across all files in a specified directory using the chosen model or encoding.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    AddCommonArgs(parserCountDir)
     parserCountDir.add_argument(
         "directory",
         type=str,
         help="Path to the directory to count tokens for.",
     )
-    AddCommonArgs(parserCountDir)
     parserCountDir.add_argument(
         "-nr",
         "--no-recursive",
@@ -181,6 +237,10 @@ def main() -> None:
     )
 
     # Parse the arguments
+    if len(sys.argv) == 1:
+        parser.print_help(sys.stderr)
+        sys.exit(1)
+
     args = parser.parse_args()
 
     try:
@@ -198,24 +258,44 @@ def main() -> None:
             print(tokens)
 
         elif args.command == "tokenize-file":
-
-            tokens = TokenizeFile(
-                filePath=args.file,
+            tokens = TokenizeFiles(
+                inputPath=args.file,
                 model=args.model,
                 encodingName=args.encoding,
                 encoding=encoding,
             )
+
             print(tokens)
 
-        elif args.command == "tokenize-dir":
+        elif args.command == "tokenize-files":
+            # Handle both multiple files and directory
+            inputPaths = [Path(p) for p in args.input]
+            if len(inputPaths) == 1 and inputPaths[0].is_dir():
+                tokenLists = TokenizeFiles(
+                    inputPath=inputPaths[0],
+                    model=args.model,
+                    encodingName=args.encoding,
+                    encoding=encoding,
+                    recursive=not args.no_recursive,
+                )
+            else:
+                tokenLists = TokenizeFiles(
+                    inputPath=inputPaths,
+                    model=args.model,
+                    encodingName=args.encoding,
+                    encoding=encoding,
+                )
+            print(tokenLists)
 
+        elif args.command == "tokenize-dir":
             tokenizedDir = TokenizeDir(
                 dirPath=args.directory,
                 model=args.model,
                 encodingName=args.encoding,
                 encoding=encoding,
-                recursive=not args.no_recursive,  # Defaults to True
+                recursive=not args.no_recursive,
             )
+
             print(tokenizedDir)
 
         elif args.command == "count-str":
@@ -230,13 +310,34 @@ def main() -> None:
 
         elif args.command == "count-file":
 
-            count = GetNumTokenFile(
-                filePath=args.file,
+            count = GetNumTokenFiles(
+                inputPath=args.file,
                 model=args.model,
                 encodingName=args.encoding,
                 encoding=encoding,
             )
+
             print(count)
+        elif args.command == "count-files":
+
+            inputPaths = [Path(p) for p in args.input]
+
+            if len(inputPaths) == 1 and inputPaths[0].is_dir():
+                totalCount = GetNumTokenFiles(
+                    inputPath=inputPaths[0],
+                    model=args.model,
+                    encodingName=args.encoding,
+                    encoding=encoding,
+                    recursive=not args.no_recursive,
+                )
+            else:
+                totalCount = GetNumTokenFiles(
+                    inputPath=inputPaths,
+                    model=args.model,
+                    encodingName=args.encoding,
+                    encoding=encoding,
+                )
+            print(totalCount)
 
         elif args.command == "count-dir":
 
@@ -245,8 +346,9 @@ def main() -> None:
                 model=args.model,
                 encodingName=args.encoding,
                 encoding=encoding,
-                recursive=not args.no_recursive,  # Defaults to True
+                recursive=not args.no_recursive,
             )
+
             print(count)
 
     except Exception as e:

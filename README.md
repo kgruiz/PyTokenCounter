@@ -9,6 +9,9 @@ PyTokenCounter is a Python library designed to simplify text tokenization and to
 - [Usage](#usage)
   - [CLI](#cli)
 - [API](#api)
+  - [Utility Functions](#utility-functions)
+  - [String Tokenization and Counting](#string-tokenization-and-counting)
+  - [File and Directory Tokenization and Counting](#file-and-directory-tokenization-and-counting)
 - [Maintainers](#maintainers)
 - [Acknowledgements](#acknowledgements)
 - [Contributing](#contributing)
@@ -75,7 +78,13 @@ tokencount tokenize-str "This is a test string." --model gpt-3.5-turbo
 # Example usage for tokenizing a file for an LLM
 tokencount tokenize-file test_file.txt --model gpt-4
 
+# Example usage for tokenizing multiple files for an LLM
+tokencount tokenize-files test_file1.txt test_file2.txt --model gpt-4
+
 # Example usage for tokenizing a directory of files for an LLM
+tokencount tokenize-files test_dir --model gpt-4 --no-recursive
+
+# Example usage for tokenizing a directory of files for an LLM (alternative)
 tokencount tokenize-dir test_dir --model gpt-4 --no-recursive
 
 # Example usage for counting tokens in a string for an LLM
@@ -84,7 +93,13 @@ tokencount count-str "This is a test string." --model gpt-3.5-turbo
 # Example usage for counting tokens in a file for an LLM
 tokencount count-file test_file.txt --model gpt-4
 
+# Example usage for counting tokens in multiple files for an LLM
+tokencount count-files test_file1.txt test_file2.txt --model gpt-4
+
 # Example usage for counting tokens in a directory for an LLM
+tokencount count-files test_dir --model gpt-4 --no-recursive
+
+# Example usage for counting tokens in a directory for an LLM (alternative)
 tokencount count-dir test_dir --model gpt-4 --no-recursive
 ```
 
@@ -98,20 +113,26 @@ The `tokencount` CLI provides several subcommands for tokenizing and counting to
   - `tokencount tokenize-str "Your string here" --model gpt-3.5-turbo`
 - `tokenize-file`: Tokenizes the contents of a file.
   - `tokencount tokenize-file path/to/your/file.txt --model gpt-4`
-- `tokenize-dir`: Tokenizes all files in a directory.
-  - `tokencount tokenize-dir path/to/your/directory --model gpt-4 --no-recursive`
+- `tokenize-files`: Tokenizes the contents of multiple specified files or all files within a directory.
+    - `tokencount tokenize-files path/to/your/file1.txt path/to/your/file2.txt --model gpt-4`
+    - `tokencount tokenize-files path/to/your/directory --model gpt-4 --no-recursive`
+- `tokenize-dir`: Tokenizes all files within a specified directory into lists of token IDs.
+    - `tokencount tokenize-dir path/to/your/directory --model gpt-4 --no-recursive`
 - `count-str`: Counts the number of tokens in a provided string.
   - `tokencount count-str "Your string here" --model gpt-3.5-turbo`
 - `count-file`: Counts the number of tokens in a file.
   - `tokencount count-file path/to/your/file.txt --model gpt-4`
-- `count-dir`: Counts the total number of tokens in all files within a directory.
+- `count-files`: Counts the number of tokens in multiple specified files or all files within a directory.
+  - `tokencount count-files path/to/your/file1.txt path/to/your/file2.txt --model gpt-4`
+  - `tokencount count-files path/to/your/directory --model gpt-4 --no-recursive`
+- `count-dir`: Counts the total number of tokens across all files in a specified directory.
   - `tokencount count-dir path/to/your/directory --model gpt-4 --no-recursive`
 
 **Options:**
 
 - `-m`, `--model`: Specifies the model to use for encoding, aligning with **LLM** specifications.
 - `-e`, `--encoding`: Specifies the encoding to use directly.
-- `-nr`, `--no-recursive`: When used with `tokenize-dir` or `count-dir`, it prevents the tool from processing subdirectories recursively.
+- `-nr`, `--no-recursive`: When used with `tokenize-files`, `tokenize-dir`, `count-files` or `count-dir` for a directory, it prevents the tool from processing subdirectories recursively.
 
 **Note:** For detailed help on each subcommand, use `tokencount <subcommand> -h`.
 
@@ -119,7 +140,9 @@ The `tokencount` CLI provides several subcommands for tokenizing and counting to
 
 Here's a detailed look at the PyTokenCounter API, designed to integrate seamlessly with **LLM** workflows:
 
-### `GetModelMappings() -> dict`
+### Utility Functions
+
+#### `GetModelMappings() -> dict`
 
 Retrieves the mappings between models and their corresponding encodings, essential for selecting the correct tokenization strategy for different **LLMs**.
 
@@ -138,7 +161,7 @@ print(modelMappings)
 
 ---
 
-### `GetValidModels() -> list[str]`
+#### `GetValidModels() -> list[str]`
 
 Returns a list of valid model names supported by PyTokenCounter, primarily focusing on **LLMs**.
 
@@ -157,7 +180,7 @@ print(validModels)
 
 ---
 
-### `GetValidEncodings() -> list[str]`
+#### `GetValidEncodings() -> list[str]`
 
 Returns a list of valid encoding names, ensuring compatibility with various **LLMs**.
 
@@ -176,7 +199,7 @@ print(validEncodings)
 
 ---
 
-### `GetModelForEncoding(encodingName: str) -> str`
+#### `GetModelForEncoding(encodingName: str) -> str`
 
 Determines the model name associated with a given encoding, facilitating the selection of appropriate **LLMs**.
 
@@ -203,7 +226,7 @@ print(modelName)
 
 ---
 
-### `GetEncodingForModel(modelName: str) -> str`
+#### `GetEncodingForModel(modelName: str) -> str`
 
 Retrieves the encoding associated with a given model name, ensuring accurate tokenization for the selected **LLM**.
 
@@ -230,7 +253,7 @@ print(encodingName)
 
 ---
 
-### `GetEncoding(model: str | None = None, encodingName: str | None = None) -> tiktoken.Encoding`
+#### `GetEncoding(model: str | None = None, encodingName: str | None = None) -> tiktoken.Encoding`
 
 Obtains the `tiktoken` encoding based on the specified model or encoding name, tailored for **LLM** usage.
 
@@ -262,7 +285,9 @@ print(type(encoding))
 
 ---
 
-### `TokenizeStr(string: str, model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None) -> list[int]`
+### String Tokenization and Counting
+
+#### `TokenizeStr(string: str, model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None) -> list[int]`
 
 Tokenizes a string into a list of token IDs, preparing text for input into an **LLM**.
 
@@ -296,7 +321,7 @@ print(tokens)
 
 ---
 
-### `GetNumTokenStr(string: str, model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None) -> int`
+#### `GetNumTokenStr(string: str, model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None) -> int`
 
 Counts the number of tokens in a string.
 
@@ -326,7 +351,9 @@ print(numTokens)
 
 ---
 
-### `TokenizeFile(filePath: Path | str, model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None) -> list[int]`
+### File and Directory Tokenization and Counting
+
+#### `TokenizeFile(filePath: Path | str, model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None) -> list[int]`
 
 Tokenizes the contents of a file into a list of token IDs.
 
@@ -360,7 +387,7 @@ print(tokens)
 
 ---
 
-### `GetNumTokenFile(filePath: Path | str, model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None) -> int`
+#### `GetNumTokenFile(filePath: Path | str, model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None) -> int`
 
 Counts the number of tokens in a file based on the specified model or encoding.
 
@@ -394,25 +421,32 @@ print(numTokens)
 
 ---
 
-### `TokenizeFiles(filePaths: list[Path] | list[str], model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None) -> list[list[int]]`
+#### `TokenizeFiles(inputPath: Path | str | list[Path | str], model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True) -> list[int | list] | list[list[int]] | list[int]`
 
-Tokenizes multiple files into lists of token IDs.
+**This is the main function used for tokenizing files** because it can tokenize single files, multiple files, or entire directories. Tokenizes multiple files or all files within a directory into lists of token IDs.
 
 **Parameters:**
 
-- `filePaths` (`list[Path] | list[str]`): A list of paths to the files to tokenize.
+- `inputPath` (`Path | str | list[Path | str]`): The path to a file or directory, or a list of file paths to tokenize.
 - `model` (`str`, optional): The name of the model to use for encoding.
 - `encodingName` (`str`, optional): The name of the encoding to use.
 - `encoding` (`tiktoken.Encoding`, optional): An existing `tiktoken.Encoding` object to use for tokenization.
+- `recursive` (`bool`, default: `True`): If `inputPath` is a directory, whether to tokenize files in subdirectories recursively.
 
 **Returns:**
 
-- `list[list[int]]`: A list where each element is a list of token IDs representing a tokenized file.
+- `list[int | list] | list[list[int]] | list[int]`:
+  - If `inputPath` is a file, returns a list of token IDs for that file.
+  - If `inputPath` is a list of files, returns a list where each element is a list of token IDs for each file.
+  - If `inputPath` is a directory:
+    - If `recursive` is `True`, returns a nested list where each element is either a list of token IDs representing a tokenized file or a sublist for a subdirectory.
+    - If `recursive` is `False`, returns a list of token IDs for each file in the directory.
 
 **Raises:**
 
 - `TypeError`: If the types of input parameters are incorrect.
-- `ValueError`: If the provided model or encoding is invalid.
+- `ValueError`: If any of the provided file paths in a list are not files, or if a provided directory path is not a directory, or if the provided model or encoding is invalid.
+- `RuntimeError`: If the provided `inputPath` is neither a file, a directory, nor a list.
 
 **Example:**
 
@@ -420,33 +454,49 @@ Tokenizes multiple files into lists of token IDs.
 import PyTokenCounter as tc
 from pathlib import Path
 
-# Assuming 'file1.txt' and 'file2.txt' exist
+# Tokenize a single file
+filePath = Path("./test_file.txt")
+tokens = tc.TokenizeFiles(inputPath=filePath, model="gpt-3.5-turbo")
+print(tokens)
+
+# Tokenize multiple files
 filePaths = [Path("./file1.txt"), Path("./file2.txt")]
-tokenizedFiles = tc.TokenizeFiles(filePaths=filePaths, model="gpt-3.5-turbo")
+tokenizedFiles = tc.TokenizeFiles(inputPath=filePaths, model="gpt-3.5-turbo")
 print(tokenizedFiles)
+
+# Tokenize a directory recursively
+dirPath = Path("./test_dir")
+tokenizedDir = tc.TokenizeFiles(inputPath=dirPath, model="gpt-4", recursive=True)
+print(tokenizedDir)
+
+# Tokenize a directory non-recursively
+tokenizedDirNonRecursive = tc.TokenizeFiles(inputPath=dirPath, model="gpt-4", recursive=False)
+print(tokenizedDirNonRecursive)
 ```
 
 ---
 
-### `GetNumTokenFiles(filePaths: list[Path] | list[str], model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None) -> int`
+#### `GetNumTokenFiles(inputPath: Path | str | list[Path | str], model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True) -> int`
 
-Counts the number of tokens across multiple files.
+**This is the main function used for counting tokens in files** because it can count tokens in single files, multiple files, or entire directories. Counts the number of tokens across multiple files or in all files within a directory.
 
 **Parameters:**
 
-- `filePaths` (`list[Path] | list[str]`): A list of paths to the files.
-- `model` (`str`, optional): The name of the model.
-- `encodingName` (`str`, optional): The name of the encoding.
-- `encoding` (`tiktoken.Encoding`, optional): A `tiktoken.Encoding` object.
+- `inputPath` (`Path | str | list[Path | str]`): The path to a file or directory, or a list of file paths to count tokens for.
+- `model` (`str`, optional): The name of the model to use for encoding.
+- `encodingName` (`str`, optional): The name of the encoding to use.
+- `encoding` (`tiktoken.Encoding`, optional): An existing `tiktoken.Encoding` object to use for tokenization.
+- `recursive` (`bool`, default: `True`): If `inputPath` is a directory, whether to count tokens in files in subdirectories recursively.
 
 **Returns:**
 
-- `int`: The total number of tokens across all files.
+- `int`: The total number of tokens in the specified files or directory.
 
 **Raises:**
 
 - `TypeError`: If the types of input parameters are incorrect.
-- `ValueError`: If the provided model or encoding is invalid.
+- `ValueError`: If any of the provided file paths in a list are not files, or if a provided directory path is not a directory, or if the provided model or encoding is invalid.
+- `RuntimeError`: If the provided `inputPath` is neither a file, a directory, nor a list.
 
 **Example:**
 
@@ -454,15 +504,29 @@ Counts the number of tokens across multiple files.
 import PyTokenCounter as tc
 from pathlib import Path
 
-# Assuming 'file1.txt' and 'file2.txt' exist
-filePaths = [Path("./file1.txt"), Path("./file2.txt")]
-numTokens = tc.GetNumTokenFiles(filePaths=filePaths, model="gpt-3.5-turbo")
+# Count tokens in a single file
+filePath = Path("./test_file.txt")
+numTokens = tc.GetNumTokenFiles(inputPath=filePath, model="gpt-3.5-turbo")
 print(numTokens)
+
+# Count tokens in multiple files
+filePaths = [Path("./file1.txt"), Path("./file2.txt")]
+numTokensFiles = tc.GetNumTokenFiles(inputPath=filePaths, model="gpt-3.5-turbo")
+print(numTokensFiles)
+
+# Count tokens in a directory recursively
+dirPath = Path("./test_dir")
+numTokensDir = tc.GetNumTokenFiles(inputPath=dirPath, model="gpt-4", recursive=True)
+print(numTokensDir)
+
+# Count tokens in a directory non-recursively
+numTokensDirNonRecursive = tc.GetNumTokenFiles(inputPath=dirPath, model="gpt-4", recursive=False)
+print(numTokensDirNonRecursive)
 ```
 
 ---
 
-### `TokenizeDir(dirPath: Path | str, model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True) -> list[int | list] | list[int]`
+#### `TokenizeDir(dirPath: Path | str, model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True) -> list[int | list] | list[int]`
 
 Tokenizes all files within a directory into lists of token IDs.
 
@@ -489,15 +553,19 @@ Tokenizes all files within a directory into lists of token IDs.
 import PyTokenCounter as tc
 from pathlib import Path
 
-# Assuming 'test_dir' exists and contains some files
+# Tokenize a directory recursively
 dirPath = Path("./test_dir")
-tokenizedDir = tc.TokenizeDir(dirPath=dirPath, model="gpt-4", recursive=False)
+tokenizedDir = tc.TokenizeDir(dirPath=dirPath, model="gpt-4", recursive=True)
 print(tokenizedDir)
+
+# Tokenize a directory non-recursively
+tokenizedDirNonRecursive = tc.TokenizeDir(dirPath=dirPath, model="gpt-4", recursive=False)
+print(tokenizedDirNonRecursive)
 ```
 
 ---
 
-### `GetNumTokenDir(dirPath: Path | str, model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True) -> int`
+#### `GetNumTokenDir(dirPath: Path | str, model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True) -> int`
 
 Counts the number of tokens in all files within a directory.
 
@@ -524,11 +592,17 @@ Counts the number of tokens in all files within a directory.
 import PyTokenCounter as tc
 from pathlib import Path
 
-# Assuming 'test_dir' exists and contains some files
+# Count tokens in a directory recursively
 dirPath = Path("./test_dir")
-numTokens = tc.GetNumTokenDir(dirPath=dirPath, model="gpt-4", recursive=False)
-print(numTokens)
+numTokensDir = tc.GetNumTokenDir(dirPath=dirPath, model="gpt-4", recursive=True)
+print(numTokensDir)
+
+# Count tokens in a directory non-recursively
+numTokensDirNonRecursive = tc.GetNumTokenDir(dirPath=dirPath, model="gpt-4", recursive=False)
+print(numTokensDirNonRecursive)
 ```
+
+---
 
 ## Maintainers
 

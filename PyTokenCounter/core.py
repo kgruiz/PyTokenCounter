@@ -19,8 +19,8 @@ Key Functions
 - "GetNumTokenStr": Count the number of tokens in a string.
 - "TokenizeFile": Tokenize the contents of a file into token IDs.
 - "GetNumTokenFile": Count the number of tokens in a file.
-- "TokenizeFiles": Tokenize multiple files into token IDs.
-- "GetNumTokenFiles": Count the number of tokens across multiple files.
+- "TokenizeFiles": Tokenize multiple files or a directory into token IDs.
+- "GetNumTokenFiles": Count the number of tokens across multiple files or in a directory.
 - "TokenizeDir": Tokenize all files within a directory.
 - "GetNumTokenDir": Count the number of tokens within a directory.
 
@@ -29,6 +29,8 @@ Key Functions
 from pathlib import Path
 
 import tiktoken
+
+from ._utils import ReadTextFile, UnsupportedEncodingError
 
 MODEL_MAPPINGS = {
     "gpt-4o": "o200k_base",
@@ -85,7 +87,7 @@ def GetValidModels() -> list[str]:
 
     Returns
     -------
-    list of str
+    list[str]
         A list of valid model names.
     """
 
@@ -98,7 +100,7 @@ def GetValidEncodings() -> list[str]:
 
     Returns
     -------
-    list of str
+    list[str]
         A list of valid encoding names.
     """
 
@@ -514,6 +516,10 @@ def TokenizeFile(
         If the provided "model" or "encodingName" is invalid, or if there is a
         mismatch between the model and encoding name, or between the provided
         encoding and the derived encoding.
+    UnsupportedEncodingError
+        If the file's encoding is not supported (i.e., not UTF-8 or ASCII).
+    FileNotFoundError
+        If the specified file does not exist.
     """
 
     if not isinstance(filePath, str) and not isinstance(filePath, Path):
@@ -542,7 +548,11 @@ def TokenizeFile(
 
     filePath = Path(filePath)
 
-    fileContents = filePath.read_text()
+    fileContents = ReadTextFile(filePath=filePath)
+
+    if not isinstance(fileContents, str):
+
+        raise UnsupportedEncodingError(encoding=fileContents[1], filePath=filePath)
 
     return TokenizeStr(
         string=fileContents, model=model, encodingName=encodingName, encoding=encoding
@@ -585,6 +595,10 @@ def GetNumTokenFile(
         If the provided "model" or "encodingName" is invalid, or if there is a
         mismatch between the model and encoding name, or between the provided
         encoding and the derived encoding.
+    UnsupportedEncodingError
+        If the file's encoding is not supported (i.e., not UTF-8 or ASCII).
+    FileNotFoundError
+        If the specified file does not exist.
     """
 
     if not isinstance(filePath, str) and not isinstance(filePath, Path):
@@ -620,202 +634,6 @@ def GetNumTokenFile(
     )
 
 
-def TokenizeFiles(
-    filePaths: list[Path] | list[str],
-    model: str | None = None,
-    encodingName: str | None = None,
-    encoding: tiktoken.Encoding | None = None,
-) -> list[list[int]]:
-    """
-    Tokenize multiple files into lists of token IDs using the specified model or encoding.
-
-    Parameters
-    ----------
-    filePaths : list[Path] | list[str]
-        A list of paths to the files to tokenize.
-    model : str | None, optional
-        The name of the model to use for encoding. If provided, the encoding
-        associated with the model will be used.
-    encodingName : str | None, optional
-        The name of the encoding to use. If provided, it must match the encoding
-        associated with the specified model.
-    encoding : tiktoken.Encoding | None, optional
-        An existing tiktoken.Encoding object to use for tokenization. If provided,
-        it must match the encoding derived from the model or encodingName.
-
-    Returns
-    -------
-    list[list[int]]
-        A list where each element is a list of token IDs representing a tokenized file.
-
-    Raises
-    ------
-    TypeError
-        If the types of "filePaths", "model", "encodingName", or "encoding" are incorrect.
-    ValueError
-        If the provided "model" or "encodingName" is invalid, or if there is a
-        mismatch between the model and encoding name, or between the provided
-        encoding and the derived encoding.
-    """
-
-    if not isinstance(filePaths, list):
-
-        raise TypeError(
-            f'Unexpected type for parameter "filePaths". Expected type: list. Given type: {type(filePaths)}'
-        )
-
-    else:
-
-        if not all(
-            isinstance(filePath, str) or isinstance(filePath, Path)
-            for filePath in filePaths
-        ):
-
-            listTypes = set([type(path) for path in filePaths])
-
-            if len(listTypes) > 1:
-
-                raise TypeError(
-                    f'Unexpected type for parameter "filePaths". Expected type: list of str or pathlib.Path. Given list contains types: {listTypes}'
-                )
-
-            else:
-
-                raise TypeError(
-                    f'Unexpected type for parameter "filePaths". Expected type: list of str or pathlib.Path. Given list contains type: {listTypes}'
-                )
-
-    if model is not None and not isinstance(model, str):
-
-        raise TypeError(
-            f'Unexpected type for parameter "model". Expected type: str. Given type: {type(model)}'
-        )
-
-    if encodingName is not None and not isinstance(encodingName, str):
-
-        raise TypeError(
-            f'Unexpected type for parameter "encodingName". Expected type: str. Given type: {type(encodingName)}'
-        )
-
-    if encoding is not None and not isinstance(encoding, tiktoken.Encoding):
-
-        raise TypeError(
-            f'Unexpected type for parameter "encoding". Expected type: tiktoken.Encoding. Given type: {type(encoding)}'
-        )
-
-    tokenizedFiles = []
-
-    for filePath in filePaths:
-
-        tokenizedFiles.append(
-            TokenizeFile(
-                filePath=filePath,
-                model=model,
-                encodingName=encodingName,
-                encoding=encoding,
-            )
-        )
-
-    return tokenizedFiles
-
-
-def GetNumTokenFiles(
-    filePaths: list[Path] | list[str],
-    model: str | None = None,
-    encodingName: str | None = None,
-    encoding: tiktoken.Encoding | None = None,
-) -> int:
-    """
-    Get the number of tokens in multiple files based on the specified model or encoding.
-
-    Parameters
-    ----------
-    filePaths : list[Path] | list[str]
-        A list of paths to the files to count tokens for.
-    model : str | None, optional
-        The name of the model to use for encoding. If provided, the encoding
-        associated with the model will be used.
-    encodingName : str | None, optional
-        The name of the encoding to use. If provided, it must match the encoding
-        associated with the specified model.
-    encoding : tiktoken.Encoding | None, optional
-        An existing tiktoken.Encoding object to use for tokenization. If provided,
-        it must match the encoding derived from the model or encodingName.
-
-    Returns
-    -------
-    int
-        The total number of tokens across all files.
-
-    Raises
-    ------
-    TypeError
-        If the types of "filePaths", "model", "encodingName", or "encoding" are incorrect.
-    ValueError
-        If the provided "model" or "encodingName" is invalid, or if there is a
-        mismatch between the model and encoding name, or between the provided
-        encoding and the derived encoding.
-    """
-
-    if not isinstance(filePaths, list):
-
-        raise TypeError(
-            f'Unexpected type for parameter "filePaths". Expected type: list. Given type: {type(filePaths)}'
-        )
-
-    else:
-
-        if not all(
-            isinstance(filePath, str) or isinstance(filePath, Path)
-            for filePath in filePaths
-        ):
-
-            listTypes = set([type(path) for path in filePaths])
-
-            if len(listTypes) > 1:
-
-                raise TypeError(
-                    f'Unexpected type for parameter "filePaths". Expected type: list of str or pathlib.Path. Given list contains types: {listTypes}'
-                )
-
-            else:
-
-                raise TypeError(
-                    f'Unexpected type for parameter "filePaths". Expected type: list of str or pathlib.Path. Given list contains type: {listTypes}'
-                )
-
-    if model is not None and not isinstance(model, str):
-
-        raise TypeError(
-            f'Unexpected type for parameter "model". Expected type: str. Given type: {type(model)}'
-        )
-
-    if encodingName is not None and not isinstance(encodingName, str):
-
-        raise TypeError(
-            f'Unexpected type for parameter "encodingName". Expected type: str. Given type: {type(encodingName)}'
-        )
-
-    if encoding is not None and not isinstance(encoding, tiktoken.Encoding):
-
-        raise TypeError(
-            f'Unexpected type for parameter "encoding". Expected type: tiktoken.Encoding. Given type: {type(encoding)}'
-        )
-
-    runningTokenCount = 0
-
-    for filePath in filePaths:
-
-        runningTokenCount += GetNumTokenFile(
-            filePath=filePath,
-            model=model,
-            encodingName=encodingName,
-            encoding=encoding,
-        )
-
-    return runningTokenCount
-
-
 def TokenizeDir(
     dirPath: Path | str,
     model: str | None = None,
@@ -846,7 +664,8 @@ def TokenizeDir(
     -------
     list[int | list] | list[int]
         A nested list where each element is either a list of token IDs representing
-        a tokenized file or a sublist for a subdirectory.
+        a tokenized file or a sublist for a subdirectory. If recursive is False, returns
+        a list of token IDs for each file in the directory.
 
     Raises
     ------
@@ -913,28 +732,37 @@ def TokenizeDir(
 
             else:
 
-                dirFilePaths.append(entry)
+                try:
 
-        tokenizedDir.append(
-            TokenizeFiles(
-                filePaths=dirFilePaths,
-                model=model,
-                encodingName=encodingName,
-                encoding=encoding,
-            )
-        )
+                    tokenizedFile = TokenizeFile(
+                        filePath=entry,
+                        model=model,
+                        encodingName=encodingName,
+                        encoding=encoding,
+                    )
+                    tokenizedDir.append(tokenizedFile)
+
+                    print(f"Tokenized file {entry}")
+
+                except UnsupportedEncodingError as e:
+
+                    print(f"Skipping file {entry} due to unsupported encoding: {e}")
+
+                    continue
 
         for subDirPath in subDirPaths:
 
-            tokenizedDir.append(
-                TokenizeDir(
-                    dirPath=subDirPath,
-                    model=model,
-                    encodingName=encodingName,
-                    encoding=encoding,
-                    recursive=recursive,
-                )
+            tokenizedSubDir = TokenizeDir(
+                dirPath=subDirPath,
+                model=model,
+                encodingName=encodingName,
+                encoding=encoding,
+                recursive=recursive,
             )
+
+            if tokenizedSubDir:
+
+                tokenizedDir.append(tokenizedSubDir)
 
         return tokenizedDir
 
@@ -950,14 +778,21 @@ def TokenizeDir(
 
             else:
 
-                dirFilePaths.append(entry)
+                try:
 
-        return TokenizeFiles(
-            filePaths=dirFilePaths,
-            model=model,
-            encodingName=encodingName,
-            encoding=encoding,
-        )
+                    tokenizedFile = TokenizeFile(
+                        filePath=entry,
+                        model=model,
+                        encodingName=encodingName,
+                        encoding=encoding,
+                    )
+                    dirFilePaths.append(tokenizedFile)
+
+                except UnsupportedEncodingError:
+
+                    continue
+
+        return dirFilePaths
 
 
 def GetNumTokenDir(
@@ -1001,41 +836,6 @@ def GetNumTokenDir(
         If an unexpected error occurs during token counting.
     """
 
-    def FlattenTokenizedDir(tokenizedDir: list[int | list]) -> list[list[int]]:
-        """
-        Flatten a nested list of token counts.
-
-        Parameters
-        ----------
-        tokenizedDir : list[int | list]
-            The nested list of token counts.
-
-        Returns
-        -------
-        list[int]
-            A flattened list of token counts.
-        """
-
-        flattened = []
-
-        for item in tokenizedDir:
-
-            if isinstance(item, list):
-
-                if all([isinstance(elem, int) for elem in item]):
-
-                    flattened.append(item)
-
-                else:
-
-                    flattened.extend(FlattenTokenizedDir(item))
-
-            else:
-
-                flattened.append(item)
-
-        return flattened
-
     if not isinstance(dirPath, str) and not isinstance(dirPath, Path):
 
         raise TypeError(
@@ -1076,40 +876,346 @@ def GetNumTokenDir(
 
         raise ValueError(f'Given directory path "{givenDirPath}" is not a directory.')
 
-    tokenizedDir = TokenizeDir(
-        dirPath=dirPath,
-        model=model,
-        encodingName=encodingName,
-        encoding=encoding,
-        recursive=recursive,
-    )
-
     if recursive:
 
-        flatTokenizedDir = FlattenTokenizedDir(tokenizedDir=tokenizedDir)
+        runningTokenTotal = 0
 
-        runningTokenCount = 0
+        subDirPaths = []
 
-        for tokenizedFile in flatTokenizedDir:
+        for entry in dirPath.iterdir():
 
-            runningTokenCount += len(tokenizedFile)
+            if entry.is_dir():
 
-        return runningTokenCount
+                subDirPaths.append(entry)
+
+            else:
+
+                try:
+
+                    runningTokenTotal += GetNumTokenFile(
+                        filePath=entry,
+                        model=model,
+                        encodingName=encodingName,
+                        encoding=encoding,
+                    )
+
+                except UnsupportedEncodingError:
+
+                    continue
+
+        for subDirPath in subDirPaths:
+
+            runningTokenTotal += GetNumTokenDir(
+                dirPath=subDirPath,
+                model=model,
+                encodingName=encodingName,
+                encoding=encoding,
+                recursive=recursive,
+            )
+
+        return runningTokenTotal
 
     else:
 
-        if not all([isinstance(item, int) for item in tokenizedDir]):
+        runningTokenTotal = 0
 
-            raise RuntimeError(
-                f"Unexpected error. Non-recursive tokenizedDir contains non-integer items. Contained types: {set([type(item) for item in tokenizedDir])}"
+        for entry in dirPath.iterdir():
+
+            if entry.is_dir():
+
+                continue
+
+            else:
+
+                try:
+
+                    runningTokenTotal += GetNumTokenFile(
+                        filePath=entry,
+                        model=model,
+                        encodingName=encodingName,
+                        encoding=encoding,
+                    )
+
+                except UnsupportedEncodingError:
+
+                    continue
+
+        return runningTokenTotal
+
+
+def TokenizeFiles(
+    inputPath: Path | str | list[Path | str],
+    /,
+    model: str | None = None,
+    encodingName: str | None = None,
+    encoding: tiktoken.Encoding | None = None,
+    recursive: bool = True,
+) -> list[int | list] | list[list[int]] | list[int]:
+    """
+    Tokenize multiple files or all files within a directory into lists of token IDs.
+
+    Parameters
+    ----------
+    inputPath : Path | str | list[Path | str]
+        The path to a file or directory, or a list of file paths to tokenize.
+    model : str | None, optional
+        The name of the model to use for encoding. If provided, the encoding
+        associated with the model will be used.
+    encodingName : str | None, optional
+        The name of the encoding to use. If provided, it must match the encoding
+        associated with the specified model.
+    encoding : tiktoken.Encoding | None, optional
+        An existing tiktoken.Encoding object to use for tokenization. If provided,
+        it must match the encoding derived from the model or encodingName.
+    recursive : bool, default True
+        If inputPath is a directory, whether to tokenize files in subdirectories
+        recursively.
+
+    Returns
+    -------
+    list[int | list] | list[list[int]] | list[int]
+        - If inputPath is a file, returns a list of token IDs for that file.
+        - If inputPath is a list of files, returns a list where each element is a
+          list of token IDs for each file.
+        - If inputPath is a directory:
+          - If recursive is True, returns a nested list where each element is either
+            a list of token IDs representing a tokenized file or a sublist for a
+            subdirectory.
+          - If recursive is False, returns a list of token IDs for each file in
+            the directory.
+
+    Raises
+    ------
+    TypeError
+        If the types of "inputPath", "model", "encodingName", "encoding", or
+        "recursive" are incorrect.
+    ValueError
+        If any of the provided file paths in a list are not files, or if a provided
+        directory path is not a directory.
+    RuntimeError
+        If the provided inputPath is neither a file, a directory, nor a list.
+    """
+
+    if not isinstance(inputPath, (str, Path, list)):
+
+        raise TypeError(
+            f'Unexpected type for parameter "inputPath". Expected type: str, pathlib.Path, or list. Given type: {type(inputPath)}'
+        )
+
+    if isinstance(inputPath, list):
+
+        if not all(isinstance(item, (str, Path)) for item in inputPath):
+
+            listTypes = set(type(item) for item in inputPath)
+
+            raise TypeError(
+                f'Unexpected type for parameter "inputPath". Expected type: list of str or pathlib.Path. Given list contains types: {listTypes}'
             )
+
+    if model is not None and not isinstance(model, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "model". Expected type: str. Given type: {type(model)}'
+        )
+
+    if encodingName is not None and not isinstance(encodingName, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encodingName". Expected type: str. Given type: {type(encodingName)}'
+        )
+
+    if encoding is not None and not isinstance(encoding, tiktoken.Encoding):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encoding". Expected type: tiktoken.Encoding. Given type: {type(encoding)}'
+        )
+
+    if isinstance(inputPath, list):
+
+        inputPath = [Path(entry) for entry in inputPath]
+
+        if not all(entry.is_file() for entry in inputPath):
+
+            nonFiles = [entry for entry in inputPath if not entry.is_file()]
+
+            raise ValueError(f"Given list contains non-file entries: {nonFiles}")
 
         else:
 
-            runningTokenCount = 0
+            tokenizedFiles = []
 
-            for tokenizedFile in tokenizedDir:
+            for file in inputPath:
 
-                runningTokenCount += len(tokenizedFile)
+                tokenizedFiles.append(
+                    TokenizeFile(
+                        filePath=file,
+                        model=model,
+                        encodingName=encodingName,
+                        encoding=encoding,
+                    )
+                )
 
-            return runningTokenCount
+            return tokenizedFiles
+
+    else:
+
+        inputPath = Path(inputPath)
+
+    if inputPath.is_file():
+
+        return TokenizeFile(
+            filePath=inputPath,
+            model=model,
+            encodingName=encodingName,
+            encoding=encoding,
+        )
+
+    elif inputPath.is_dir():
+
+        return TokenizeDir(
+            dirPath=inputPath,
+            model=model,
+            encodingName=encodingName,
+            encoding=encoding,
+            recursive=recursive,
+        )
+
+    else:
+
+        raise RuntimeError(
+            f'Unexpected error. Given inputPath "{inputPath}" is neither a file, a directory, nor a list.'
+        )
+
+
+def GetNumTokenFiles(
+    inputPath: Path | str | list[Path | str],
+    /,
+    model: str | None = None,
+    encodingName: str | None = None,
+    encoding: tiktoken.Encoding | None = None,
+    recursive: bool = True,
+) -> int:
+    """
+    Get the number of tokens in multiple files or all files within a directory.
+
+    Parameters
+    ----------
+    inputPath : Path | str | list[Path | str]
+        The path to a file or directory, or a list of file paths to count tokens for.
+    model : str | None, optional
+        The name of the model to use for encoding. If provided, the encoding
+        associated with the model will be used.
+    encodingName : str | None, optional
+        The name of the encoding to use. If provided, it must match the encoding
+        associated with the specified model.
+    encoding : tiktoken.Encoding | None, optional
+        An existing tiktoken.Encoding object to use for tokenization. If provided,
+        it must match the encoding derived from the model or encodingName.
+    recursive : bool, default True
+        If inputPath is a directory, whether to count tokens in files in
+        subdirectories recursively.
+
+    Returns
+    -------
+    int
+        The total number of tokens in the specified files or directory.
+
+    Raises
+    ------
+    TypeError
+        If the types of "inputPath", "model", "encodingName", "encoding", or
+        "recursive" are incorrect.
+    ValueError
+        If any of the provided file paths in a list are not files, or if a provided
+        directory path is not a directory.
+    RuntimeError
+        If the provided inputPath is neither a file, a directory, nor a list.
+    """
+
+    if not isinstance(inputPath, (str, Path, list)):
+
+        raise TypeError(
+            f'Unexpected type for parameter "inputPath". Expected type: str, pathlib.Path, or list. Given type: {type(inputPath)}'
+        )
+
+    if isinstance(inputPath, list):
+
+        if not all(isinstance(item, (str, Path)) for item in inputPath):
+
+            listTypes = set(type(item) for item in inputPath)
+
+            raise TypeError(
+                f'Unexpected type for parameter "inputPath". Expected type: list of str or pathlib.Path. Given list contains types: {listTypes}'
+            )
+
+    if model is not None and not isinstance(model, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "model". Expected type: str. Given type: {type(model)}'
+        )
+
+    if encodingName is not None and not isinstance(encodingName, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encodingName". Expected type: str. Given type: {type(encodingName)}'
+        )
+
+    if encoding is not None and not isinstance(encoding, tiktoken.Encoding):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encoding". Expected type: tiktoken.Encoding. Given type: {type(encoding)}'
+        )
+
+    if isinstance(inputPath, list):
+
+        inputPath = [Path(entry) for entry in inputPath]
+
+        if not all(entry.is_file() for entry in inputPath):
+
+            nonFiles = [entry for entry in inputPath if not entry.is_file()]
+
+            raise ValueError(f"Given list contains non-file entries: {nonFiles}")
+
+        else:
+
+            runningTokenTotal = 0
+
+            for file in inputPath:
+
+                runningTokenTotal += GetNumTokenFile(
+                    filePath=file,
+                    model=model,
+                    encodingName=encodingName,
+                    encoding=encoding,
+                )
+
+            return runningTokenTotal
+
+    else:
+
+        inputPath = Path(inputPath)
+
+    if inputPath.is_file():
+
+        return GetNumTokenFile(
+            filePath=inputPath,
+            model=model,
+            encodingName=encodingName,
+            encoding=encoding,
+        )
+
+    elif inputPath.is_dir():
+
+        return GetNumTokenDir(
+            dirPath=inputPath,
+            model=model,
+            encodingName=encodingName,
+            encoding=encoding,
+            recursive=recursive,
+        )
+
+    else:
+
+        raise RuntimeError(
+            f'Unexpected error. Given inputPath "{inputPath}" is neither a file, a directory, nor a list.'
+        )
