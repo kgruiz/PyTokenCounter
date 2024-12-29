@@ -1,7 +1,7 @@
-# main.py
+# core.py
 
 """
-PyTokenCounter Main Module
+PyTokenCounter Core Module
 =============================
 
 Provides functions to tokenize and count tokens in strings, files, and directories using specified models or encodings.

@@ -30,7 +30,7 @@ import argparse
 import logging
 import sys
 
-from .main import (
+from .core import (
     VALID_ENCODINGS,
     VALID_MODELS,
     GetEncoding,
@@ -78,7 +78,7 @@ def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
     )
 
 
-def Main() -> None:
+def main() -> None:
     """
     Entry point for the CLI. Parses command-line arguments and invokes the appropriate
     tokenization or counting functions based on the provided subcommand.
@@ -257,4 +257,4 @@ def Main() -> None:
 
 if __name__ == "__main__":
 
-    Main()
+    main()

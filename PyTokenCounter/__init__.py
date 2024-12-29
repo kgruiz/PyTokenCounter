@@ -1,6 +1,6 @@
 # PyTokenCounter/__init__.py
 
-from .main import (
+from .core import (
     GetEncoding,
     GetEncodingForModel,
     GetModelForEncoding,
