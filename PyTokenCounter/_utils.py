@@ -38,10 +38,9 @@ class UnsupportedEncodingError(Exception):
         super().__init__(self.message)
 
 
-def ReadTextFile(filePath: Path | str) -> str | tuple[None, str | None]:
+def ReadTextFile(filePath: Path | str) -> str:
     """
-    Reads a text file if it is UTF-8 or ASCII encoded. If the file is not UTF-8 or ASCII encoded,
-    returns a tuple containing `None` and the detected encoding.
+    Reads a text file if it is UTF-8 or ASCII encoded. Raises an exception for unsupported encodings.
 
     Parameters
     ----------
@@ -52,9 +51,6 @@ def ReadTextFile(filePath: Path | str) -> str | tuple[None, str | None]:
     -------
     str
         The content of the file as a string if it is UTF-8 or ASCII encoded.
-    tuple[None, str | None]
-        A tuple `(None, encoding)` if the file is not UTF-8 or ASCII encoded, where `encoding`
-        is the detected encoding or `None` if the encoding could not be detected.
 
     Raises
     ------
@@ -62,6 +58,8 @@ def ReadTextFile(filePath: Path | str) -> str | tuple[None, str | None]:
         If the input `filePath` is not of type `str` or `pathlib.Path`.
     FileNotFoundError
         If the specified file does not exist.
+    UnsupportedEncodingError
+        If the file's encoding is neither UTF-8 nor ASCII.
 
     Examples
     --------
@@ -70,12 +68,6 @@ def ReadTextFile(filePath: Path | str) -> str | tuple[None, str | None]:
     >>> from utils import ReadTextFile
     >>> content = ReadTextFile('example.txt')
     >>> print(content)
-
-    Handling a file with a non-UTF-8 encoding:
-
-    >>> result = ReadTextFile('non_utf8.txt')
-    >>> print(result)
-    (None, 'ISO-8859-1')
 
     Handling a non-existent file:
 
@@ -90,6 +82,15 @@ def ReadTextFile(filePath: Path | str) -> str | tuple[None, str | None]:
     Traceback (most recent call last):
         ...
     TypeError: Unexpected type for parameter "filePath". Expected type: str or pathlib.Path. Given type: <class 'int'>
+
+    Handling a file with a non-UTF-8 encoding:
+
+    >>> from utils import ReadTextFile
+    >>> try:
+    ...     content = ReadTextFile('non_utf8.txt')
+    ... except UnsupportedEncodingError as e:
+    ...     print(e)
+    File encoding is not supported. Detected encoding: ISO-8859-1. File path: non_utf8.txt
     """
 
     if not isinstance(filePath, str) and not isinstance(filePath, Path):
@@ -119,4 +120,4 @@ def ReadTextFile(filePath: Path | str) -> str | tuple[None, str | None]:
 
     else:
 
-        return (None, encoding)
+        raise UnsupportedEncodingError(encoding=encoding, filePath=filePath)

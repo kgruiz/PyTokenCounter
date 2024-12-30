@@ -353,7 +353,7 @@ def main() -> None:
 
     except Exception as e:
 
-        logger.error(f"Error: {e}")
+        logger.error(f"Error: {e}", exc_info=True)
         sys.exit(1)
 
 

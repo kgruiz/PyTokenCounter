@@ -992,6 +992,8 @@ def TokenizeFiles(
     ValueError
         If any of the provided file paths in a list are not files, or if a provided
         directory path is not a directory.
+    UnsupportedEncodingError
+        If any of the files to be tokenized have an unsupported encoding (i.e., not UTF-8 or ASCII).
     RuntimeError
         If the provided inputPath is neither a file, a directory, nor a list.
     """
@@ -1128,6 +1130,8 @@ def GetNumTokenFiles(
     ValueError
         If any of the provided file paths in a list are not files, or if a provided
         directory path is not a directory.
+    UnsupportedEncodingError
+        If any of the files to be tokenized have an unsupported encoding (i.e., not UTF-8 or ASCII).
     RuntimeError
         If the provided inputPath is neither a file, a directory, nor a list.
     """
