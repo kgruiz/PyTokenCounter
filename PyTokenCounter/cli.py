@@ -22,15 +22,16 @@ Subcommands:
     count-dir      Count tokens in all files within a directory.
 
 For detailed help on each subcommand, use:
+
     tokencount <subcommand> -h
 
 Example:
-    tokencount tokenize-str "Hello, world!" -m gpt-4
-    tokencount tokenize-files ./file1.txt ./file2.txt -m gpt-4
-    tokencount tokenize-files ./my_directory -m gpt-4 -nr
-    tokencount tokenize-dir ./my_directory -m gpt-4 -nr
-    tokencount count-files ./my_directory -m gpt-4
-    tokencount count-dir ./my_directory -m gpt-4
+    tokencount tokenize-str "Hello, world!" -m gpt-4o
+    tokencount tokenize-files ./file1.txt ./file2.txt -m gpt-4o
+    tokencount tokenize-files ./my_directory -m gpt-4o -nr
+    tokencount tokenize-dir ./my_directory -m gpt-4o -nr
+    tokencount count-files ./my_directory -m gpt-4o
+    tokencount count-dir ./my_directory -m gpt-4o
 """
 
 import argparse
@@ -75,14 +76,22 @@ def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
         "--model",
         type=str,
         choices=VALID_MODELS,
-        help="Model to use for encoding.",
+        help="Model to use for encoding.\nValid options are:\n"
+        + "\n".join(f"  - {model}" for model in VALID_MODELS),
     )
     subParser.add_argument(
         "-e",
         "--encoding",
         type=str,
         choices=VALID_ENCODINGS,
-        help="Encoding to use directly.",
+        help="Encoding to use directly.\nValid options are:\n"
+        + "\n".join(f"  - {encoding}" for encoding in VALID_ENCODINGS),
+    )
+    subParser.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        help="Silence progress bars and minimize output.",
     )
 
 
@@ -237,7 +246,9 @@ def main() -> None:
     )
 
     # Parse the arguments
+
     if len(sys.argv) == 1:
+
         parser.print_help(sys.stderr)
         sys.exit(1)
 
@@ -254,47 +265,59 @@ def main() -> None:
                 model=args.model,
                 encodingName=args.encoding,
                 encoding=encoding,
+                quiet=args.quiet,
             )
             print(tokens)
 
         elif args.command == "tokenize-file":
+
             tokens = TokenizeFiles(
                 args.file,
                 model=args.model,
                 encodingName=args.encoding,
                 encoding=encoding,
+                quiet=args.quiet,
             )
 
             print(tokens)
 
         elif args.command == "tokenize-files":
+
             # Handle both multiple files and directory
             # Split inputs by commas and flatten the list
             inputPaths = [Path(p) for arg in args.input for p in arg.split(",")]
+
             if len(inputPaths) == 1 and inputPaths[0].is_dir():
+
                 tokenLists = TokenizeFiles(
                     inputPaths[0],
                     model=args.model,
                     encodingName=args.encoding,
                     encoding=encoding,
                     recursive=not args.no_recursive,
+                    quiet=args.quiet,
                 )
+
             else:
+
                 tokenLists = TokenizeFiles(
                     inputPaths,
                     model=args.model,
                     encodingName=args.encoding,
                     encoding=encoding,
+                    quiet=args.quiet,
                 )
             print(tokenLists)
 
         elif args.command == "tokenize-dir":
+
             tokenizedDir = TokenizeDir(
                 dirPath=args.directory,
                 model=args.model,
                 encodingName=args.encoding,
                 encoding=encoding,
                 recursive=not args.no_recursive,
+                quiet=args.quiet,
             )
 
             print(tokenizedDir)
@@ -306,6 +329,7 @@ def main() -> None:
                 model=args.model,
                 encodingName=args.encoding,
                 encoding=encoding,
+                quiet=args.quiet,
             )
             print(count)
 
@@ -316,28 +340,35 @@ def main() -> None:
                 model=args.model,
                 encodingName=args.encoding,
                 encoding=encoding,
+                quiet=args.quiet,
             )
 
             print(count)
+
         elif args.command == "count-files":
 
             # Split inputs by commas and flatten the list
             inputPaths = [Path(p) for arg in args.input for p in arg.split(",")]
 
             if len(inputPaths) == 1 and inputPaths[0].is_dir():
+
                 totalCount = GetNumTokenFiles(
                     inputPaths[0],
                     model=args.model,
                     encodingName=args.encoding,
                     encoding=encoding,
                     recursive=not args.no_recursive,
+                    quiet=args.quiet,
                 )
+
             else:
+
                 totalCount = GetNumTokenFiles(
                     inputPaths,
                     model=args.model,
                     encodingName=args.encoding,
                     encoding=encoding,
+                    quiet=args.quiet,
                 )
             print(totalCount)
 
@@ -349,6 +380,7 @@ def main() -> None:
                 encodingName=args.encoding,
                 encoding=encoding,
                 recursive=not args.no_recursive,
+                quiet=args.quiet,
             )
 
             print(count)

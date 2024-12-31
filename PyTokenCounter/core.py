@@ -73,7 +73,7 @@ _progressInstance = Progress()
 _tasks = {}
 
 
-def _InitializeTask(taskName, total, quiet: bool = False):
+def _InitializeTask(taskName: str, total: int, quiet: bool = False) -> int | None:
     """
     Internal function to initialize a task in the progress bar.
 
@@ -110,7 +110,9 @@ def _InitializeTask(taskName, total, quiet: bool = False):
     return taskId
 
 
-def _UpdateTask(taskName, advance, description=None, quiet: bool = False):
+def _UpdateTask(
+    taskName: str, advance: int, description: str = None, quiet: bool = False
+) -> None:
     """
     Internal function to update a task's progress and optionally its description.
 
@@ -148,6 +150,29 @@ def _UpdateTask(taskName, advance, description=None, quiet: bool = False):
 
 
 def _CountDirFiles(dirPath: Path, recursive: bool = True) -> int:
+    """
+    Count the number of files in a directory.
+
+    This function traverses the specified directory and counts the number of files it contains.
+    It can operate recursively to include files in subdirectories if desired.
+
+    Parameters
+    ----------
+    dirPath : Path
+        The path to the directory in which to count files.
+    recursive : bool, optional
+        Whether to count files in subdirectories recursively (default is True).
+
+    Returns
+    -------
+    int
+        The total number of files in the directory.
+
+    Raises
+    ------
+    ValueError
+        If the provided `dirPath` is not a directory.
+    """
 
     if not dirPath.is_dir():
 
