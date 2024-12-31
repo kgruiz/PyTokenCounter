@@ -2,7 +2,7 @@
 
 """
 PyTokenCounter Core Module
-=============================
+============================
 
 Provides functions to tokenize and count tokens in strings, files, and directories using specified models or encodings.
 Includes utilities for managing model-encoding mappings and validating inputs.
@@ -69,12 +69,11 @@ VALID_MODELS_STR = "\n".join(VALID_MODELS)
 VALID_ENCODINGS_STR = "\n".join(VALID_ENCODINGS)
 
 
-# Singleton-like Progress instance and task tracker
 _progressInstance = Progress()
 _tasks = {}
 
 
-def _InitializeTask(taskName, total):
+def _InitializeTask(taskName, total, quiet: bool = False):
     """
     Internal function to initialize a task in the progress bar.
 
@@ -84,12 +83,18 @@ def _InitializeTask(taskName, total):
         The description of the task to display in the progress bar.
     total : int
         The total work required for the task.
+    quiet : bool, optional
+        If True, suppress the progress bar (default is False).
 
     Returns
     -------
-    int
-        Task ID for the initialized task.
+    int or None
+        Task ID for the initialized task, or None if quiet is True.
     """
+
+    if quiet:
+
+        return None
 
     if not _progressInstance.live.is_started:
 
@@ -105,7 +110,7 @@ def _InitializeTask(taskName, total):
     return taskId
 
 
-def _UpdateTask(taskName, advance, description=None):
+def _UpdateTask(taskName, advance, description=None, quiet: bool = False):
     """
     Internal function to update a task's progress and optionally its description.
 
@@ -117,26 +122,32 @@ def _UpdateTask(taskName, advance, description=None):
         The amount of work to add to the task's progress.
     description : str, optional
         A new description for the task (default is None).
+    quiet : bool, optional
+        If True, suppress the progress bar update (default is False).
 
     Raises
     ------
     ValueError
         If the specified task name is not found.
     """
+
+    if quiet:
+
+        return
+
     if taskName not in _tasks:
+
         raise ValueError(f"Task '{taskName}' not found.")
 
-    # Update progress and optionally the description
     _progressInstance.update(_tasks[taskName], advance=advance, description=description)
 
-    # Stop progress if all tasks are finished
     if all(task.finished for task in _progressInstance.tasks):
 
         _progressInstance.stop()
-        _tasks.clear()  # Clear completed tasks
+        _tasks.clear()
 
 
-def _CountDirFiles(dirPath: Path, recursive: bool = True):
+def _CountDirFiles(dirPath: Path, recursive: bool = True) -> int:
 
     if not dirPath.is_dir():
 
@@ -179,6 +190,7 @@ def GetModelMappings() -> dict:
 def GetValidModels() -> list[str]:
     """
     Get a list of valid models.
+
 
     Returns
     -------
@@ -237,7 +249,7 @@ def GetModelForEncoding(encodingName: str) -> str:
                 return model
 
 
-def GetEncodingForModel(modelName: str) -> str:
+def GetEncodingForModel(modelName: str, quiet: bool = False) -> str:
     """
     Get the encoding for a given model name.
 
@@ -245,6 +257,8 @@ def GetEncodingForModel(modelName: str) -> str:
     ----------
     modelName : str
         The name of the model.
+    quiet : bool, optional
+        If True, suppress progress updates (default is False).
 
     Returns
     -------
@@ -262,25 +276,30 @@ def GetEncodingForModel(modelName: str) -> str:
         raise ValueError(
             f"Invalid model: {modelName}\n\nValid models:\n{VALID_MODELS_STR}"
         )
+
     else:
 
         return MODEL_MAPPINGS[modelName]
 
 
 def GetEncoding(
-    model: str | None = None, encodingName: str | None = None
+    model: str | None = None,
+    encodingName: str | None = None,
+    quiet: bool = False,
 ) -> tiktoken.Encoding:
     """
     Get the tiktoken Encoding based on the specified model or encoding name.
 
     Parameters
     ----------
-    model : str | None, optional
+    model : str or None, optional
         The name of the model to retrieve the encoding for. If provided,
         the encoding associated with the model will be used.
-    encodingName : str | None, optional
+    encodingName : str or None, optional
         The name of the encoding to use. If provided, it must match the encoding
         associated with the specified model.
+    quiet : bool, optional
+        If True, suppress progress updates (default is False).
 
     Returns
     -------
@@ -297,11 +316,13 @@ def GetEncoding(
     """
 
     if model is not None and not isinstance(model, str):
+
         raise TypeError(
             f'Unexpected type for parameter "model". Expected type: str. Given type: {type(model)}'
         )
 
     if encodingName is not None and not isinstance(encodingName, str):
+
         raise TypeError(
             f'Unexpected type for parameter "encodingName". Expected type: str. Given type: {type(encodingName)}'
         )
@@ -349,7 +370,8 @@ def GetEncoding(
     if _encodingName is None:
 
         raise ValueError(
-            "Either model or encoding must be provided. Valid models:\n{VALID_MODELS_STR}\n\nValid encodings:\n{VALID_ENCODINGS_STR}"
+            "Either model or encoding must be provided. Valid models:\n"
+            f"{VALID_MODELS_STR}\n\nValid encodings:\n{VALID_ENCODINGS_STR}"
         )
 
     return tiktoken.get_encoding(encoding_name=_encodingName)
@@ -360,6 +382,7 @@ def TokenizeStr(
     model: str | None = None,
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
+    quiet: bool = False,
 ) -> list[int]:
     """
     Tokenize a string into a list of token IDs using the specified model or encoding.
@@ -368,15 +391,17 @@ def TokenizeStr(
     ----------
     string : str
         The string to tokenize.
-    model : str | None, optional
+    model : str or None, optional
         The name of the model to use for encoding. If provided, the encoding
         associated with the model will be used.
-    encodingName : str | None, optional
+    encodingName : str or None, optional
         The name of the encoding to use. If provided, it must match the encoding
         associated with the specified model.
-    encoding : tiktoken.Encoding | None, optional
+    encoding : tiktoken.Encoding or None, optional
         An existing tiktoken.Encoding object to use for tokenization. If provided,
         it must match the encoding derived from the model or encodingName.
+    quiet : bool, optional
+        If True, suppress progress updates (default is False).
 
     Returns
     -------
@@ -500,28 +525,20 @@ def TokenizeStr(
         if _encodingName is None and _encoding is None:
 
             raise ValueError(
-                "Either model, encoding name, or encoding must be provided. Valid models:\n{VALID_MODELS_STR}\n\nValid encodings:\n{VALID_ENCODINGS_STR}"
+                "Either model, encoding name, or encoding must be provided. Valid models:\n"
+                f"{VALID_MODELS_STR}\n\nValid encodings:\n{VALID_ENCODINGS_STR}"
             )
 
     hasBar = False
     taskName = None
 
-    displayString = ""
+    displayString = f"{string[:10]}..." if len(string) > 13 else string
 
-    if len(string) > 13:
-
-        displayString = f"{string[:10]}..."
-
-    else:
-
-        displayString = string
-
-    if len(_tasks) == 0:
+    if len(_tasks) == 0 and not quiet:
 
         hasBar = True
-
         taskName = f'Tokenizing "{displayString}"'
-        _InitializeTask(taskName=taskName, total=1)
+        _InitializeTask(taskName=taskName, total=1, quiet=quiet)
 
     tokenizedStr = _encoding.encode(text=string)
 
@@ -531,6 +548,7 @@ def TokenizeStr(
             taskName=taskName,
             advance=1,
             description=f'Done Tokenizing "{displayString}"',
+            quiet=quiet,
         )
 
     return tokenizedStr
@@ -541,6 +559,7 @@ def GetNumTokenStr(
     model: str | None = None,
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
+    quiet: bool = False,
 ) -> int:
     """
     Get the number of tokens in a string based on the specified model or encoding.
@@ -549,15 +568,17 @@ def GetNumTokenStr(
     ----------
     string : str
         The string to count tokens for.
-    model : str | None, optional
+    model : str or None, optional
         The name of the model to use for encoding. If provided, the encoding
         associated with the model will be used.
-    encodingName : str | None, optional
+    encodingName : str or None, optional
         The name of the encoding to use. If provided, it must match the encoding
         associated with the specified model.
-    encoding : tiktoken.Encoding | None, optional
+    encoding : tiktoken.Encoding or None, optional
         An existing tiktoken.Encoding object to use for tokenization. If provided,
         it must match the encoding derived from the model or encodingName.
+    quiet : bool, optional
+        If True, suppress progress updates (default is False).
 
     Returns
     -------
@@ -601,25 +622,20 @@ def GetNumTokenStr(
     hasBar = False
     taskName = None
 
-    displayString = ""
+    displayString = f"{string[:10]}..." if len(string) > 13 else string
 
-    if len(string) > 13:
-
-        displayString = f"{string[:10]}..."
-
-    else:
-
-        displayString = string
-
-    if len(_tasks) == 0:
+    if len(_tasks) == 0 and not quiet:
 
         hasBar = True
-
         taskName = f'Counting Tokens in "{displayString}"'
-        _InitializeTask(taskName=taskName, total=1)
+        _InitializeTask(taskName=taskName, total=1, quiet=quiet)
 
     tokens = TokenizeStr(
-        string=string, model=model, encodingName=encodingName, encoding=encoding
+        string=string,
+        model=model,
+        encodingName=encodingName,
+        encoding=encoding,
+        quiet=quiet,
     )
 
     if hasBar:
@@ -628,6 +644,7 @@ def GetNumTokenStr(
             taskName=taskName,
             advance=1,
             description=f'Done Counting Tokens in "{displayString}"',
+            quiet=quiet,
         )
 
     return len(tokens)
@@ -638,23 +655,26 @@ def TokenizeFile(
     model: str | None = None,
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
+    quiet: bool = False,
 ) -> list[int]:
     """
     Tokenize the contents of a file into a list of token IDs using the specified model or encoding.
 
     Parameters
     ----------
-    filePath : Path | str
+    filePath : Path or str
         The path to the file to tokenize.
-    model : str | None, optional
+    model : str or None, optional
         The name of the model to use for encoding. If provided, the encoding
         associated with the model will be used.
-    encodingName : str | None, optional
+    encodingName : str or None, optional
         The name of the encoding to use. If provided, it must match the encoding
         associated with the specified model.
-    encoding : tiktoken.Encoding | None, optional
+    encoding : tiktoken.Encoding or None, optional
         An existing tiktoken.Encoding object to use for tokenization. If provided,
         it must match the encoding derived from the model or encodingName.
+    quiet : bool, optional
+        If True, suppress progress updates (default is False).
 
     Returns
     -------
@@ -675,7 +695,7 @@ def TokenizeFile(
         If the specified file does not exist.
     """
 
-    if not isinstance(filePath, str) and not isinstance(filePath, Path):
+    if not isinstance(filePath, (str, Path)):
 
         raise TypeError(
             f'Unexpected type for parameter "filePath". Expected type: str or pathlib.Path. Given type: {type(filePath)}'
@@ -710,15 +730,18 @@ def TokenizeFile(
     hasBar = False
     taskName = None
 
-    if len(_tasks) == 0:
+    if len(_tasks) == 0 and not quiet:
 
         hasBar = True
-
         taskName = f"Tokenizing {filePath.name}"
-        _InitializeTask(taskName=taskName, total=1)
+        _InitializeTask(taskName=taskName, total=1, quiet=quiet)
 
     tokens = TokenizeStr(
-        string=fileContents, model=model, encodingName=encodingName, encoding=encoding
+        string=fileContents,
+        model=model,
+        encodingName=encodingName,
+        encoding=encoding,
+        quiet=quiet,
     )
 
     if hasBar:
@@ -727,6 +750,7 @@ def TokenizeFile(
             taskName=taskName,
             advance=1,
             description=f"Done Tokenizing {filePath.name}",
+            quiet=quiet,
         )
 
     return tokens
@@ -737,23 +761,26 @@ def GetNumTokenFile(
     model: str | None = None,
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
+    quiet: bool = False,
 ) -> int:
     """
     Get the number of tokens in a file based on the specified model or encoding.
 
     Parameters
     ----------
-    filePath : Path | str
+    filePath : Path or str
         The path to the file to count tokens for.
-    model : str | None, optional
+    model : str or None, optional
         The name of the model to use for encoding. If provided, the encoding
         associated with the model will be used.
-    encodingName : str | None, optional
+    encodingName : str or None, optional
         The name of the encoding to use. If provided, it must match the encoding
         associated with the specified model.
-    encoding : tiktoken.Encoding | None, optional
+    encoding : tiktoken.Encoding or None, optional
         An existing tiktoken.Encoding object to use for tokenization. If provided,
         it must match the encoding derived from the model or encodingName.
+    quiet : bool, optional
+        If True, suppress progress updates (default is False).
 
     Returns
     -------
@@ -774,7 +801,7 @@ def GetNumTokenFile(
         If the specified file does not exist.
     """
 
-    if not isinstance(filePath, str) and not isinstance(filePath, Path):
+    if not isinstance(filePath, (str, Path)):
 
         raise TypeError(
             f'Unexpected type for parameter "filePath". Expected type: str or pathlib.Path. Given type: {type(filePath)}'
@@ -803,16 +830,19 @@ def GetNumTokenFile(
     hasBar = False
     taskName = None
 
-    if len(_tasks) == 0:
+    if len(_tasks) == 0 and not quiet:
 
         hasBar = True
-
         taskName = f"Counting Tokens in {filePath.name}"
-        _InitializeTask(taskName=taskName, total=1)
+        _InitializeTask(taskName=taskName, total=1, quiet=quiet)
 
     numTokens = len(
         TokenizeFile(
-            filePath=filePath, model=model, encodingName=encodingName, encoding=encoding
+            filePath=filePath,
+            model=model,
+            encodingName=encodingName,
+            encoding=encoding,
+            quiet=quiet,
         )
     )
 
@@ -822,6 +852,7 @@ def GetNumTokenFile(
             taskName=taskName,
             advance=1,
             description=f"Done Counting Tokens in {filePath.name}",
+            quiet=quiet,
         )
 
     return numTokens
@@ -833,29 +864,32 @@ def TokenizeDir(
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
     recursive: bool = True,
+    quiet: bool = False,
 ) -> list[int | list] | list[int]:
     """
     Tokenize all files in a directory into lists of token IDs using the specified model or encoding.
 
     Parameters
     ----------
-    dirPath : Path | str
+    dirPath : Path or str
         The path to the directory to tokenize.
-    model : str | None, optional
+    model : str or None, optional
         The name of the model to use for encoding. If provided, the encoding
         associated with the model will be used.
-    encodingName : str | None, optional
+    encodingName : str or None, optional
         The name of the encoding to use. If provided, it must match the encoding
         associated with the specified model.
-    encoding : tiktoken.Encoding | None, optional
+    encoding : tiktoken.Encoding or None, optional
         An existing tiktoken.Encoding object to use for tokenization. If provided,
         it must match the encoding derived from the model or encodingName.
     recursive : bool, default True
         Whether to tokenize files in subdirectories recursively.
+    quiet : bool, optional
+        If True, suppress progress updates (default is False).
 
     Returns
     -------
-    list[int | list] | list[int]
+    list[int or list] or list[int]
         A nested list where each element is either a list of token IDs representing
         a tokenized file or a sublist for a subdirectory. If recursive is False, returns
         a list of token IDs for each file in the directory.
@@ -870,7 +904,7 @@ def TokenizeDir(
         If an unexpected error occurs during tokenization.
     """
 
-    if not isinstance(dirPath, str) and not isinstance(dirPath, Path):
+    if not isinstance(dirPath, (str, Path)):
 
         raise TypeError(
             f'Unexpected type for parameter "dirPath". Expected type: str or pathlib.Path. Given type: {type(dirPath)}'
@@ -901,9 +935,7 @@ def TokenizeDir(
         )
 
     dirPath = Path(dirPath)
-
     givenDirPath = dirPath
-
     dirPath = dirPath.resolve()
 
     if not dirPath.is_dir():
@@ -912,13 +944,18 @@ def TokenizeDir(
 
     numFiles = _CountDirFiles(dirPath=dirPath, recursive=recursive)
 
-    taskName = "Tokenizing Directory"
-    _InitializeTask(taskName=taskName, total=numFiles)
+    if not quiet:
+
+        taskName = "Tokenizing Directory"
+        _InitializeTask(taskName=taskName, total=numFiles, quiet=quiet)
+
+    else:
+
+        taskName = None
 
     if recursive:
 
         tokenizedDir = []
-
         subDirPaths = []
 
         for entry in dirPath.iterdir():
@@ -929,11 +966,14 @@ def TokenizeDir(
 
             else:
 
-                _UpdateTask(
-                    taskName=taskName,
-                    advance=0,
-                    description=f"Tokenizing {entry.relative_to(dirPath)}",
-                )
+                if not quiet:
+
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=0,
+                        description=f"Tokenizing {entry.relative_to(dirPath)}",
+                        quiet=quiet,
+                    )
 
                 try:
 
@@ -942,22 +982,29 @@ def TokenizeDir(
                         model=model,
                         encodingName=encodingName,
                         encoding=encoding,
+                        quiet=quiet,
                     )
                     tokenizedDir.append(tokenizedFile)
 
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=1,
-                        description=f"Done Tokenizing {entry.relative_to(dirPath)}",
-                    )
+                    if not quiet:
+
+                        _UpdateTask(
+                            taskName=taskName,
+                            advance=1,
+                            description=f"Done Tokenizing {entry.relative_to(dirPath)}",
+                            quiet=quiet,
+                        )
 
                 except UnsupportedEncodingError as e:
 
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=1,
-                        description=f"Skipping {entry.relative_to(dirPath)}",
-                    )
+                    if not quiet:
+
+                        _UpdateTask(
+                            taskName=taskName,
+                            advance=1,
+                            description=f"Skipping {entry.relative_to(dirPath)}",
+                            quiet=quiet,
+                        )
 
                     continue
 
@@ -969,6 +1016,7 @@ def TokenizeDir(
                 encodingName=encodingName,
                 encoding=encoding,
                 recursive=recursive,
+                quiet=quiet,
             )
 
             if tokenizedSubDir:
@@ -989,11 +1037,14 @@ def TokenizeDir(
 
             else:
 
-                _UpdateTask(
-                    taskName=taskName,
-                    advance=0,
-                    description=f"Tokenizing {entry.relative_to(dirPath)}",
-                )
+                if not quiet:
+
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=0,
+                        description=f"Tokenizing {entry.relative_to(dirPath)}",
+                        quiet=quiet,
+                    )
 
                 try:
 
@@ -1002,21 +1053,30 @@ def TokenizeDir(
                         model=model,
                         encodingName=encodingName,
                         encoding=encoding,
+                        quiet=quiet,
                     )
                     tokenizedDir.append(tokenizedFile)
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=1,
-                        description=f"Done Tokenizing {entry.relative_to(dirPath)}",
-                    )
+
+                    if not quiet:
+
+                        _UpdateTask(
+                            taskName=taskName,
+                            advance=1,
+                            description=f"Done Tokenizing {entry.relative_to(dirPath)}",
+                            quiet=quiet,
+                        )
 
                 except UnsupportedEncodingError:
 
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=1,
-                        description=f"Skipping {entry.relative_to(dirPath)}",
-                    )
+                    if not quiet:
+
+                        _UpdateTask(
+                            taskName=taskName,
+                            advance=1,
+                            description=f"Skipping {entry.relative_to(dirPath)}",
+                            quiet=quiet,
+                        )
+
                     continue
 
         return tokenizedDir
@@ -1028,25 +1088,28 @@ def GetNumTokenDir(
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
     recursive: bool = True,
+    quiet: bool = False,
 ) -> int:
     """
     Get the number of tokens in all files within a directory based on the specified model or encoding.
 
     Parameters
     ----------
-    dirPath : Path | str
+    dirPath : Path or str
         The path to the directory to count tokens for.
-    model : str | None, optional
+    model : str or None, optional
         The name of the model to use for encoding. If provided, the encoding
         associated with the model will be used.
-    encodingName : str | None, optional
+    encodingName : str or None, optional
         The name of the encoding to use. If provided, it must match the encoding
         associated with the specified model.
-    encoding : tiktoken.Encoding | None, optional
+    encoding : tiktoken.Encoding or None, optional
         An existing tiktoken.Encoding object to use for tokenization. If provided,
         it must match the encoding derived from the model or encodingName.
     recursive : bool, default True
         Whether to count tokens in files in subdirectories recursively.
+    quiet : bool, optional
+        If True, suppress progress updates (default is False).
 
     Returns
     -------
@@ -1063,7 +1126,7 @@ def GetNumTokenDir(
         If an unexpected error occurs during token counting.
     """
 
-    if not isinstance(dirPath, str) and not isinstance(dirPath, Path):
+    if not isinstance(dirPath, (str, Path)):
 
         raise TypeError(
             f'Unexpected type for parameter "dirPath". Expected type: str or pathlib.Path. Given type: {type(dirPath)}'
@@ -1094,9 +1157,7 @@ def GetNumTokenDir(
         )
 
     dirPath = Path(dirPath)
-
     givenDirPath = dirPath
-
     dirPath = dirPath.resolve()
 
     if not dirPath.is_dir():
@@ -1105,13 +1166,18 @@ def GetNumTokenDir(
 
     numFiles = _CountDirFiles(dirPath=dirPath, recursive=recursive)
 
-    taskName = "Counting Tokens in Directory"
-    _InitializeTask(taskName=taskName, total=numFiles)
+    if not quiet:
+
+        taskName = "Counting Tokens in Directory"
+        _InitializeTask(taskName=taskName, total=numFiles, quiet=quiet)
+
+    else:
+
+        taskName = None
 
     if recursive:
 
         runningTokenTotal = 0
-
         subDirPaths = []
 
         for entry in dirPath.iterdir():
@@ -1122,11 +1188,14 @@ def GetNumTokenDir(
 
             else:
 
-                _UpdateTask(
-                    taskName=taskName,
-                    advance=0,
-                    description=f"Counting Tokens in {entry.relative_to(dirPath)}",
-                )
+                if not quiet:
+
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=0,
+                        description=f"Counting Tokens in {entry.relative_to(dirPath)}",
+                        quiet=quiet,
+                    )
 
                 try:
 
@@ -1135,20 +1204,29 @@ def GetNumTokenDir(
                         model=model,
                         encodingName=encodingName,
                         encoding=encoding,
+                        quiet=quiet,
                     )
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=1,
-                        description=f"Done Counting Tokens in {entry.relative_to(dirPath)}",
-                    )
+
+                    if not quiet:
+
+                        _UpdateTask(
+                            taskName=taskName,
+                            advance=1,
+                            description=f"Done Counting Tokens in {entry.relative_to(dirPath)}",
+                            quiet=quiet,
+                        )
 
                 except UnsupportedEncodingError:
 
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=1,
-                        description=f"Skipping {entry.relative_to(dirPath)}",
-                    )
+                    if not quiet:
+
+                        _UpdateTask(
+                            taskName=taskName,
+                            advance=1,
+                            description=f"Skipping {entry.relative_to(dirPath)}",
+                            quiet=quiet,
+                        )
+
                     continue
 
         for subDirPath in subDirPaths:
@@ -1159,6 +1237,7 @@ def GetNumTokenDir(
                 encodingName=encodingName,
                 encoding=encoding,
                 recursive=recursive,
+                quiet=quiet,
             )
 
         return runningTokenTotal
@@ -1175,11 +1254,14 @@ def GetNumTokenDir(
 
             else:
 
-                _UpdateTask(
-                    taskName=taskName,
-                    advance=0,
-                    description=f"Counting Tokens in {entry.relative_to(dirPath)}",
-                )
+                if not quiet:
+
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=0,
+                        description=f"Counting Tokens in {entry.relative_to(dirPath)}",
+                        quiet=quiet,
+                    )
 
                 try:
 
@@ -1188,21 +1270,29 @@ def GetNumTokenDir(
                         model=model,
                         encodingName=encodingName,
                         encoding=encoding,
+                        quiet=quiet,
                     )
 
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=1,
-                        description=f"Done Counting Tokens in {entry.relative_to(dirPath)}",
-                    )
+                    if not quiet:
+
+                        _UpdateTask(
+                            taskName=taskName,
+                            advance=1,
+                            description=f"Done Counting Tokens in {entry.relative_to(dirPath)}",
+                            quiet=quiet,
+                        )
 
                 except UnsupportedEncodingError:
 
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=1,
-                        description=f"Skipping {entry.relative_to(dirPath)}",
-                    )
+                    if not quiet:
+
+                        _UpdateTask(
+                            taskName=taskName,
+                            advance=1,
+                            description=f"Skipping {entry.relative_to(dirPath)}",
+                            quiet=quiet,
+                        )
+
                     continue
 
         return runningTokenTotal
@@ -1215,30 +1305,33 @@ def TokenizeFiles(
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
     recursive: bool = True,
+    quiet: bool = False,
 ) -> list[int | list] | list[list[int]] | list[int]:
     """
     Tokenize multiple files or all files within a directory into lists of token IDs.
 
     Parameters
     ----------
-    inputPath : Path | str | list[Path | str]
+    inputPath : Path, str, or list of Path or str
         The path to a file or directory, or a list of file paths to tokenize.
-    model : str | None, optional
+    model : str or None, optional
         The name of the model to use for encoding. If provided, the encoding
         associated with the model will be used.
-    encodingName : str | None, optional
+    encodingName : str or None, optional
         The name of the encoding to use. If provided, it must match the encoding
         associated with the specified model.
-    encoding : tiktoken.Encoding | None, optional
+    encoding : tiktoken.Encoding or None, optional
         An existing tiktoken.Encoding object to use for tokenization. If provided,
         it must match the encoding derived from the model or encodingName.
     recursive : bool, default True
         If inputPath is a directory, whether to tokenize files in subdirectories
         recursively.
+    quiet : bool, optional
+        If True, suppress progress updates (default is False).
 
     Returns
     -------
-    list[int | list] | list[list[int]] | list[int]
+    list[int or list] or list[list[int]] or list[int]
         - If inputPath is a file, returns a list of token IDs for that file.
         - If inputPath is a list of files, returns a list where each element is a
           list of token IDs for each file.
@@ -1310,17 +1403,27 @@ def TokenizeFiles(
         else:
 
             tokenizedFiles = []
-
             numFiles = len(inputPath)
 
-            taskName = "Tokenizing File List"
-            _InitializeTask(taskName=taskName, total=numFiles)
+            if not quiet:
+
+                taskName = "Tokenizing File List"
+                _InitializeTask(taskName=taskName, total=numFiles, quiet=quiet)
+
+            else:
+
+                taskName = None
 
             for file in inputPath:
 
-                _UpdateTask(
-                    taskName=taskName, advance=0, description=f"Tokenizing {file.name}"
-                )
+                if not quiet:
+
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=0,
+                        description=f"Tokenizing {file.name}",
+                        quiet=quiet,
+                    )
 
                 try:
 
@@ -1330,22 +1433,30 @@ def TokenizeFiles(
                             model=model,
                             encodingName=encodingName,
                             encoding=encoding,
+                            quiet=quiet,
                         )
                     )
 
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=1,
-                        description=f"Done Tokenizing {file.name}",
-                    )
+                    if not quiet:
+
+                        _UpdateTask(
+                            taskName=taskName,
+                            advance=1,
+                            description=f"Done Tokenizing {file.name}",
+                            quiet=quiet,
+                        )
 
                 except UnsupportedEncodingError:
 
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=1,
-                        description=f"Skipping {file.name}",
-                    )
+                    if not quiet:
+
+                        _UpdateTask(
+                            taskName=taskName,
+                            advance=1,
+                            description=f"Skipping {file.name}",
+                            quiet=quiet,
+                        )
+
                     continue
 
             return tokenizedFiles
@@ -1361,6 +1472,7 @@ def TokenizeFiles(
             model=model,
             encodingName=encodingName,
             encoding=encoding,
+            quiet=quiet,
         )
 
     elif inputPath.is_dir():
@@ -1371,6 +1483,7 @@ def TokenizeFiles(
             encodingName=encodingName,
             encoding=encoding,
             recursive=recursive,
+            quiet=quiet,
         )
 
     else:
@@ -1387,26 +1500,29 @@ def GetNumTokenFiles(
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
     recursive: bool = True,
+    quiet: bool = False,
 ) -> int:
     """
     Get the number of tokens in multiple files or all files within a directory.
 
     Parameters
     ----------
-    inputPath : Path | str | list[Path | str]
+    inputPath : Path, str, or list of Path or str
         The path to a file or directory, or a list of file paths to count tokens for.
-    model : str | None, optional
+    model : str or None, optional
         The name of the model to use for encoding. If provided, the encoding
         associated with the model will be used.
-    encodingName : str | None, optional
+    encodingName : str or None, optional
         The name of the encoding to use. If provided, it must match the encoding
         associated with the specified model.
-    encoding : tiktoken.Encoding | None, optional
+    encoding : tiktoken.Encoding or None, optional
         An existing tiktoken.Encoding object to use for tokenization. If provided,
         it must match the encoding derived from the model or encodingName.
     recursive : bool, default True
         If inputPath is a directory, whether to count tokens in files in
         subdirectories recursively.
+    quiet : bool, optional
+        If True, suppress progress updates (default is False).
 
     Returns
     -------
@@ -1474,19 +1590,27 @@ def GetNumTokenFiles(
         else:
 
             runningTokenTotal = 0
-
             numFiles = len(inputPath)
 
-            taskName = "Counting Tokens in File List"
-            _InitializeTask(taskName=taskName, total=numFiles)
+            if not quiet:
+
+                taskName = "Counting Tokens in File List"
+                _InitializeTask(taskName=taskName, total=numFiles, quiet=quiet)
+
+            else:
+
+                taskName = None
 
             for file in inputPath:
 
-                _UpdateTask(
-                    taskName=taskName,
-                    advance=0,
-                    description=f"Counting Tokens in {file.name}",
-                )
+                if not quiet:
+
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=0,
+                        description=f"Counting Tokens in {file.name}",
+                        quiet=quiet,
+                    )
 
                 try:
 
@@ -1495,21 +1619,29 @@ def GetNumTokenFiles(
                         model=model,
                         encodingName=encodingName,
                         encoding=encoding,
+                        quiet=quiet,
                     )
 
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=1,
-                        description=f"Done Counting Tokens in {file.name}",
-                    )
+                    if not quiet:
+
+                        _UpdateTask(
+                            taskName=taskName,
+                            advance=1,
+                            description=f"Done Counting Tokens in {file.name}",
+                            quiet=quiet,
+                        )
 
                 except UnsupportedEncodingError:
 
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=1,
-                        description=f"Skipping {file.name}",
-                    )
+                    if not quiet:
+
+                        _UpdateTask(
+                            taskName=taskName,
+                            advance=1,
+                            description=f"Skipping {file.name}",
+                            quiet=quiet,
+                        )
+
                     continue
 
             return runningTokenTotal
@@ -1525,6 +1657,7 @@ def GetNumTokenFiles(
             model=model,
             encodingName=encodingName,
             encoding=encoding,
+            quiet=quiet,
         )
 
     elif inputPath.is_dir():
@@ -1535,6 +1668,7 @@ def GetNumTokenFiles(
             encodingName=encodingName,
             encoding=encoding,
             recursive=recursive,
+            quiet=quiet,
         )
 
     else:
