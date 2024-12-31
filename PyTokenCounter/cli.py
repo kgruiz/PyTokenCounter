@@ -61,7 +61,35 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
+class CustomFormatter(
+    argparse.ArgumentDefaultsHelpFormatter, argparse.RawTextHelpFormatter
+):
+    """
+    Custom formatter to combine ArgumentDefaultsHelpFormatter and RawTextHelpFormatter.
+    This allows for multiline help messages and inclusion of default values.
+    """
+
+    pass
+
+
+def formatChoices(choices):
+    """
+    Formats a list of choices into a bulleted list.
+
+    Parameters
+    ----------
+    choices : list
+        The list of choices to format.
+
+    Returns
+    -------
+    str
+        A formatted string with each choice on a new line, preceded by a bullet.
+    """
+    return "\n".join(f"  - {choice}" for choice in choices)
+
+
+def addCommonArgs(subParser: argparse.ArgumentParser) -> None:
     """
     Adds common arguments to a subparser.
 
@@ -71,21 +99,28 @@ def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
         The subparser to which the arguments will be added.
     """
 
+    modelHelp = "Model to use for encoding.\nValid options are:\n" + formatChoices(
+        VALID_MODELS
+    )
+    encodingHelp = "Encoding to use directly.\nValid options are:\n" + formatChoices(
+        VALID_ENCODINGS
+    )
+
     subParser.add_argument(
         "-m",
         "--model",
         type=str,
         choices=VALID_MODELS,
-        help="Model to use for encoding.\nValid options are:\n"
-        + "\n".join(f"  - {model}" for model in VALID_MODELS),
+        metavar="MODEL",
+        help=modelHelp,
     )
     subParser.add_argument(
         "-e",
         "--encoding",
         type=str,
         choices=VALID_ENCODINGS,
-        help="Encoding to use directly.\nValid options are:\n"
-        + "\n".join(f"  - {encoding}" for encoding in VALID_ENCODINGS),
+        metavar="ENCODING",
+        help=encodingHelp,
     )
     subParser.add_argument(
         "-q",
@@ -108,7 +143,7 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(
         description="Tokenize strings, files, or directories using specified models or encodings.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=CustomFormatter,
     )
 
     subParsers = parser.add_subparsers(title="Commands", dest="command", required=True)
@@ -118,9 +153,9 @@ def main() -> None:
         "tokenize-str",
         help="Tokenize a provided string.",
         description="Tokenize a given string into a list of token IDs using the specified model or encoding.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=CustomFormatter,
     )
-    AddCommonArgs(parserTokenizeStr)
+    addCommonArgs(parserTokenizeStr)
     parserTokenizeStr.add_argument("string", type=str, help="The string to tokenize.")
 
     # Subparser for tokenizing a file
@@ -128,9 +163,9 @@ def main() -> None:
         "tokenize-file",
         help="Tokenize the contents of a file.",
         description="Tokenize the contents of a specified file into a list of token IDs using the given model or encoding.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=CustomFormatter,
     )
-    AddCommonArgs(parserTokenizeFile)
+    addCommonArgs(parserTokenizeFile)
     parserTokenizeFile.add_argument(
         "file",
         type=str,
@@ -142,14 +177,17 @@ def main() -> None:
         "tokenize-files",
         help="Tokenize the contents of multiple files or a directory.",
         description="Tokenize the contents of multiple specified files or all files within a directory into lists of token IDs using the given model or encoding.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=CustomFormatter,
     )
-    AddCommonArgs(parserTokenizeFiles)
+    addCommonArgs(parserTokenizeFiles)
     parserTokenizeFiles.add_argument(
         "input",
         type=str,
         nargs="+",
-        help="Paths to the files to tokenize or a directory path. Multiple files can be separated by spaces or commas.",
+        help="""\
+Paths to the files to tokenize or a directory path.
+Multiple files can be separated by spaces or commas.
+""",
     )
     parserTokenizeFiles.add_argument(
         "-nr",
@@ -163,9 +201,9 @@ def main() -> None:
         "tokenize-dir",
         help="Tokenize all files in a directory.",
         description="Tokenize all files within a specified directory into lists of token IDs using the chosen model or encoding.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=CustomFormatter,
     )
-    AddCommonArgs(parserTokenizeDir)
+    addCommonArgs(parserTokenizeDir)
     parserTokenizeDir.add_argument(
         "directory",
         type=str,
@@ -183,9 +221,9 @@ def main() -> None:
         "count-str",
         help="Count tokens in a provided string.",
         description="Count the number of tokens in a given string using the specified model or encoding.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=CustomFormatter,
     )
-    AddCommonArgs(parserCountStr)
+    addCommonArgs(parserCountStr)
     parserCountStr.add_argument(
         "string", type=str, help="The string to count tokens for."
     )
@@ -195,9 +233,9 @@ def main() -> None:
         "count-file",
         help="Count tokens in a file.",
         description="Count the number of tokens in a specified file using the given model or encoding.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=CustomFormatter,
     )
-    AddCommonArgs(parserCountFile)
+    addCommonArgs(parserCountFile)
     parserCountFile.add_argument(
         "file",
         type=str,
@@ -209,14 +247,17 @@ def main() -> None:
         "count-files",
         help="Count tokens in multiple files or a directory.",
         description="Count the number of tokens in multiple specified files or all files within a directory using the given model or encoding.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=CustomFormatter,
     )
-    AddCommonArgs(parserCountFiles)
+    addCommonArgs(parserCountFiles)
     parserCountFiles.add_argument(
         "input",
         type=str,
         nargs="+",
-        help="Paths to the files to count tokens for or a directory path. Multiple files can be separated by spaces or commas.",
+        help="""\
+Paths to the files to count tokens for or a directory path.
+Multiple files can be separated by spaces or commas.
+""",
     )
     parserCountFiles.add_argument(
         "-nr",
@@ -230,9 +271,9 @@ def main() -> None:
         "count-dir",
         help="Count tokens in all files within a directory.",
         description="Count the total number of tokens across all files in a specified directory using the chosen model or encoding.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=CustomFormatter,
     )
-    AddCommonArgs(parserCountDir)
+    addCommonArgs(parserCountDir)
     parserCountDir.add_argument(
         "directory",
         type=str,
@@ -248,7 +289,6 @@ def main() -> None:
     # Parse the arguments
 
     if len(sys.argv) == 1:
-
         parser.print_help(sys.stderr)
         sys.exit(1)
 
@@ -285,7 +325,7 @@ def main() -> None:
 
             # Handle both multiple files and directory
             # Split inputs by commas and flatten the list
-            inputPaths = [Path(p) for arg in args.input for p in arg.split(",")]
+            inputPaths = [Path(p.strip()) for arg in args.input for p in arg.split(",")]
 
             if len(inputPaths) == 1 and inputPaths[0].is_dir():
 
@@ -348,7 +388,7 @@ def main() -> None:
         elif args.command == "count-files":
 
             # Split inputs by commas and flatten the list
-            inputPaths = [Path(p) for arg in args.input for p in arg.split(",")]
+            inputPaths = [Path(p.strip()) for arg in args.input for p in arg.split(",")]
 
             if len(inputPaths) == 1 and inputPaths[0].is_dir():
 
