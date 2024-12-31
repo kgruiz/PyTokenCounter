@@ -140,7 +140,7 @@ def main() -> None:
         "input",
         type=str,
         nargs="+",
-        help="Paths to the files to tokenize or a directory path.",
+        help="Paths to the files to tokenize or a directory path. Multiple files can be separated by spaces or commas.",
     )
     parserTokenizeFiles.add_argument(
         "-nr",
@@ -207,7 +207,7 @@ def main() -> None:
         "input",
         type=str,
         nargs="+",
-        help="Paths to the files to count tokens for or a directory path.",
+        help="Paths to the files to count tokens for or a directory path. Multiple files can be separated by spaces or commas.",
     )
     parserCountFiles.add_argument(
         "-nr",
@@ -259,7 +259,7 @@ def main() -> None:
 
         elif args.command == "tokenize-file":
             tokens = TokenizeFiles(
-                inputPath=args.file,
+                args.file,
                 model=args.model,
                 encodingName=args.encoding,
                 encoding=encoding,
@@ -269,10 +269,11 @@ def main() -> None:
 
         elif args.command == "tokenize-files":
             # Handle both multiple files and directory
-            inputPaths = [Path(p) for p in args.input]
+            # Split inputs by commas and flatten the list
+            inputPaths = [Path(p) for arg in args.input for p in arg.split(",")]
             if len(inputPaths) == 1 and inputPaths[0].is_dir():
                 tokenLists = TokenizeFiles(
-                    inputPath=inputPaths[0],
+                    inputPaths[0],
                     model=args.model,
                     encodingName=args.encoding,
                     encoding=encoding,
@@ -280,7 +281,7 @@ def main() -> None:
                 )
             else:
                 tokenLists = TokenizeFiles(
-                    inputPath=inputPaths,
+                    inputPaths,
                     model=args.model,
                     encodingName=args.encoding,
                     encoding=encoding,
@@ -311,7 +312,7 @@ def main() -> None:
         elif args.command == "count-file":
 
             count = GetNumTokenFiles(
-                inputPath=args.file,
+                args.file,
                 model=args.model,
                 encodingName=args.encoding,
                 encoding=encoding,
@@ -320,11 +321,12 @@ def main() -> None:
             print(count)
         elif args.command == "count-files":
 
-            inputPaths = [Path(p) for p in args.input]
+            # Split inputs by commas and flatten the list
+            inputPaths = [Path(p) for arg in args.input for p in arg.split(",")]
 
             if len(inputPaths) == 1 and inputPaths[0].is_dir():
                 totalCount = GetNumTokenFiles(
-                    inputPath=inputPaths[0],
+                    inputPaths[0],
                     model=args.model,
                     encodingName=args.encoding,
                     encoding=encoding,
@@ -332,7 +334,7 @@ def main() -> None:
                 )
             else:
                 totalCount = GetNumTokenFiles(
-                    inputPath=inputPaths,
+                    inputPaths,
                     model=args.model,
                     encodingName=args.encoding,
                     encoding=encoding,
@@ -353,7 +355,7 @@ def main() -> None:
 
     except Exception as e:
 
-        logger.error(f"Error: {e}", exc_info=True)
+        logger.error(f"Error: {e}")
         sys.exit(1)
 
 

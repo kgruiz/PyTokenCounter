@@ -29,6 +29,7 @@ Key Functions
 from pathlib import Path
 
 import tiktoken
+from rich.progress import Progress
 
 from ._utils import ReadTextFile, UnsupportedEncodingError
 
@@ -66,6 +67,100 @@ VALID_ENCODINGS = ["o200k_base", "cl100k_base", "p50k_base", "r50k_base"]
 
 VALID_MODELS_STR = "\n".join(VALID_MODELS)
 VALID_ENCODINGS_STR = "\n".join(VALID_ENCODINGS)
+
+
+# Singleton-like Progress instance and task tracker
+_progressInstance = Progress()
+_tasks = {}
+
+
+def _InitializeTask(taskName, total):
+    """
+    Internal function to initialize a task in the progress bar.
+
+    Parameters
+    ----------
+    taskName : str
+        The description of the task to display in the progress bar.
+    total : int
+        The total work required for the task.
+
+    Returns
+    -------
+    int
+        Task ID for the initialized task.
+    """
+
+    if not _progressInstance.live.is_started:
+
+        _progressInstance.start()
+
+    if taskName in _tasks:
+
+        return _tasks[taskName]
+
+    taskId = _progressInstance.add_task(taskName, total=total)
+    _tasks[taskName] = taskId
+
+    return taskId
+
+
+def _UpdateTask(taskName, advance, description=None):
+    """
+    Internal function to update a task's progress and optionally its description.
+
+    Parameters
+    ----------
+    taskName : str
+        The name of the task to update.
+    advance : int
+        The amount of work to add to the task's progress.
+    description : str, optional
+        A new description for the task (default is None).
+
+    Raises
+    ------
+    ValueError
+        If the specified task name is not found.
+    """
+    if taskName not in _tasks:
+        raise ValueError(f"Task '{taskName}' not found.")
+
+    # Update progress and optionally the description
+    _progressInstance.update(_tasks[taskName], advance=advance, description=description)
+
+    # Stop progress if all tasks are finished
+    if all(task.finished for task in _progressInstance.tasks):
+
+        _progressInstance.stop()
+        _tasks.clear()  # Clear completed tasks
+
+
+def _CountDirFiles(dirPath: Path, recursive: bool = True):
+
+    if not dirPath.is_dir():
+
+        raise ValueError(f"Given path '{dirPath}' is not a directory.")
+
+    numFiles = 0
+
+    if recursive:
+
+        for entry in dirPath.iterdir():
+
+            if entry.is_dir():
+
+                numFiles += _CountDirFiles(entry, recursive=recursive)
+
+            else:
+
+                numFiles += 1
+
+    else:
+
+        numFiles = sum(1 for entry in dirPath.iterdir() if entry.is_file())
+
+    return numFiles
 
 
 def GetModelMappings() -> dict:
@@ -408,7 +503,37 @@ def TokenizeStr(
                 "Either model, encoding name, or encoding must be provided. Valid models:\n{VALID_MODELS_STR}\n\nValid encodings:\n{VALID_ENCODINGS_STR}"
             )
 
-    return _encoding.encode(text=string)
+    hasBar = False
+    taskName = None
+
+    displayString = ""
+
+    if len(string) > 13:
+
+        displayString = f"{string[:10]}..."
+
+    else:
+
+        displayString = string
+
+    if len(_tasks) == 0:
+
+        hasBar = True
+
+        taskName = f'Tokenizing "{displayString}"'
+        _InitializeTask(taskName=taskName, total=1)
+
+    tokenizedStr = _encoding.encode(text=string)
+
+    if hasBar:
+
+        _UpdateTask(
+            taskName=taskName,
+            advance=1,
+            description=f'Done Tokenizing "{displayString}"',
+        )
+
+    return tokenizedStr
 
 
 def GetNumTokenStr(
@@ -473,9 +598,37 @@ def GetNumTokenStr(
             f'Unexpected type for parameter "encoding". Expected type: tiktoken.Encoding. Given type: {type(encoding)}'
         )
 
+    hasBar = False
+    taskName = None
+
+    displayString = ""
+
+    if len(string) > 13:
+
+        displayString = f"{string[:10]}..."
+
+    else:
+
+        displayString = string
+
+    if len(_tasks) == 0:
+
+        hasBar = True
+
+        taskName = f'Counting Tokens in "{displayString}"'
+        _InitializeTask(taskName=taskName, total=1)
+
     tokens = TokenizeStr(
         string=string, model=model, encodingName=encodingName, encoding=encoding
     )
+
+    if hasBar:
+
+        _UpdateTask(
+            taskName=taskName,
+            advance=1,
+            description=f'Done Counting Tokens in "{displayString}"',
+        )
 
     return len(tokens)
 
@@ -554,9 +707,29 @@ def TokenizeFile(
 
         raise UnsupportedEncodingError(encoding=fileContents[1], filePath=filePath)
 
-    return TokenizeStr(
+    hasBar = False
+    taskName = None
+
+    if len(_tasks) == 0:
+
+        hasBar = True
+
+        taskName = f"Tokenizing {filePath.name}"
+        _InitializeTask(taskName=taskName, total=1)
+
+    tokens = TokenizeStr(
         string=fileContents, model=model, encodingName=encodingName, encoding=encoding
     )
+
+    if hasBar:
+
+        _UpdateTask(
+            taskName=taskName,
+            advance=1,
+            description=f"Done Tokenizing {filePath.name}",
+        )
+
+    return tokens
 
 
 def GetNumTokenFile(
@@ -627,11 +800,31 @@ def GetNumTokenFile(
 
     filePath = Path(filePath)
 
-    return len(
+    hasBar = False
+    taskName = None
+
+    if len(_tasks) == 0:
+
+        hasBar = True
+
+        taskName = f"Counting Tokens in {filePath.name}"
+        _InitializeTask(taskName=taskName, total=1)
+
+    numTokens = len(
         TokenizeFile(
             filePath=filePath, model=model, encodingName=encodingName, encoding=encoding
         )
     )
+
+    if hasBar:
+
+        _UpdateTask(
+            taskName=taskName,
+            advance=1,
+            description=f"Done Counting Tokens in {filePath.name}",
+        )
+
+    return numTokens
 
 
 def TokenizeDir(
@@ -717,12 +910,16 @@ def TokenizeDir(
 
         raise ValueError(f'Given directory path "{givenDirPath}" is not a directory.')
 
+    numFiles = _CountDirFiles(dirPath=dirPath, recursive=recursive)
+
+    taskName = "Tokenizing Directory"
+    _InitializeTask(taskName=taskName, total=numFiles)
+
     if recursive:
 
         tokenizedDir = []
 
         subDirPaths = []
-        dirFilePaths = []
 
         for entry in dirPath.iterdir():
 
@@ -731,6 +928,12 @@ def TokenizeDir(
                 subDirPaths.append(entry)
 
             else:
+
+                _UpdateTask(
+                    taskName=taskName,
+                    advance=0,
+                    description=f"Tokenizing {entry.relative_to(dirPath)}",
+                )
 
                 try:
 
@@ -742,11 +945,19 @@ def TokenizeDir(
                     )
                     tokenizedDir.append(tokenizedFile)
 
-                    print(f"Tokenized file {entry}")
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=1,
+                        description=f"Done Tokenizing {entry.relative_to(dirPath)}",
+                    )
 
                 except UnsupportedEncodingError as e:
 
-                    print(f"Skipping file {entry} due to unsupported encoding: {e}")
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=1,
+                        description=f"Skipping {entry.relative_to(dirPath)}",
+                    )
 
                     continue
 
@@ -768,7 +979,7 @@ def TokenizeDir(
 
     else:
 
-        dirFilePaths = []
+        tokenizedDir = []
 
         for entry in dirPath.iterdir():
 
@@ -778,6 +989,12 @@ def TokenizeDir(
 
             else:
 
+                _UpdateTask(
+                    taskName=taskName,
+                    advance=0,
+                    description=f"Tokenizing {entry.relative_to(dirPath)}",
+                )
+
                 try:
 
                     tokenizedFile = TokenizeFile(
@@ -786,13 +1003,23 @@ def TokenizeDir(
                         encodingName=encodingName,
                         encoding=encoding,
                     )
-                    dirFilePaths.append(tokenizedFile)
+                    tokenizedDir.append(tokenizedFile)
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=1,
+                        description=f"Done Tokenizing {entry.relative_to(dirPath)}",
+                    )
 
                 except UnsupportedEncodingError:
 
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=1,
+                        description=f"Skipping {entry.relative_to(dirPath)}",
+                    )
                     continue
 
-        return dirFilePaths
+        return tokenizedDir
 
 
 def GetNumTokenDir(
@@ -876,6 +1103,11 @@ def GetNumTokenDir(
 
         raise ValueError(f'Given directory path "{givenDirPath}" is not a directory.')
 
+    numFiles = _CountDirFiles(dirPath=dirPath, recursive=recursive)
+
+    taskName = "Counting Tokens in Directory"
+    _InitializeTask(taskName=taskName, total=numFiles)
+
     if recursive:
 
         runningTokenTotal = 0
@@ -890,6 +1122,12 @@ def GetNumTokenDir(
 
             else:
 
+                _UpdateTask(
+                    taskName=taskName,
+                    advance=0,
+                    description=f"Counting Tokens in {entry.relative_to(dirPath)}",
+                )
+
                 try:
 
                     runningTokenTotal += GetNumTokenFile(
@@ -898,9 +1136,19 @@ def GetNumTokenDir(
                         encodingName=encodingName,
                         encoding=encoding,
                     )
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=1,
+                        description=f"Done Counting Tokens in {entry.relative_to(dirPath)}",
+                    )
 
                 except UnsupportedEncodingError:
 
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=1,
+                        description=f"Skipping {entry.relative_to(dirPath)}",
+                    )
                     continue
 
         for subDirPath in subDirPaths:
@@ -927,6 +1175,12 @@ def GetNumTokenDir(
 
             else:
 
+                _UpdateTask(
+                    taskName=taskName,
+                    advance=0,
+                    description=f"Counting Tokens in {entry.relative_to(dirPath)}",
+                )
+
                 try:
 
                     runningTokenTotal += GetNumTokenFile(
@@ -936,8 +1190,19 @@ def GetNumTokenDir(
                         encoding=encoding,
                     )
 
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=1,
+                        description=f"Done Counting Tokens in {entry.relative_to(dirPath)}",
+                    )
+
                 except UnsupportedEncodingError:
 
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=1,
+                        description=f"Skipping {entry.relative_to(dirPath)}",
+                    )
                     continue
 
         return runningTokenTotal
@@ -1046,16 +1311,42 @@ def TokenizeFiles(
 
             tokenizedFiles = []
 
+            numFiles = len(inputPath)
+
+            taskName = "Tokenizing File List"
+            _InitializeTask(taskName=taskName, total=numFiles)
+
             for file in inputPath:
 
-                tokenizedFiles.append(
-                    TokenizeFile(
-                        filePath=file,
-                        model=model,
-                        encodingName=encodingName,
-                        encoding=encoding,
-                    )
+                _UpdateTask(
+                    taskName=taskName, advance=0, description=f"Tokenizing {file.name}"
                 )
+
+                try:
+
+                    tokenizedFiles.append(
+                        TokenizeFile(
+                            filePath=file,
+                            model=model,
+                            encodingName=encodingName,
+                            encoding=encoding,
+                        )
+                    )
+
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=1,
+                        description=f"Done Tokenizing {file.name}",
+                    )
+
+                except UnsupportedEncodingError:
+
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=1,
+                        description=f"Skipping {file.name}",
+                    )
+                    continue
 
             return tokenizedFiles
 
@@ -1184,14 +1475,42 @@ def GetNumTokenFiles(
 
             runningTokenTotal = 0
 
+            numFiles = len(inputPath)
+
+            taskName = "Counting Tokens in File List"
+            _InitializeTask(taskName=taskName, total=numFiles)
+
             for file in inputPath:
 
-                runningTokenTotal += GetNumTokenFile(
-                    filePath=file,
-                    model=model,
-                    encodingName=encodingName,
-                    encoding=encoding,
+                _UpdateTask(
+                    taskName=taskName,
+                    advance=0,
+                    description=f"Counting Tokens in {file.name}",
                 )
+
+                try:
+
+                    runningTokenTotal += GetNumTokenFile(
+                        filePath=file,
+                        model=model,
+                        encodingName=encodingName,
+                        encoding=encoding,
+                    )
+
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=1,
+                        description=f"Done Counting Tokens in {file.name}",
+                    )
+
+                except UnsupportedEncodingError:
+
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=1,
+                        description=f"Skipping {file.name}",
+                    )
+                    continue
 
             return runningTokenTotal
 
