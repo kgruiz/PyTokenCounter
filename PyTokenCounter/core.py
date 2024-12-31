@@ -29,7 +29,15 @@ Key Functions
 from pathlib import Path
 
 import tiktoken
-from rich.progress import Progress
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
+from rich.table import Column
 
 from ._utils import ReadTextFile, UnsupportedEncodingError
 
@@ -69,7 +77,21 @@ VALID_MODELS_STR = "\n".join(VALID_MODELS)
 VALID_ENCODINGS_STR = "\n".join(VALID_ENCODINGS)
 
 
-_progressInstance = Progress()
+_progressInstance = Progress(
+    TextColumn(
+        "[bold blue]{task.description}",
+        justify="left",
+        table_column=Column(width=35),
+    ),
+    TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+    BarColumn(bar_width=None),
+    MofNCompleteColumn(),
+    TextColumn("•"),
+    TimeElapsedColumn(),
+    TextColumn("•"),
+    TimeRemainingColumn(),
+    expand=True,
+)
 _tasks = {}
 
 
@@ -111,7 +133,11 @@ def _InitializeTask(taskName: str, total: int, quiet: bool = False) -> int | Non
 
 
 def _UpdateTask(
-    taskName: str, advance: int, description: str = None, quiet: bool = False
+    taskName: str,
+    advance: int,
+    description: str = None,
+    appendDescription: str = None,
+    quiet: bool = False,
 ) -> None:
     """
     Internal function to update a task's progress and optionally its description.
@@ -124,6 +150,8 @@ def _UpdateTask(
         The amount of work to add to the task's progress.
     description : str, optional
         A new description for the task (default is None).
+    appendDescription : str, optional
+        Text to append to the current description of the task (default is None).
     quiet : bool, optional
         If True, suppress the progress bar update (default is False).
 
@@ -140,6 +168,17 @@ def _UpdateTask(
     if taskName not in _tasks:
 
         raise ValueError(f"Task '{taskName}' not found.")
+
+    currentTask = _progressInstance.tasks[_tasks[taskName]]
+    currentDescription = currentTask.description if currentTask.description else ""
+
+    if appendDescription is not None:
+
+        description = f"{currentDescription} {appendDescription}".strip()
+
+    elif description is None:
+
+        description = currentDescription
 
     _progressInstance.update(_tasks[taskName], advance=advance, description=description)
 
@@ -557,7 +596,7 @@ def TokenizeStr(
     hasBar = False
     taskName = None
 
-    displayString = f"{string[:10]}..." if len(string) > 13 else string
+    displayString = f"{string[:15]}..." if len(string) > 18 else string
 
     if len(_tasks) == 0 and not quiet:
 
