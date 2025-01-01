@@ -38,9 +38,13 @@ class UnsupportedEncodingError(Exception):
         super().__init__(self.message)
 
 
+# Set the module to 'PyTokenCounter' to reflect in tracebacks
+UnsupportedEncodingError.__module__ = "PyTokenCounter"
+
+
 def ReadTextFile(filePath: Path | str) -> str:
     """
-    Reads a text file if it is UTF-8 or ASCII encoded. Raises an exception for unsupported encodings.
+    Reads a text file using its detected encoding. Supports any encoding identified by `chardet`.
 
     Parameters
     ----------
@@ -50,22 +54,21 @@ def ReadTextFile(filePath: Path | str) -> str:
     Returns
     -------
     str
-        The content of the file as a string if it is UTF-8 or ASCII encoded.
+        The content of the file as a string using the detected encoding.
 
     Raises
     ------
     TypeError
-        If the input `filePath` is not of type `str` or `pathlib.Path`.
+        Raised if the input `filePath` is not of type `str` or `pathlib.Path`.
     FileNotFoundError
-        If the specified file does not exist.
+        Raised if the specified file does not exist.
     UnsupportedEncodingError
-        If the file's encoding is neither UTF-8 nor ASCII.
+        Raised if the file's encoding cannot be determined.
 
     Examples
     --------
-    Reading a valid UTF-8 encoded file:
+    Reading a valid text file with a detectable encoding:
 
-    >>> from utils import ReadTextFile
     >>> content = ReadTextFile('example.txt')
     >>> print(content)
 
@@ -83,14 +86,13 @@ def ReadTextFile(filePath: Path | str) -> str:
         ...
     TypeError: Unexpected type for parameter "filePath". Expected type: str or pathlib.Path. Given type: <class 'int'>
 
-    Handling a file with a non-UTF-8 encoding:
+    Handling a file with an undetectable encoding:
 
-    >>> from utils import ReadTextFile
     >>> try:
-    ...     content = ReadTextFile('non_utf8.txt')
+    ...     content = ReadTextFile('invalid_encoding.txt')
     ... except UnsupportedEncodingError as e:
     ...     print(e)
-    File encoding is not supported. Detected encoding: ISO-8859-1. File path: non_utf8.txt
+    Encoding could not be determined. File path: invalid_encoding.txt
     """
 
     if not isinstance(filePath, str) and not isinstance(filePath, Path):
@@ -110,13 +112,11 @@ def ReadTextFile(filePath: Path | str) -> str:
         detection = chardet.detect(binaryFile.read())
         encoding = detection["encoding"]
 
-    if encoding and encoding.lower() == "utf-8":
+    if encoding:
 
-        return file.read_text(encoding="utf-8")
+        encoding = "utf-8"
 
-    elif encoding and encoding.lower() == "ascii":
-
-        return file.read_text(encoding="ascii")
+        return file.read_text(encoding=encoding)
 
     else:
 

@@ -1,9 +1,12 @@
 # PyTokenCounter/__init__.py
 
-from .core import (
+from PyTokenCounter._utils import UnsupportedEncodingError
+from PyTokenCounter.core import (
     GetEncoding,
     GetEncodingForModel,
+    GetEncodingNameForModel,
     GetModelForEncoding,
+    GetModelForEncodingName,
     GetModelMappings,
     GetNumTokenDir,
     GetNumTokenFile,
@@ -17,12 +20,15 @@ from .core import (
     TokenizeStr,
 )
 
+# Define the public API of the package
 __all__ = [
     "GetModelMappings",
     "GetValidModels",
-    "GetValidEncodings",
-    "GetModelForEncoding",
     "GetEncodingForModel",
+    "GetValidEncodings",
+    "GetModelForEncodingName",
+    "GetModelForEncoding",
+    "GetEncodingNameForModel",
     "GetEncoding",
     "TokenizeStr",
     "GetNumTokenStr",
@@ -32,4 +38,5 @@ __all__ = [
     "GetNumTokenFiles",
     "TokenizeDir",
     "GetNumTokenDir",
+    "UnsupportedEncodingError",
 ]
