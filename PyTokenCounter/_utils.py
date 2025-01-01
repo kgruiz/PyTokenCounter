@@ -114,6 +114,8 @@ def ReadTextFile(filePath: Path | str) -> str:
 
     if encoding:
 
+        encoding = "utf-8"
+
         return file.read_text(encoding=encoding)
 
     else:

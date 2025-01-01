@@ -1,7 +1,9 @@
 {
-    "TestDir1": {
+    "TestDir1": 
+    {
         "numTokens": 128,
-        "tokens": [
+        "tokens": 
+        [
             976,
             19458,
             5831,
@@ -132,9 +134,11 @@
             13
         ]
     },
-    "TestDir2": {
+    "TestDir2": 
+    {
         "numTokens": 132,
-        "tokens": [
+        "tokens": 
+        [
             976,
             5030,
             45940,
@@ -269,9 +273,11 @@
             13
         ]
     },
-    "TestDir3": {
+    "TestDir3": 
+    {
         "numTokens": 140,
-        "tokens": [
+        "tokens": 
+        [
             976,
             29011,
             38841,
@@ -414,9 +420,11 @@
             13
         ]
     },
-    "TestDir4": {
+    "TestDir4": 
+    {
         "numTokens": 127,
-        "tokens": [
+        "tokens": 
+        [
             976,
             21689,
             12761,
@@ -546,9 +554,11 @@
             13
         ]
     },
-    "TestDir5": {
+    "TestDir5": 
+    {
         "numTokens": 128,
-        "tokens": [
+        "tokens": 
+        [
             65307,
             16953,
             34531,

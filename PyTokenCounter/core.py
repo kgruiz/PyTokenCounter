@@ -298,7 +298,7 @@ def GetValidEncodings() -> list[str]:
     return VALID_ENCODINGS
 
 
-def GetModelForEncoding(encodingName: str) -> str:
+def GetModelForEncoding(encodingName: str) -> list[str] | str:
     """
     Get the model name for a given encoding.
 
@@ -333,11 +333,21 @@ def GetModelForEncoding(encodingName: str) -> str:
 
     else:
 
+        modelMatches = []
+
         for model, encoding in MODEL_MAPPINGS.items():
 
             if encoding == encodingName:
 
-                return model
+                modelMatches.append(model)
+
+        if len(modelMatches) == 1:
+
+            return modelMatches[0]
+
+        else:
+
+            return sorted(modelMatches)
 
 
 def GetEncodingForModel(modelName: str, quiet: bool = False) -> str:
@@ -1053,7 +1063,7 @@ def TokenizeDir(
     encoding: tiktoken.Encoding | None = None,
     recursive: bool = True,
     quiet: bool = False,
-) -> list[int | list] | list[int]:
+) -> dict[str, list[int] | dict]:
     """
     Tokenize all files in a directory into lists of token IDs using the specified model or encoding.
 
@@ -1072,15 +1082,15 @@ def TokenizeDir(
         it must match the encoding derived from the model or encodingName.
     recursive : bool, default True
         Whether to tokenize files in subdirectories recursively.
-    quiet : bool, optional
-        If True, suppress progress updates (default is False).
+    quiet : bool, default False
+        If True, suppress progress updates.
 
     Returns
     -------
-    list of int or list
-        A nested list where each element is either a list of token IDs representing
-        a tokenized file or a sublist for a subdirectory. If recursive is False, returns
-        a list of token IDs for each file in the directory.
+    dict[str, list[int] | dict]
+        A nested dictionary where each key is a file or subdirectory name:
+        - If the key is a file, its value is a list of token IDs.
+        - If the key is a subdirectory, its value is another dictionary following the same structure.
 
     Raises
     ------
@@ -1096,20 +1106,14 @@ def TokenizeDir(
     >>> from core import TokenizeDir
     >>> tokenized_dir = TokenizeDir('/path/to/directory', model='gpt-4')
     >>> print(tokenized_dir)
-    [[15496, 11, 995], [1234, 5678, 91011], ...]
-
-    >>> import tiktoken
-    >>> encoding = tiktoken.get_encoding('p50k_base')
-    >>> tokenized_dir = TokenizeDir('/path/to/directory', encoding=encoding, recursive=False)
-    >>> print(tokenized_dir)
-    [[1234, 5678], [91011, 1213], ...]
-
-    >>> # Tokenizing with recursion
-    >>> tokenized_dir = TokenizeDir('/path/to/directory', model='gpt-3.5-turbo', recursive=True)
-    >>> print(tokenized_dir)
-    [[[15496, 11, 995], [1234, 5678, 91011]], [[2345, 6789], [3456, 7890]]]
+    {
+        'file1.txt': [15496, 11, 995],
+        'file2.txt': [1234, 5678, 91011],
+        'subdir': {
+            'file3.txt': [2345, 6789]
+        }
+    }
     """
-
     if not isinstance(dirPath, (str, Path)):
 
         raise TypeError(
@@ -1140,13 +1144,11 @@ def TokenizeDir(
             f'Unexpected type for parameter "recursive". Expected type: bool. Given type: {type(recursive)}'
         )
 
-    dirPath = Path(dirPath)
-    givenDirPath = dirPath
-    dirPath = dirPath.resolve()
+    dirPath = Path(dirPath).resolve()
 
     if not dirPath.is_dir():
 
-        raise ValueError(f'Given directory path "{givenDirPath}" is not a directory.')
+        raise ValueError(f'Given directory path "{dirPath}" is not a directory.')
 
     numFiles = _CountDirFiles(dirPath=dirPath, recursive=recursive)
 
@@ -1159,133 +1161,75 @@ def TokenizeDir(
 
         taskName = None
 
-    if recursive:
+    tokenizedDir: dict[str, list[int] | dict] = {}
+    subDirPaths: list[Path] = []
 
-        tokenizedDir = []
-        subDirPaths = []
+    for entry in dirPath.iterdir():
 
-        for entry in dirPath.iterdir():
+        if entry.is_dir():
 
-            if entry.is_dir():
+            subDirPaths.append(entry)
 
-                subDirPaths.append(entry)
+        else:
 
-            else:
+            if not quiet:
+
+                _UpdateTask(
+                    taskName=taskName,
+                    advance=0,
+                    description=f"Tokenizing {entry.relative_to(dirPath)}",
+                    quiet=quiet,
+                )
+
+            try:
+
+                tokenizedFile = TokenizeFile(
+                    filePath=entry,
+                    model=model,
+                    encodingName=encodingName,
+                    encoding=encoding,
+                    quiet=quiet,
+                )
+                tokenizedDir[entry.name] = tokenizedFile
 
                 if not quiet:
 
                     _UpdateTask(
                         taskName=taskName,
-                        advance=0,
-                        description=f"Tokenizing {entry.relative_to(dirPath)}",
+                        advance=1,
+                        description=f"Done Tokenizing {entry.relative_to(dirPath)}",
                         quiet=quiet,
                     )
 
-                try:
+            except UnsupportedEncodingError as e:
 
-                    tokenizedFile = TokenizeFile(
-                        filePath=entry,
-                        model=model,
-                        encodingName=encodingName,
-                        encoding=encoding,
+                if not quiet:
+
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=1,
+                        description=f"Skipping {entry.relative_to(dirPath)}",
                         quiet=quiet,
                     )
-                    tokenizedDir.append(tokenizedFile)
-
-                    if not quiet:
-
-                        _UpdateTask(
-                            taskName=taskName,
-                            advance=1,
-                            description=f"Done Tokenizing {entry.relative_to(dirPath)}",
-                            quiet=quiet,
-                        )
-
-                except UnsupportedEncodingError as e:
-
-                    if not quiet:
-
-                        _UpdateTask(
-                            taskName=taskName,
-                            advance=1,
-                            description=f"Skipping {entry.relative_to(dirPath)}",
-                            quiet=quiet,
-                        )
-
-                    continue
-
-        for subDirPath in subDirPaths:
-
-            tokenizedSubDir = TokenizeDir(
-                dirPath=subDirPath,
-                model=model,
-                encodingName=encodingName,
-                encoding=encoding,
-                recursive=recursive,
-                quiet=quiet,
-            )
-
-            if tokenizedSubDir:
-
-                tokenizedDir.append(tokenizedSubDir)
-
-        return tokenizedDir
-
-    else:
-
-        tokenizedDir = []
-
-        for entry in dirPath.iterdir():
-
-            if entry.is_dir():
 
                 continue
 
-            else:
+    for subDirPath in subDirPaths:
 
-                if not quiet:
+        tokenizedSubDir = TokenizeDir(
+            dirPath=subDirPath,
+            model=model,
+            encodingName=encodingName,
+            encoding=encoding,
+            recursive=recursive,
+            quiet=quiet,
+        )
 
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=0,
-                        description=f"Tokenizing {entry.relative_to(dirPath)}",
-                        quiet=quiet,
-                    )
+        if tokenizedSubDir:
 
-                try:
+            tokenizedDir[subDirPath.name] = tokenizedSubDir
 
-                    tokenizedFile = TokenizeFile(
-                        filePath=entry,
-                        model=model,
-                        encodingName=encodingName,
-                        encoding=encoding,
-                        quiet=quiet,
-                    )
-                    tokenizedDir.append(tokenizedFile)
-
-                    if not quiet:
-
-                        _UpdateTask(
-                            taskName=taskName,
-                            advance=1,
-                            description=f"Done Tokenizing {entry.relative_to(dirPath)}",
-                            quiet=quiet,
-                        )
-
-                except UnsupportedEncodingError:
-
-                    if not quiet:
-
-                        _UpdateTask(
-                            taskName=taskName,
-                            advance=1,
-                            description=f"Skipping {entry.relative_to(dirPath)}",
-                            quiet=quiet,
-                        )
-
-                    continue
-
-        return tokenizedDir
+    return tokenizedDir
 
 
 def GetNumTokenDir(
@@ -1314,8 +1258,8 @@ def GetNumTokenDir(
         it must match the encoding derived from the model or encodingName.
     recursive : bool, default True
         Whether to count tokens in files in subdirectories recursively.
-    quiet : bool, optional
-        If True, suppress progress updates (default is False).
+    quiet : bool, default False
+        If True, suppress progress updates.
 
     Returns
     -------
@@ -1349,7 +1293,6 @@ def GetNumTokenDir(
     >>> print(total_tokens)
     3000
     """
-
     if not isinstance(dirPath, (str, Path)):
 
         raise TypeError(
@@ -1380,13 +1323,11 @@ def GetNumTokenDir(
             f'Unexpected type for parameter "recursive". Expected type: bool. Given type: {type(recursive)}'
         )
 
-    dirPath = Path(dirPath)
-    givenDirPath = dirPath
-    dirPath = dirPath.resolve()
+    dirPath = Path(dirPath).resolve()
 
     if not dirPath.is_dir():
 
-        raise ValueError(f'Given directory path "{givenDirPath}" is not a directory.')
+        raise ValueError(f'Given directory path "{dirPath}" is not a directory.')
 
     numFiles = _CountDirFiles(dirPath=dirPath, recursive=recursive)
 
@@ -1399,127 +1340,70 @@ def GetNumTokenDir(
 
         taskName = None
 
-    if recursive:
+    runningTokenTotal = 0
+    subDirPaths: list[Path] = []
 
-        runningTokenTotal = 0
-        subDirPaths = []
+    for entry in dirPath.iterdir():
 
-        for entry in dirPath.iterdir():
+        if entry.is_dir():
 
-            if entry.is_dir():
+            subDirPaths.append(entry)
 
-                subDirPaths.append(entry)
+        else:
 
-            else:
+            if not quiet:
+
+                _UpdateTask(
+                    taskName=taskName,
+                    advance=0,
+                    description=f"Counting Tokens in {entry.relative_to(dirPath)}",
+                    quiet=quiet,
+                )
+
+            try:
+
+                runningTokenTotal += GetNumTokenFile(
+                    filePath=entry,
+                    model=model,
+                    encodingName=encodingName,
+                    encoding=encoding,
+                    quiet=quiet,
+                )
 
                 if not quiet:
 
                     _UpdateTask(
                         taskName=taskName,
-                        advance=0,
-                        description=f"Counting Tokens in {entry.relative_to(dirPath)}",
+                        advance=1,
+                        description=f"Done Counting Tokens in {entry.relative_to(dirPath)}",
                         quiet=quiet,
                     )
 
-                try:
+            except UnsupportedEncodingError:
 
-                    runningTokenTotal += GetNumTokenFile(
-                        filePath=entry,
-                        model=model,
-                        encodingName=encodingName,
-                        encoding=encoding,
+                if not quiet:
+
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=1,
+                        description=f"Skipping {entry.relative_to(dirPath)}",
                         quiet=quiet,
                     )
-
-                    if not quiet:
-
-                        _UpdateTask(
-                            taskName=taskName,
-                            advance=1,
-                            description=f"Done Counting Tokens in {entry.relative_to(dirPath)}",
-                            quiet=quiet,
-                        )
-
-                except UnsupportedEncodingError:
-
-                    if not quiet:
-
-                        _UpdateTask(
-                            taskName=taskName,
-                            advance=1,
-                            description=f"Skipping {entry.relative_to(dirPath)}",
-                            quiet=quiet,
-                        )
-
-                    continue
-
-        for subDirPath in subDirPaths:
-
-            runningTokenTotal += GetNumTokenDir(
-                dirPath=subDirPath,
-                model=model,
-                encodingName=encodingName,
-                encoding=encoding,
-                recursive=recursive,
-                quiet=quiet,
-            )
-
-        return runningTokenTotal
-
-    else:
-
-        runningTokenTotal = 0
-
-        for entry in dirPath.iterdir():
-
-            if entry.is_dir():
 
                 continue
 
-            else:
+    for subDirPath in subDirPaths:
 
-                if not quiet:
+        runningTokenTotal += GetNumTokenDir(
+            dirPath=subDirPath,
+            model=model,
+            encodingName=encodingName,
+            encoding=encoding,
+            recursive=recursive,
+            quiet=quiet,
+        )
 
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=0,
-                        description=f"Counting Tokens in {entry.relative_to(dirPath)}",
-                        quiet=quiet,
-                    )
-
-                try:
-
-                    runningTokenTotal += GetNumTokenFile(
-                        filePath=entry,
-                        model=model,
-                        encodingName=encodingName,
-                        encoding=encoding,
-                        quiet=quiet,
-                    )
-
-                    if not quiet:
-
-                        _UpdateTask(
-                            taskName=taskName,
-                            advance=1,
-                            description=f"Done Counting Tokens in {entry.relative_to(dirPath)}",
-                            quiet=quiet,
-                        )
-
-                except UnsupportedEncodingError:
-
-                    if not quiet:
-
-                        _UpdateTask(
-                            taskName=taskName,
-                            advance=1,
-                            description=f"Skipping {entry.relative_to(dirPath)}",
-                            quiet=quiet,
-                        )
-
-                    continue
-
-        return runningTokenTotal
+    return runningTokenTotal
 
 
 def TokenizeFiles(
@@ -1531,7 +1415,7 @@ def TokenizeFiles(
     recursive: bool = True,
     quiet: bool = False,
     exitOnListEror: bool = True,
-) -> list[int | list] | list[list[int]] | list[int]:
+) -> list[list[int]] | list[int] | dict[str, list[int] | dict]:
     """
     Tokenize multiple files or all files within a directory into lists of token IDs.
 
@@ -1551,21 +1435,23 @@ def TokenizeFiles(
     recursive : bool, default True
         If inputPath is a directory, whether to tokenize files in subdirectories
         recursively.
-    quiet : bool, optional
-        If True, suppress progress updates (default is False).
+    quiet : bool, default False
+        If True, suppress progress updates.
+    exitOnListEror : bool, default True
+        If True, stop processing the list upon encountering an error. If False,
+        skip files that cause errors.
 
     Returns
     -------
-    list of int or list
+    list[list[int]] | list[int] | dict[str, list[int] | dict]
         - If inputPath is a file, returns a list of token IDs for that file.
         - If inputPath is a list of files, returns a list where each element is a
           list of token IDs for each file.
         - If inputPath is a directory:
-          - If recursive is True, returns a nested list where each element is either
-            a list of token IDs representing a tokenized file or a sublist for a
-            subdirectory.
-          - If recursive is False, returns a list of token IDs for each file in
-            the directory.
+          - If recursive is True, returns a nested dictionary where each key is a
+            file or subdirectory name with corresponding token lists or sub-dictionaries.
+          - If recursive is False, returns a dictionary with file names as keys and
+            their token lists as values.
 
     Raises
     ------
@@ -1576,8 +1462,7 @@ def TokenizeFiles(
         If any of the provided file paths in a list are not files, or if a provided
         directory path is not a directory.
     UnsupportedEncodingError
-        If any of the files to be tokenized have an unsupported encoding (i.e., not UTF-8, ASCII, or another
-        text encoding format supported by the chardet package).
+        If any of the files to be tokenized have an unsupported encoding.
     RuntimeError
         If the provided inputPath is neither a file, a directory, nor a list.
 
@@ -1596,7 +1481,11 @@ def TokenizeFiles(
     >>> encoding = tiktoken.get_encoding('p50k_base')
     >>> tokens = TokenizeFiles('/path/to/directory', encoding=encoding, recursive=False)
     >>> print(tokens)
-    [[1234, 5678], [91011, 1213], ...]
+    {
+        'file1.txt': [1234, 5678],
+        'file2.txt': [91011, 1213],
+        ...
+    }
 
     Handling a list with a non-file entry:
 
@@ -1609,7 +1498,14 @@ def TokenizeFiles(
 
     >>> tokens = TokenizeFiles('/path/to/directory', model='gpt-3.5-turbo', recursive=True)
     >>> print(tokens)
-    [[[15496, 11, 995], [1234, 5678, 91011]], [[2345, 6789], [3456, 7890]]]
+    {
+        'file1.txt': [15496, 11, 995],
+        'file2.txt': [1234, 5678, 91011],
+        'subdir': {
+            'file3.txt': [2345, 6789],
+            'file4.txt': [3456, 7890]
+        }
+    }
     """
 
     if not isinstance(inputPath, (str, Path, list)):
@@ -1658,24 +1554,21 @@ def TokenizeFiles(
 
         else:
 
-            tokenizedFiles = []
+            tokenizedFiles: list[list[int]] = []
             numFiles = len(inputPath)
 
             if not quiet:
 
-                taskName = "Tokenizing File List"
-                _InitializeTask(taskName=taskName, total=numFiles, quiet=quiet)
-
-            else:
-
-                taskName = None
+                _InitializeTask(
+                    taskName="Tokenizing File List", total=numFiles, quiet=quiet
+                )
 
             for file in inputPath:
 
                 if not quiet:
 
                     _UpdateTask(
-                        taskName=taskName,
+                        taskName="Tokenizing File List",
                         advance=0,
                         description=f"Tokenizing {file.name}",
                         quiet=quiet,
@@ -1696,7 +1589,7 @@ def TokenizeFiles(
                     if not quiet:
 
                         _UpdateTask(
-                            taskName=taskName,
+                            taskName="Tokenizing File List",
                             advance=1,
                             description=f"Done Tokenizing {file.name}",
                             quiet=quiet,
@@ -1719,7 +1612,7 @@ def TokenizeFiles(
                         if not quiet:
 
                             _UpdateTask(
-                                taskName=taskName,
+                                taskName="Tokenizing File List",
                                 advance=1,
                                 description=f"Done Tokenizing {file.name}",
                                 quiet=quiet,
@@ -1730,7 +1623,7 @@ def TokenizeFiles(
                         if not quiet:
 
                             _UpdateTask(
-                                taskName=taskName,
+                                taskName="Tokenizing File List",
                                 advance=1,
                                 description=f"Skipping {file.name}",
                                 quiet=quiet,
@@ -1801,8 +1694,11 @@ def GetNumTokenFiles(
     recursive : bool, default True
         If inputPath is a directory, whether to count tokens in files in
         subdirectories recursively.
-    quiet : bool, optional
-        If True, suppress progress updates (default is False).
+    quiet : bool, default False
+        If True, suppress progress updates.
+    exitOnListError : bool, default True
+        If True, stop processing the list upon encountering an error. If False,
+        skip files that cause errors.
 
     Returns
     -------
@@ -1818,8 +1714,7 @@ def GetNumTokenFiles(
         If any of the provided file paths in a list are not files, or if a provided
         directory path is not a directory.
     UnsupportedEncodingError
-        If any of the files to be tokenized have an unsupported encoding (i.e., not UTF-8, ASCII, or another
-        text encoding format supported by the chardet package).
+        If any of the files to be tokenized have an unsupported encoding.
     RuntimeError
         If the provided inputPath is neither a file, a directory, nor a list.
 
@@ -1905,19 +1800,16 @@ def GetNumTokenFiles(
 
             if not quiet:
 
-                taskName = "Counting Tokens in File List"
-                _InitializeTask(taskName=taskName, total=numFiles, quiet=quiet)
-
-            else:
-
-                taskName = None
+                _InitializeTask(
+                    taskName="Counting Tokens in File List", total=numFiles, quiet=quiet
+                )
 
             for file in inputPath:
 
                 if not quiet:
 
                     _UpdateTask(
-                        taskName=taskName,
+                        taskName="Counting Tokens in File List",
                         advance=0,
                         description=f"Counting Tokens in {file.name}",
                         quiet=quiet,
@@ -1936,7 +1828,7 @@ def GetNumTokenFiles(
                     if not quiet:
 
                         _UpdateTask(
-                            taskName=taskName,
+                            taskName="Counting Tokens in File List",
                             advance=1,
                             description=f"Done Counting Tokens in {file.name}",
                             quiet=quiet,
@@ -1957,7 +1849,7 @@ def GetNumTokenFiles(
                         if not quiet:
 
                             _UpdateTask(
-                                taskName=taskName,
+                                taskName="Counting Tokens in File List",
                                 advance=1,
                                 description=f"Done Counting Tokens in {file.name}",
                                 quiet=quiet,
@@ -1968,7 +1860,7 @@ def GetNumTokenFiles(
                         if not quiet:
 
                             _UpdateTask(
-                                taskName=taskName,
+                                taskName="Counting Tokens in File List",
                                 advance=1,
                                 description=f"Skipping {file.name}",
                                 quiet=quiet,
