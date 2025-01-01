@@ -20,6 +20,16 @@ Subcommands:
     count-file     Count tokens in a file.
     count-files    Count tokens in multiple files or a directory.
     count-dir      Count tokens in all files within a directory.
+    get-model      Retrieves the model name from the provided encoding.
+    get-encoding   Retrieves the encoding name from the provided model.
+
+Options:
+    -m, --model      Model to use for encoding.
+    -e, --encoding   Encoding to use directly.
+    -nr, --no-recursive Do not tokenize files in subdirectories
+                        if a directory is given.
+    -q, --quiet      Silence progress bars and minimize output.
+
 
 For detailed help on each subcommand, use:
 
@@ -32,6 +42,8 @@ Example:
     tokencount tokenize-dir ./my_directory -m gpt-4o -nr
     tokencount count-files ./my_directory -m gpt-4o
     tokencount count-dir ./my_directory -m gpt-4o
+    tokencount get-model cl100k_base
+    tokencount get-encoding gpt-4o
 """
 
 import argparse
@@ -43,6 +55,7 @@ from .core import (
     VALID_ENCODINGS,
     VALID_MODELS,
     GetEncoding,
+    GetModelForEncodingName,
     GetNumTokenDir,
     GetNumTokenFiles,
     GetNumTokenStr,
@@ -72,7 +85,7 @@ class CustomFormatter(
     pass
 
 
-def formatChoices(choices):
+def FormatChoices(choices):
     """
     Formats a list of choices into a bulleted list.
 
@@ -86,10 +99,11 @@ def formatChoices(choices):
     str
         A formatted string with each choice on a new line, preceded by a bullet.
     """
+
     return "\n".join(f"  - {choice}" for choice in choices)
 
 
-def addCommonArgs(subParser: argparse.ArgumentParser) -> None:
+def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
     """
     Adds common arguments to a subparser.
 
@@ -99,10 +113,10 @@ def addCommonArgs(subParser: argparse.ArgumentParser) -> None:
         The subparser to which the arguments will be added.
     """
 
-    modelHelp = "Model to use for encoding.\nValid options are:\n" + formatChoices(
+    modelHelp = "Model to use for encoding.\nValid options are:\n" + FormatChoices(
         VALID_MODELS
     )
-    encodingHelp = "Encoding to use directly.\nValid options are:\n" + formatChoices(
+    encodingHelp = "Encoding to use directly.\nValid options are:\n" + FormatChoices(
         VALID_ENCODINGS
     )
 
@@ -155,7 +169,7 @@ def main() -> None:
         description="Tokenize a given string into a list of token IDs using the specified model or encoding.",
         formatter_class=CustomFormatter,
     )
-    addCommonArgs(parserTokenizeStr)
+    AddCommonArgs(parserTokenizeStr)
     parserTokenizeStr.add_argument("string", type=str, help="The string to tokenize.")
 
     # Subparser for tokenizing a file
@@ -165,7 +179,7 @@ def main() -> None:
         description="Tokenize the contents of a specified file into a list of token IDs using the given model or encoding.",
         formatter_class=CustomFormatter,
     )
-    addCommonArgs(parserTokenizeFile)
+    AddCommonArgs(parserTokenizeFile)
     parserTokenizeFile.add_argument(
         "file",
         type=str,
@@ -179,7 +193,7 @@ def main() -> None:
         description="Tokenize the contents of multiple specified files or all files within a directory into lists of token IDs using the given model or encoding.",
         formatter_class=CustomFormatter,
     )
-    addCommonArgs(parserTokenizeFiles)
+    AddCommonArgs(parserTokenizeFiles)
     parserTokenizeFiles.add_argument(
         "input",
         type=str,
@@ -203,7 +217,7 @@ Multiple files can be separated by spaces or commas.
         description="Tokenize all files within a specified directory into lists of token IDs using the chosen model or encoding.",
         formatter_class=CustomFormatter,
     )
-    addCommonArgs(parserTokenizeDir)
+    AddCommonArgs(parserTokenizeDir)
     parserTokenizeDir.add_argument(
         "directory",
         type=str,
@@ -223,7 +237,7 @@ Multiple files can be separated by spaces or commas.
         description="Count the number of tokens in a given string using the specified model or encoding.",
         formatter_class=CustomFormatter,
     )
-    addCommonArgs(parserCountStr)
+    AddCommonArgs(parserCountStr)
     parserCountStr.add_argument(
         "string", type=str, help="The string to count tokens for."
     )
@@ -235,7 +249,7 @@ Multiple files can be separated by spaces or commas.
         description="Count the number of tokens in a specified file using the given model or encoding.",
         formatter_class=CustomFormatter,
     )
-    addCommonArgs(parserCountFile)
+    AddCommonArgs(parserCountFile)
     parserCountFile.add_argument(
         "file",
         type=str,
@@ -249,7 +263,7 @@ Multiple files can be separated by spaces or commas.
         description="Count the number of tokens in multiple specified files or all files within a directory using the given model or encoding.",
         formatter_class=CustomFormatter,
     )
-    addCommonArgs(parserCountFiles)
+    AddCommonArgs(parserCountFiles)
     parserCountFiles.add_argument(
         "input",
         type=str,
@@ -273,7 +287,7 @@ Multiple files can be separated by spaces or commas.
         description="Count the total number of tokens across all files in a specified directory using the chosen model or encoding.",
         formatter_class=CustomFormatter,
     )
-    addCommonArgs(parserCountDir)
+    AddCommonArgs(parserCountDir)
     parserCountDir.add_argument(
         "directory",
         type=str,
@@ -286,6 +300,38 @@ Multiple files can be separated by spaces or commas.
         help="Do not count tokens in subdirectories.",
     )
 
+    # Subparser for getting the model from an encoding
+    parserGetModel = subParsers.add_parser(
+        "get-model",
+        help="Retrieves the model name from the provided encoding.",
+        description="Retrieves the model name(s) associated with the specified encoding.",
+        formatter_class=CustomFormatter,
+    )
+    parserGetModel.add_argument(
+        "encoding",
+        type=str,
+        choices=VALID_ENCODINGS,
+        metavar="ENCODING",
+        help="Encoding to get the model for.\nValid options are:\n"
+        + FormatChoices(VALID_ENCODINGS),
+    )
+
+    # Subparser for getting the encoding from a model
+    parserGetEncoding = subParsers.add_parser(
+        "get-encoding",
+        help="Retrieves the encoding name from the provided model.",
+        description="Retrieves the encoding name associated with the specified model.",
+        formatter_class=CustomFormatter,
+    )
+    parserGetEncoding.add_argument(
+        "model",
+        type=str,
+        choices=VALID_MODELS,
+        metavar="MODEL",
+        help="Model to get the encoding for.\nValid options are:\n"
+        + FormatChoices(VALID_MODELS),
+    )
+
     # Parse the arguments
 
     if len(sys.argv) == 1:
@@ -296,7 +342,15 @@ Multiple files can be separated by spaces or commas.
 
     try:
 
-        encoding = GetEncoding(model=args.model, encodingName=args.encoding)
+        encoding = None
+        if args.model and args.encoding:
+            encoding = GetEncoding(model=args.model, encodingName=args.encoding)
+        elif args.model:
+            encoding = GetEncoding(model=args.model)
+        elif args.encoding:
+            encoding = GetEncoding(encodingName=args.encoding)
+        else:
+            encoding = GetEncoding(model="gpt-4o")
 
         if args.command == "tokenize-str":
 
@@ -424,6 +478,14 @@ Multiple files can be separated by spaces or commas.
             )
 
             print(count)
+
+        elif args.command == "get-model":
+            model_name = GetModelForEncodingName(encodingName=args.encoding)
+            print(model_name)
+
+        elif args.command == "get-encoding":
+            encoding_name = GetEncoding(model=args.model).name
+            print(encoding_name)
 
     except Exception as e:
 

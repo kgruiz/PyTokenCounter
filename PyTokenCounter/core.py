@@ -12,8 +12,8 @@ Key Functions
 - "GetModelMappings": Retrieve model to encoding mappings.
 - "GetValidModels": List all valid model names.
 - "GetValidEncodings": List all valid encoding names.
-- "GetModelForEncoding": Get the model associated with a specific encoding.
-- "GetEncodingForModel": Get the encoding associated with a specific model.
+- "GetModelForEncodingName": Get the model associated with a specific encoding.
+- "GetEncodingNameForModel": Get the encoding associated with a specific model.
 - "GetEncoding": Obtain the "tiktoken.Encoding" based on a model or encoding name.
 - "TokenizeStr": Tokenize a single string into token IDs.
 - "GetNumTokenStr": Count the number of tokens in a string.
@@ -249,10 +249,10 @@ def GetModelMappings() -> dict:
 
     Examples
     --------
-    >>> from core import GetModelMappings
+    >>> from PyTokenCounter import GetModelMappings
     >>> mappings = GetModelMappings()
     >>> print(mappings)
-    {'gpt-4': 'cl100k_base', 'gpt-3.5-turbo': 'cl100k_base', ...}
+    {'gpt-4o': 'o200k_base', 'gpt-4o-mini': 'o200k_base', 'gpt-4-turbo': 'cl100k_base', 'gpt-4': 'cl100k_base', 'gpt-3.5-turbo': 'cl100k_base', 'text-embedding-ada-002': 'cl100k_base', 'text-embedding-3-small': 'cl100k_base', 'text-embedding-3-large': 'cl100k_base', 'Codex models': 'p50k_base', 'text-davinci-002': 'p50k_base', 'text-davinci-003': 'p50k_base', 'GPT-3 models like davinci': 'r50k_base'}
     """
 
     return MODEL_MAPPINGS
@@ -269,10 +269,10 @@ def GetValidModels() -> list[str]:
 
     Examples
     --------
-    >>> from core import GetValidModels
+    >>> from PyTokenCounter import GetValidModels
     >>> models = GetValidModels()
     >>> print(models)
-    ['gpt-4', 'gpt-3.5-turbo', 'text-embedding-ada-002', ...]
+    ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo', 'text-embedding-ada-002', 'text-embedding-3-small', 'text-embedding-3-large', 'Codex models', 'text-davinci-002', 'text-davinci-003', 'GPT-3 models like davinci']
     """
 
     return VALID_MODELS
@@ -289,16 +289,71 @@ def GetValidEncodings() -> list[str]:
 
     Examples
     --------
-    >>> from core import GetValidEncodings
+    >>> from PyTokenCounter import GetValidEncodings
     >>> encodings = GetValidEncodings()
     >>> print(encodings)
-    ['cl100k_base', 'p50k_base', 'r50k_base', ...]
+    ['o200k_base', 'cl100k_base', 'p50k_base', 'r50k_base']
     """
 
     return VALID_ENCODINGS
 
 
-def GetModelForEncoding(encodingName: str) -> list[str] | str:
+def GetModelForEncoding(encoding: tiktoken.Encoding) -> list[str] | str:
+    """
+    Get the model name for a given encoding.
+
+    Parameters
+    ----------
+    encoding : tiktoken.Encoding
+        The encoding to get the model for.
+
+    Returns
+    -------
+    str
+        The model name corresponding to the given encoding.
+
+    Raises
+    ------
+    ValueError
+        If the encoding name is not valid.
+
+    Examples
+    --------
+    >>> from PyTokenCounter import GetModelForEncoding
+    >>> import tiktoken
+    >>> encoding = tiktoken.get_encoding('cl100k_base')
+    >>> model = GetModelForEncoding(encoding=encoding)
+    >>> print(model)
+    ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'text-embedding-3-large', 'text-embedding-3-small', 'text-embedding-ada-002']
+    """
+    encodingName = encoding.name
+
+    if encodingName not in VALID_ENCODINGS:
+
+        raise ValueError(
+            f"Invalid encoding name: {encodingName}\n\nValid encoding names:\n{VALID_ENCODINGS_STR}"
+        )
+
+    else:
+
+        modelMatches = []
+
+        for model, encoding in MODEL_MAPPINGS.items():
+
+            if encoding == encodingName:
+
+                modelMatches.append(model)
+
+        if len(modelMatches) == 1:
+
+            return modelMatches[0]
+
+        else:
+
+            return sorted(modelMatches)
+
+
+def GetModelForEncodingName(encodingName: str) -> list[str] | str:
     """
     Get the model name for a given encoding.
 
@@ -319,10 +374,10 @@ def GetModelForEncoding(encodingName: str) -> list[str] | str:
 
     Examples
     --------
-    >>> from core import GetModelForEncoding
-    >>> model = GetModelForEncoding('cl100k_base')
+    >>> from PyTokenCounter import GetModelForEncodingName
+    >>> model = GetModelForEncodingName('cl100k_base')
     >>> print(model)
-    'gpt-4'
+    ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'text-embedding-3-large', 'text-embedding-3-small', 'text-embedding-ada-002']
     """
 
     if encodingName not in VALID_ENCODINGS:
@@ -350,7 +405,7 @@ def GetModelForEncoding(encodingName: str) -> list[str] | str:
             return sorted(modelMatches)
 
 
-def GetEncodingForModel(modelName: str, quiet: bool = False) -> str:
+def GetEncodingForModel(modelName: str, quiet: bool = False) -> tiktoken.Encoding:
     """
     Get the encoding for a given model name.
 
@@ -373,8 +428,50 @@ def GetEncodingForModel(modelName: str, quiet: bool = False) -> str:
 
     Examples
     --------
-    >>> from core import GetEncodingForModel
-    >>> encoding = GetEncodingForModel('gpt-3.5-turbo')
+    >>> from PyTokenCounter import GetEncodingNameForModel
+    >>> encoding = GetEncodingNameForModel('gpt-3.5-turbo')
+    >>> print(encoding)
+    'cl100k_base'
+    """
+
+    if modelName not in VALID_MODELS:
+
+        raise ValueError(
+            f"Invalid model: {modelName}\n\nValid models:\n{VALID_MODELS_STR}"
+        )
+
+    else:
+
+        encodingName = MODEL_MAPPINGS[modelName]
+
+        return tiktoken.get_encoding(encoding_name=encodingName)
+
+
+def GetEncodingNameForModel(modelName: str, quiet: bool = False) -> str:
+    """
+    Get the encoding for a given model name.
+
+    Parameters
+    ----------
+    modelName : str
+        The name of the model.
+    quiet : bool, optional
+        If True, suppress progress updates (default is False).
+
+    Returns
+    -------
+    str
+        The encoding corresponding to the given model.
+
+    Raises
+    ------
+    ValueError
+        If the model name is not valid.
+
+    Examples
+    --------
+    >>> from PyTokenCounter import GetEncodingNameForModel
+    >>> encoding = GetEncodingNameForModel('gpt-3.5-turbo')
     >>> print(encoding)
     'cl100k_base'
     """
@@ -421,7 +518,7 @@ def GetEncoding(
 
     Examples
     --------
-    >>> from core import GetEncoding
+    >>> from PyTokenCounter import GetEncoding
     >>> encoding = GetEncoding(model='gpt-3.5-turbo')
     >>> print(encoding)
     <Encoding cl100k_base>
@@ -536,16 +633,15 @@ def TokenizeStr(
 
     Examples
     --------
-    >>> from core import TokenizeStr
-    >>> tokens = TokenizeStr("Hello, world!", model="gpt-3.5-turbo")
+    >>> from PyTokenCounter import TokenizeStr
+    >>> tokens = TokenizeStr(string="Hail to the Victors!", model="gpt-4o")
     >>> print(tokens)
-    [15496, 11, 995]
-
+    [39, 663, 316, 290, ..., 914, 0]
     >>> import tiktoken
-    >>> encoding = tiktoken.get_encoding("p50k_base")
-    >>> tokens = TokenizeStr("Sample text for tokenization.", encoding=encoding)
+    >>> encoding = tiktoken.get_encoding("cl100k_base")
+    >>> tokens = TokenizeStr(string="2024 National Champions", encoding=encoding)
     >>> print(tokens)
-    [1234, 5678, 91011]
+    [1323, 19, 6743, 40544]
     """
 
     if not isinstance(string, str):
@@ -724,16 +820,16 @@ def GetNumTokenStr(
 
     Examples
     --------
-    >>> from core import GetNumTokenStr
-    >>> num_tokens = GetNumTokenStr("Hello, world!", model="gpt-4")
-    >>> print(num_tokens)
-    3
-
-    >>> import tiktoken
-    >>> encoding = tiktoken.get_encoding("p50k_base")
-    >>> num_tokens = GetNumTokenStr("Another example string.", encoding=encoding)
-    >>> print(num_tokens)
-    5
+    >>> from PyTokenCounter import GetNumTokenStr
+    >>> numTokens = GetNumTokenStr(string="Hail to the Victors!", model="gpt-4o")
+    >>> print(numTokens)
+    7
+    >>> numTokens = GetNumTokenStr(string="2024 National Champions", model="gpt-4o")
+    >>> print(numTokens)
+    4
+    >>> numTokens = GetNumTokenStr(string="Corum 4 Heisman", encoding=tiktoken.get_encoding("cl100k_base"))
+    >>> print(numTokens)
+    6
     """
 
     if not isinstance(string, str):
@@ -840,31 +936,23 @@ def TokenizeFile(
     --------
     Tokenizing a file with a specified model:
 
-    >>> tokens = TokenizeFile('example.txt', model='gpt-3.5-turbo')
+    >>> from pathlib import Path
+    >>> from PyTokenCounter import TokenizeFile
+    >>> filePath = Path("./PyTokenCounter/Tests/Input/TestFile1.txt")
+    >>> tokens = TokenizeFile(filePath=filePath, model="gpt-4o")
     >>> print(tokens)
-    [15496, 11, 995, ...]
+    [2305, 290, 7334, 132491, 11, 290, ..., 11526, 13]
 
     Tokenizing a file with an existing encoding object:
 
-    >>> from tiktoken import Encoding
-    >>> encoding = Encoding.load('gpt-3.5-turbo')
-    >>> tokens = TokenizeFile('example.txt', encoding=encoding)
+    >>> from pathlib import Path
+    >>> from PyTokenCounter import TokenizeFile
+    >>> import tiktoken
+    >>> encoding = tiktoken.get_encoding("p50k_base")
+    >>> filePath = Path("./PyTokenCounter/Tests/Input/TestFile2.txt")
+    >>> tokens = TokenizeFile(filePath=filePath, encoding=encoding)
     >>> print(tokens)
-    [1234, 5678, 91011, ...]
-
-    Handling a non-existent file:
-
-    >>> TokenizeFile('non_existent.txt')
-    Traceback (most recent call last):
-        ...
-    FileNotFoundError: File not found: /absolute/path/to/non_existent.txt
-
-    Using a mismatched encoding and model:
-
-    >>> TokenizeFile('example.txt', model='gpt-3.5-turbo', encodingName='wrong-encoding')
-    Traceback (most recent call last):
-        ...
-    ValueError: Encoding name "wrong-encoding" does not match the encoding associated with model "gpt-3.5-turbo".
+    [976, 13873, 10377, 472, 261, ..., 3333, 13]
     """
 
     if not isinstance(filePath, (str, Path)):
@@ -975,28 +1063,16 @@ def GetNumTokenFile(
 
     Examples
     --------
-    >>> from core import GetNumTokenFile
-    >>> num_tokens = GetNumTokenFile('example.txt', model='gpt-4')
-    >>> print(num_tokens)
-    150
-
-    >>> import tiktoken
-    >>> encoding = tiktoken.get_encoding('p50k_base')
-    >>> num_tokens = GetNumTokenFile('sample.txt', encoding=encoding)
-    >>> print(num_tokens)
-    200
-
-    >>> # Handling a non-existent file
-    >>> GetNumTokenFile('non_existent.txt')
-    Traceback (most recent call last):
-        ...
-    FileNotFoundError: File not found: /absolute/path/to/non_existent.txt
-
-    >>> # Using a mismatched encoding and model
-    >>> GetNumTokenFile('example.txt', model='gpt-3.5-turbo', encodingName='wrong-encoding')
-    Traceback (most recent call last):
-        ...
-    ValueError: Encoding name "wrong-encoding" does not match the encoding associated with model "gpt-3.5-turbo".
+    >>> from PyTokenCounter import GetNumTokenFile
+    >>> from pathlib import Path
+    >>> filePath = Path("./PyTokenCounter/Tests/Input/TestFile1.txt")
+    >>> numTokens = GetNumTokenFile(filePath=filePath, model="gpt-4o")
+    >>> print(numTokens)
+    221
+    >>> filePath = Path("./PyTokenCounter/Tests/Input/TestFile2.txt")
+    >>> numTokens = GetNumTokenFile(filePath=filePath, model="gpt-4o")
+    >>> print(numTokens)
+    213
     """
 
     if not isinstance(filePath, (str, Path)):
@@ -1103,14 +1179,66 @@ def TokenizeDir(
 
     Examples
     --------
-    >>> from core import TokenizeDir
-    >>> tokenized_dir = TokenizeDir('/path/to/directory', model='gpt-4')
-    >>> print(tokenized_dir)
+    >>> from PyTokenCounter import TokenizeDir
+    >>> from pathlib import Path
+    >>> dirPath = Path("./PyTokenCounter/Tests/Input/TestDirectory")
+    >>> tokenizedDir = TokenizeDir(dirPath=dirPath, model='gpt-4o')
+    >>> print(tokenizedDir)
     {
-        'file1.txt': [15496, 11, 995],
-        'file2.txt': [1234, 5678, 91011],
-        'subdir': {
-            'file3.txt': [2345, 6789]
+            'TestDir1.txt': [
+                976, 19458, 5831, 23757, 306, 290, ..., 26321, 13
+            ],
+            'TestDir2.txt': {
+                'numTokens': 132,
+            'tokens':
+            [
+                976,
+                5030,
+                45940,
+                295,
+                483,
+               ...,
+               1665,
+               4717,
+               13
+            ]
+        },
+        'TestDir3.txt': {
+            'numTokens': 140,
+            'tokens':
+            [
+                976, 29011, 38841, 306, 483,  ..., 16592, 316, 21846, 4194, 483, 290, 69214, 13
+            ]
+        },
+        'TestSubDir': {
+            'TestDir4.txt': {
+                'numTokens': 127,
+                'tokens': [
+                    976,
+                    21689,
+                    12761,
+                    50217,
+                    71327,
+                    412,
+                    ...,
+                    10740,
+                    13
+                ]
+            },
+            'TestDir5.txt': {
+                'numTokens': 128,
+                'tokens': [
+                    65307,
+                    16953,
+                    34531,
+                    290,
+                    37603,
+                    306,
+                   ...,
+                   34618,
+                   13
+                ]
+            }
         }
     }
     """
@@ -1280,22 +1408,23 @@ def GetNumTokenDir(
 
     Examples
     --------
-    >>> from core import GetNumTokenDir
-    >>> total_tokens = GetNumTokenDir('/path/to/directory', model='gpt-4')
+    >>> from PyTokenCounter import GetNumTokenDir
+    >>> from pathlib import Path
+    >>> dirPath = Path("./PyTokenCounter/Tests/Input/TestDirectory")
+    >>> total_tokens = GetNumTokenDir(dirPath=dirPath, model='gpt-4o')
     >>> print(total_tokens)
     1500
-
     >>> import tiktoken
     >>> encoding = tiktoken.get_encoding('p50k_base')
-    >>> total_tokens = GetNumTokenDir('/path/to/directory', encoding=encoding, recursive=False)
+    >>> total_tokens = GetNumTokenDir(dirPath=dirPath, encoding=encoding, recursive=False)
     >>> print(total_tokens)
     2000
-
     >>> # Counting tokens with recursion
-    >>> total_tokens = GetNumTokenDir('/path/to/directory', model='gpt-3.5-turbo', recursive=True)
+    >>> total_tokens = GetNumTokenDir(dirPath=dirPath, model='gpt-3.5-turbo', recursive=True)
     >>> print(total_tokens)
     3000
     """
+
     if not isinstance(dirPath, (str, Path)):
 
         raise TypeError(
@@ -1420,7 +1549,7 @@ def TokenizeFiles(
     exitOnListError: bool = True,
 ) -> list[int] | dict[str, list[int] | dict]:
     """
-    Tokenize multiple files or all files within a directory into lists of token IDs.
+    Tokenize multiple files or all files within a directory into lists of token IDs using the specified model or encoding.
 
     Parameters
     ----------
@@ -1473,43 +1602,97 @@ def TokenizeFiles(
     --------
     Tokenizing a list of files with a specified model:
 
-    >>> from core import TokenizeFiles
-    >>> tokens = TokenizeFiles(['file1.txt', 'file2.txt'], model='gpt-4')
+    >>> from PyTokenCounter import TokenizeFiles
+    >>> from pathlib import Path
+    >>> tokens = TokenizeFiles(inputPath=[Path("./PyTokenCounter/Tests/Input/TestFile1.txt"), Path("./PyTokenCounter/Tests/Input/TestFile2.txt")], model='gpt-4o')
     >>> print(tokens)
     {
-        'file1.txt': [15496, 11, 995],
-        'file2.txt': [1234, 5678, 91011]
+        'TestFile1.txt': [2305, 290, 7334, 132491, 11, 290, ..., 11526, 13],
+        'TestFile2.txt': [976, 13873, 10377, 472, 261, ..., 3333, 13]
     }
 
     Tokenizing a directory with a specific encoding and non-recursive:
 
+    >>> from PyTokenCounter import TokenizeFiles
     >>> import tiktoken
+    >>> from pathlib import Path
     >>> encoding = tiktoken.get_encoding('p50k_base')
-    >>> tokens = TokenizeFiles('/path/to/directory', encoding=encoding, recursive=False)
+    >>> dirPath = Path("./PyTokenCounter/Tests/Input/TestDirectory")
+    >>> tokens = TokenizeFiles(inputPath=dirPath, encoding=encoding, recursive=False)
     >>> print(tokens)
     {
-        'file1.txt': [1234, 5678],
-        'file2.txt': [91011, 1213],
-        ...
+        'TestDir1.txt': [976, 19458, 5831, 23757, 306, ..., 26321, 13],
+        'TestDir2.txt': [976, 5030, 45940, 295, 483, ..., 48614, 1665, 4717, 13],
+        'TestDir3.txt': [976, 29011, 38841, 306, 483, ..., 16592, 316, 21846, 4194, 483, 290, 69214, 13]
     }
 
     Handling a list with a non-file entry:
 
-    >>> TokenizeFiles(['file1.txt', 'directory'])
+    >>> TokenizeFiles(inputPath=['./PyTokenCounter/Tests/Input/TestFile1.txt', './PyTokenCounter/Tests/Input/TestDirectory'])
     Traceback (most recent call last):
         ...
-    ValueError: Given list contains non-file entries: [Path('directory')]
+    ValueError: Given list contains non-file entries: [Path('./PyTokenCounter/Tests/Input/TestDirectory')]
 
     Tokenizing a directory with recursion:
 
-    >>> tokens = TokenizeFiles('/path/to/directory', model='gpt-3.5-turbo', recursive=True)
+    >>> from PyTokenCounter import TokenizeFiles
+    >>> from pathlib import Path
+    >>> dirPath = Path("./PyTokenCounter/Tests/Input/TestDirectory")
+    >>> tokens = TokenizeFiles(inputPath=dirPath, model='gpt-4o', recursive=True)
     >>> print(tokens)
     {
-        'file1.txt': [15496, 11, 995],
-        'file2.txt': [1234, 5678, 91011],
-        'subdir': {
-            'file3.txt': [2345, 6789],
-            'file4.txt': [3456, 7890]
+            'TestDir1.txt': [976, 19458, 5831, 23757, 306, 290, ..., 26321, 13],
+            'TestDir2.txt': {
+                'numTokens': 132,
+            'tokens':
+            [
+                976,
+                5030,
+                45940,
+                295,
+                483,
+               ...,
+               1665,
+               4717,
+               13
+            ]
+        },
+        'TestDir3.txt': {
+            'numTokens': 140,
+            'tokens':
+            [
+                976, 29011, 38841, 306, 483,  ..., 16592, 316, 21846, 4194, 483, 290, 69214, 13
+            ]
+        },
+        'TestSubDir': {
+            'TestDir4.txt': {
+                'numTokens': 127,
+                'tokens': [
+                    976,
+                    21689,
+                    12761,
+                    50217,
+                    71327,
+                    412,
+                    ...,
+                    10740,
+                    13
+                ]
+            },
+            'TestDir5.txt': {
+                'numTokens': 128,
+                'tokens': [
+                    65307,
+                    16953,
+                    34531,
+                    290,
+                    37603,
+                    306,
+                   ...,
+                   34618,
+                   13
+                ]
+            }
         }
     }
     """
@@ -1678,7 +1861,7 @@ def GetNumTokenFiles(
     exitOnListError: bool = True,
 ) -> int:
     """
-    Get the number of tokens in multiple files or all files within a directory.
+    Get the number of tokens in multiple files or all files within a directory based on the specified model or encoding.
 
     Parameters
     ----------
@@ -1710,8 +1893,8 @@ def GetNumTokenFiles(
     Raises
     ------
     TypeError
-        If the types of "inputPath", "model", "encodingName", "encoding", or
-        "recursive" are incorrect.
+        If the types of `inputPath`, `model`, `encodingName`, `encoding`, or
+        `recursive` are incorrect.
     ValueError
         If any of the provided file paths in a list are not files, or if a provided
         directory path is not a directory.
@@ -1724,31 +1907,23 @@ def GetNumTokenFiles(
     --------
     Tokenizing a list of files with a specified model:
 
-    >>> from core import GetNumTokenFiles
-    >>> total_tokens = GetNumTokenFiles(['file1.txt', 'file2.txt'], model='gpt-4')
-    >>> print(total_tokens)
-    3000
-
-    Tokenizing a directory with a specific encoding and non-recursive:
-
+    >>> from PyTokenCounter import GetNumTokenFiles
+    >>> from pathlib import Path
+    >>> totalTokens = GetNumTokenFiles(inputPath=[Path("./PyTokenCounter/Tests/Input/TestFile1.txt"), Path("./PyTokenCounter/Tests/Input/TestFile2.txt")], model='gpt-4o')
+    >>> print(totalTokens)
+    434
     >>> import tiktoken
     >>> encoding = tiktoken.get_encoding('p50k_base')
-    >>> total_tokens = GetNumTokenFiles('/path/to/directory', encoding=encoding, recursive=False)
-    >>> print(total_tokens)
-    4000
+    >>> dirPath = Path("./PyTokenCounter/Tests/Input/TestDirectory")
+    >>> totalTokens = GetNumTokenFiles(inputPath=dirPath, encoding=encoding, recursive=False)
+    >>> print(totalTokens)
+    400
 
-    Handling a list with a non-file entry:
-
-    >>> GetNumTokenFiles(['file1.txt', 'directory'])
-    Traceback (most recent call last):
-        ...
-    ValueError: Given list contains non-file entries: [Path('directory')]
-
-    Counting tokens in a directory with recursion:
-
-    >>> total_tokens = GetNumTokenFiles('/path/to/directory', model='gpt-3.5-turbo', recursive=True)
-    >>> print(total_tokens)
-    5000
+    >>> # Counting tokens with recursion
+    >>> dirPath = Path("./PyTokenCounter/Tests/Input/TestDirectory")
+    >>> totalTokens = GetNumTokenFiles(inputPath=dirPath, model='gpt-3.5-turbo', recursive=True)
+    >>> print(totalTokens)
+    657
     """
 
     if not isinstance(inputPath, (str, Path, list)):

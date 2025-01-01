@@ -4,7 +4,9 @@ from PyTokenCounter._utils import UnsupportedEncodingError
 from PyTokenCounter.core import (
     GetEncoding,
     GetEncodingForModel,
+    GetEncodingNameForModel,
     GetModelForEncoding,
+    GetModelForEncodingName,
     GetModelMappings,
     GetNumTokenDir,
     GetNumTokenFile,
@@ -22,9 +24,11 @@ from PyTokenCounter.core import (
 __all__ = [
     "GetModelMappings",
     "GetValidModels",
-    "GetValidEncodings",
-    "GetModelForEncoding",
     "GetEncodingForModel",
+    "GetValidEncodings",
+    "GetModelForEncodingName",
+    "GetModelForEncoding",
+    "GetEncodingNameForModel",
     "GetEncoding",
     "TokenizeStr",
     "GetNumTokenStr",

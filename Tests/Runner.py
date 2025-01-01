@@ -1,6 +1,5 @@
 import inspect
 import json
-import os
 from pathlib import Path
 
 import tiktoken
@@ -449,12 +448,67 @@ def TestGetModelForEncoding():
         "r50k_base": "GPT-3 models like davinci",
     }
 
+    for encodingName, expectedModels in encodingModelPairs.items():
+        # Assume tc.GetModelForEncoding expects an encoding object, so we mock or retrieve it
+        encoding = tiktoken.get_encoding(encoding_name=encodingName)
+        actualModels = tc.GetModelForEncoding(encoding=encoding)
+
+        if isinstance(expectedModels, list):
+            if not isinstance(actualModels, list):
+                RaiseTestAssertion(
+                    f"Expected GetModelForEncoding('{encodingName}') to return a list, "
+                    f"but got {type(actualModels).__name__}."
+                )
+            sortedExpected = sorted(expectedModels)
+            sortedActual = sorted(actualModels)
+            if sortedActual != sortedExpected:
+                RaiseTestAssertion(
+                    f"Models for encoding '{encodingName}' mismatch.\n"
+                    f"Expected: {sortedExpected}\n"
+                    f"Got: {sortedActual}"
+                )
+        elif isinstance(expectedModels, str):
+            if not isinstance(actualModels, str):
+                RaiseTestAssertion(
+                    f"Expected GetModelForEncoding('{encodingName}') to return a string, "
+                    f"but got {type(actualModels).__name__}."
+                )
+            if actualModels != expectedModels:
+                RaiseTestAssertion(
+                    f"Model for encoding '{encodingName}' mismatch.\n"
+                    f"Expected: '{expectedModels}'\n"
+                    f"Got: '{actualModels}'"
+                )
+        else:
+            RaiseTestAssertion(
+                f"Invalid expectedModels type for encoding '{encodingName}'. Must be list or string."
+            )
+
+
+def TestGetModelForEncodingName():
+    """
+    Test retrieval of the correct model(s) for each encoding.
+    """
+    encodingModelPairs = {
+        "o200k_base": ["gpt-4o", "gpt-4o-mini"],
+        "cl100k_base": [
+            "gpt-3.5-turbo",
+            "gpt-4",
+            "gpt-4-turbo",
+            "text-embedding-3-large",
+            "text-embedding-3-small",
+            "text-embedding-ada-002",
+        ],
+        "p50k_base": ["Codex models", "text-davinci-002", "text-davinci-003"],
+        "r50k_base": "GPT-3 models like davinci",
+    }
+
     for encodingName, expectedModel in encodingModelPairs.items():
-        actualModel = tc.GetModelForEncoding(encodingName=encodingName)
+        actualModel = tc.GetModelForEncodingName(encodingName=encodingName)
         if isinstance(expectedModel, list):
             if not isinstance(actualModel, list):
                 RaiseTestAssertion(
-                    f"Expected GetModelForEncoding('{encodingName}') to return a list, but got {type(actualModel).__name__}."
+                    f"Expected GetModelForEncodingName('{encodingName}') to return a list, but got {type(actualModel).__name__}."
                 )
             sortedExpected = sorted(expectedModel)
             sortedActual = sorted(actualModel)
@@ -467,7 +521,7 @@ def TestGetModelForEncoding():
         elif isinstance(expectedModel, str):
             if not isinstance(actualModel, str):
                 RaiseTestAssertion(
-                    f"Expected GetModelForEncoding('{encodingName}') to return a string, but got {type(actualModel).__name__}."
+                    f"Expected GetModelForEncodingName('{encodingName}') to return a string, but got {type(actualModel).__name__}."
                 )
             if actualModel != expectedModel:
                 RaiseTestAssertion(
@@ -494,6 +548,35 @@ def TestGetEncodingForModel():
         "text-embedding-ada-002": "cl100k_base",
         "text-embedding-3-small": "cl100k_base",
         "text-embedding-3-large": "cl100k_base",
+        # "Codex models": "p50k_base",
+        "text-davinci-002": "p50k_base",
+        "text-davinci-003": "p50k_base",
+        # "GPT-3 models like davinci": "r50k_base",
+    }
+
+    for modelName, expectedEncoding in modelEncodingPairs.items():
+        actualEncoding = tc.GetEncodingForModel(modelName=modelName)
+        if actualEncoding.name != expectedEncoding:
+            RaiseTestAssertion(
+                f"Encoding for model '{modelName}' mismatch.\n"
+                f"Expected: '{expectedEncoding}'\n"
+                f"Got: '{actualEncoding.name}'"
+            )
+
+
+def TestGetEncodingNameForModel():
+    """
+    Test retrieval of the correct encoding for each model.
+    """
+    modelEncodingPairs = {
+        "gpt-4o": "o200k_base",
+        "gpt-4o-mini": "o200k_base",
+        "gpt-4-turbo": "cl100k_base",
+        "gpt-4": "cl100k_base",
+        "gpt-3.5-turbo": "cl100k_base",
+        "text-embedding-ada-002": "cl100k_base",
+        "text-embedding-3-small": "cl100k_base",
+        "text-embedding-3-large": "cl100k_base",
         "Codex models": "p50k_base",
         "text-davinci-002": "p50k_base",
         "text-davinci-003": "p50k_base",
@@ -501,7 +584,7 @@ def TestGetEncodingForModel():
     }
 
     for modelName, expectedEncoding in modelEncodingPairs.items():
-        actualEncoding = tc.GetEncodingForModel(modelName=modelName)
+        actualEncoding = tc.GetEncodingNameForModel(modelName=modelName)
         if actualEncoding != expectedEncoding:
             RaiseTestAssertion(
                 f"Encoding for model '{modelName}' mismatch.\n"
@@ -779,8 +862,8 @@ if __name__ == "__main__":
     TestGetModelMappings()
     TestGetValidModels()
     TestGetValidEncodings()
-    TestGetModelForEncoding()
-    TestGetEncodingForModel()
+    TestGetModelForEncodingName()
+    TestGetEncodingNameForModel()
     TestGetEncoding()
     TestTokenizeDirectory()
     TestTokenizeDirectoryNoRecursion()
