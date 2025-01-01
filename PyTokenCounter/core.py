@@ -1114,6 +1114,7 @@ def TokenizeDir(
         }
     }
     """
+
     if not isinstance(dirPath, (str, Path)):
 
         raise TypeError(
@@ -1214,20 +1215,22 @@ def TokenizeDir(
 
                 continue
 
-    for subDirPath in subDirPaths:
+    if recursive:
 
-        tokenizedSubDir = TokenizeDir(
-            dirPath=subDirPath,
-            model=model,
-            encodingName=encodingName,
-            encoding=encoding,
-            recursive=recursive,
-            quiet=quiet,
-        )
+        for subDirPath in subDirPaths:
 
-        if tokenizedSubDir:
+            tokenizedSubDir = TokenizeDir(
+                dirPath=subDirPath,
+                model=model,
+                encodingName=encodingName,
+                encoding=encoding,
+                recursive=recursive,
+                quiet=quiet,
+            )
 
-            tokenizedDir[subDirPath.name] = tokenizedSubDir
+            if tokenizedSubDir:
+
+                tokenizedDir[subDirPath.name] = tokenizedSubDir
 
     return tokenizedDir
 
@@ -1414,8 +1417,8 @@ def TokenizeFiles(
     encoding: tiktoken.Encoding | None = None,
     recursive: bool = True,
     quiet: bool = False,
-    exitOnListEror: bool = True,
-) -> list[list[int]] | list[int] | dict[str, list[int] | dict]:
+    exitOnListError: bool = True,
+) -> list[int] | dict[str, list[int] | dict]:
     """
     Tokenize multiple files or all files within a directory into lists of token IDs.
 
@@ -1437,34 +1440,34 @@ def TokenizeFiles(
         recursively.
     quiet : bool, default False
         If True, suppress progress updates.
-    exitOnListEror : bool, default True
+    exitOnListError : bool, default True
         If True, stop processing the list upon encountering an error. If False,
         skip files that cause errors.
 
     Returns
     -------
-    list[list[int]] | list[int] | dict[str, list[int] | dict]
-        - If inputPath is a file, returns a list of token IDs for that file.
-        - If inputPath is a list of files, returns a list where each element is a
-          list of token IDs for each file.
-        - If inputPath is a directory:
-          - If recursive is True, returns a nested dictionary where each key is a
+    list[int] | dict[str, list[int] | dict]
+        - If `inputPath` is a file, returns a list of token IDs for that file.
+        - If `inputPath` is a list of files, returns a dictionary where each key is
+          the file name and the value is the list of token IDs for that file.
+        - If `inputPath` is a directory:
+          - If `recursive` is True, returns a nested dictionary where each key is a
             file or subdirectory name with corresponding token lists or sub-dictionaries.
-          - If recursive is False, returns a dictionary with file names as keys and
+          - If `recursive` is False, returns a dictionary with file names as keys and
             their token lists as values.
 
     Raises
     ------
     TypeError
-        If the types of "inputPath", "model", "encodingName", "encoding", or
-        "recursive" are incorrect.
+        If the types of `inputPath`, `model`, `encodingName`, `encoding`, or
+        `recursive` are incorrect.
     ValueError
         If any of the provided file paths in a list are not files, or if a provided
         directory path is not a directory.
     UnsupportedEncodingError
         If any of the files to be tokenized have an unsupported encoding.
     RuntimeError
-        If the provided inputPath is neither a file, a directory, nor a list.
+        If the provided `inputPath` is neither a file, a directory, nor a list.
 
     Examples
     --------
@@ -1473,7 +1476,10 @@ def TokenizeFiles(
     >>> from core import TokenizeFiles
     >>> tokens = TokenizeFiles(['file1.txt', 'file2.txt'], model='gpt-4')
     >>> print(tokens)
-    [[15496, 11, 995], [1234, 5678, 91011]]
+    {
+        'file1.txt': [15496, 11, 995],
+        'file2.txt': [1234, 5678, 91011]
+    }
 
     Tokenizing a directory with a specific encoding and non-recursive:
 
@@ -1554,7 +1560,7 @@ def TokenizeFiles(
 
         else:
 
-            tokenizedFiles: list[list[int]] = []
+            tokenizedFiles: dict[str, list[int]] = dict()
             numFiles = len(inputPath)
 
             if not quiet:
@@ -1574,16 +1580,14 @@ def TokenizeFiles(
                         quiet=quiet,
                     )
 
-                if exitOnListEror:
+                if exitOnListError:
 
-                    tokenizedFiles.append(
-                        TokenizeFile(
-                            filePath=file,
-                            model=model,
-                            encodingName=encodingName,
-                            encoding=encoding,
-                            quiet=quiet,
-                        )
+                    tokenizedFiles[file.name] = TokenizeFile(
+                        filePath=file,
+                        model=model,
+                        encodingName=encodingName,
+                        encoding=encoding,
+                        quiet=quiet,
                     )
 
                     if not quiet:
@@ -1599,14 +1603,12 @@ def TokenizeFiles(
 
                     try:
 
-                        tokenizedFiles.append(
-                            TokenizeFile(
-                                filePath=file,
-                                model=model,
-                                encodingName=encodingName,
-                                encoding=encoding,
-                                quiet=quiet,
-                            )
+                        tokenizedFiles[file.name] = TokenizeFile(
+                            filePath=file,
+                            model=model,
+                            encodingName=encodingName,
+                            encoding=encoding,
+                            quiet=quiet,
                         )
 
                         if not quiet:
