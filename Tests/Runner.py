@@ -1,18 +1,15 @@
 import inspect
+import io
 import json
+import sys
 from pathlib import Path
 
 import tiktoken
 
 import PyTokenCounter as tc
 
-# Define the paths to the test input and answers directories
-testInputDir = Path(
-    "/Users/kadengruizenga/Development/Packages/Python/PyTokenCounter/Tests/Input"
-)
-testAnswersDir = Path(
-    "/Users/kadengruizenga/Development/Packages/Python/PyTokenCounter/Tests/Answers"
-)
+testInputDir = Path("./Input")
+testAnswersDir = Path("./Answers")
 
 
 def RaiseTestAssertion(message: str):
@@ -27,7 +24,7 @@ def RaiseTestAssertion(message: str):
     raise AssertionError(fullMessage)
 
 
-def compareTokenDicts(expected, actual, path=""):
+def CompareTokenDicts(expected, actual, path=""):
     """
     Recursively compare two nested dictionaries containing token lists.
 
@@ -103,7 +100,7 @@ def compareTokenDicts(expected, actual, path=""):
                         f"Expected '{expectedPath}' to be a directory, but got {type(actualEntry).__name__}."
                     )
                 # Recurse into the subdirectory
-                compareTokenDicts(expectedEntry, actualEntry, path=expectedPath)
+                CompareTokenDicts(expectedEntry, actualEntry, path=expectedPath)
         else:
             RaiseTestAssertion(
                 f"Unexpected structure for key '{expectedPath}' in expected data."
@@ -142,7 +139,7 @@ def TestTokenizeDirectory():
             f"Expected TokenizeDir to return a dict for directory '{dirPath}', got {type(tokenizedDir).__name__}."
         )
 
-    compareTokenDicts(expected, tokenizedDir)
+    CompareTokenDicts(expected, tokenizedDir)
 
 
 def TestTokenizeFilesWithDirectory():
@@ -163,7 +160,7 @@ def TestTokenizeFilesWithDirectory():
             f"Expected TokenizeFiles to return a dict for directory '{dirPath}', got {type(tokenizedFiles).__name__}."
         )
 
-    compareTokenDicts(expected, tokenizedFiles)
+    CompareTokenDicts(expected, tokenizedFiles)
 
 
 def TestTokenizeFilesMultiple():
@@ -197,7 +194,7 @@ def TestTokenizeFilesMultiple():
         key: {"tokens": value} for key, value in expectedTokenLists.items()
     }
 
-    compareTokenDicts(expectedStructure, tokenizedFiles)
+    CompareTokenDicts(expectedStructure, tokenizedFiles)
 
 
 def TestTokenizeFilesExitOnListErrorFalse():
@@ -237,7 +234,7 @@ def TestTokenizeFilesExitOnListErrorFalse():
         key: {"tokens": value} for key, value in expectedTokenLists.items()
     }
 
-    compareTokenDicts(expectedStructure, tokenizedFiles)
+    CompareTokenDicts(expectedStructure, tokenizedFiles)
 
 
 def TestTokenizeDirectoryNoRecursion():
@@ -263,7 +260,7 @@ def TestTokenizeDirectoryNoRecursion():
             f"Expected TokenizeDir to return a dict for directory '{dirPath}', got {type(tokenizedDir).__name__}."
         )
 
-    compareTokenDicts(expected, tokenizedDir)
+    CompareTokenDicts(expected, tokenizedDir)
 
     # Ensure subdirectories are not included
     for entry in dirPath.iterdir():
@@ -317,9 +314,6 @@ def TestTokenizeFilesListQuietFalse():
             expectedTokenLists[inputFile.name] = answer["tokens"]
 
     # Capture stdout to verify that progress is displayed when quiet=False
-    import io
-    import sys
-
     capturedOutput = io.StringIO()
     sysStdout = sys.stdout
     sys.stdout = capturedOutput
@@ -347,7 +341,7 @@ def TestTokenizeFilesListQuietFalse():
         key: {"tokens": value} for key, value in expectedTokenLists.items()
     }
 
-    compareTokenDicts(expectedStructure, tokenizedFiles)
+    CompareTokenDicts(expectedStructure, tokenizedFiles)
 
 
 def TestGetModelMappings():

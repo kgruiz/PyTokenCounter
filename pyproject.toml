@@ -8,7 +8,11 @@ license = {file = "LICENSE"}
 
 authors = [{name = "Kaden Gruizenga", email = "kgruiz@umich.edu"}]
 
-dependencies = ["tiktoken>=0.8.0"]
+dependencies = [
+    "tiktoken>=0.8.0",
+    "rich>=13.9.4",
+    "chardet>=5.2.0",
+]
 
 classifiers = [
     "Development Status :: 5 - Production/Stable",
