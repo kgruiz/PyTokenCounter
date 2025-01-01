@@ -2,7 +2,7 @@
 
 """
 PyTokenCounter Core Module
-============================
+===========================
 
 Provides functions to tokenize and count tokens in strings, files, and directories using specified models or encodings.
 Includes utilities for managing model-encoding mappings and validating inputs.
@@ -81,7 +81,7 @@ _progressInstance = Progress(
     TextColumn(
         "[bold blue]{task.description}",
         justify="left",
-        table_column=Column(width=35),
+        table_column=Column(width=50),
     ),
     TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
     BarColumn(bar_width=None),
@@ -246,6 +246,13 @@ def GetModelMappings() -> dict:
     -------
     dict
         A dictionary where keys are model names and values are their corresponding encodings.
+
+    Examples
+    --------
+    >>> from core import GetModelMappings
+    >>> mappings = GetModelMappings()
+    >>> print(mappings)
+    {'gpt-4': 'cl100k_base', 'gpt-3.5-turbo': 'cl100k_base', ...}
     """
 
     return MODEL_MAPPINGS
@@ -255,11 +262,17 @@ def GetValidModels() -> list[str]:
     """
     Get a list of valid models.
 
-
     Returns
     -------
-    list[str]
+    list of str
         A list of valid model names.
+
+    Examples
+    --------
+    >>> from core import GetValidModels
+    >>> models = GetValidModels()
+    >>> print(models)
+    ['gpt-4', 'gpt-3.5-turbo', 'text-embedding-ada-002', ...]
     """
 
     return VALID_MODELS
@@ -271,8 +284,15 @@ def GetValidEncodings() -> list[str]:
 
     Returns
     -------
-    list[str]
+    list of str
         A list of valid encoding names.
+
+    Examples
+    --------
+    >>> from core import GetValidEncodings
+    >>> encodings = GetValidEncodings()
+    >>> print(encodings)
+    ['cl100k_base', 'p50k_base', 'r50k_base', ...]
     """
 
     return VALID_ENCODINGS
@@ -296,6 +316,13 @@ def GetModelForEncoding(encodingName: str) -> str:
     ------
     ValueError
         If the encoding name is not valid.
+
+    Examples
+    --------
+    >>> from core import GetModelForEncoding
+    >>> model = GetModelForEncoding('cl100k_base')
+    >>> print(model)
+    'gpt-4'
     """
 
     if encodingName not in VALID_ENCODINGS:
@@ -333,6 +360,13 @@ def GetEncodingForModel(modelName: str, quiet: bool = False) -> str:
     ------
     ValueError
         If the model name is not valid.
+
+    Examples
+    --------
+    >>> from core import GetEncodingForModel
+    >>> encoding = GetEncodingForModel('gpt-3.5-turbo')
+    >>> print(encoding)
+    'cl100k_base'
     """
 
     if modelName not in VALID_MODELS:
@@ -349,7 +383,6 @@ def GetEncodingForModel(modelName: str, quiet: bool = False) -> str:
 def GetEncoding(
     model: str | None = None,
     encodingName: str | None = None,
-    quiet: bool = False,
 ) -> tiktoken.Encoding:
     """
     Get the tiktoken Encoding based on the specified model or encoding name.
@@ -362,8 +395,6 @@ def GetEncoding(
     encodingName : str or None, optional
         The name of the encoding to use. If provided, it must match the encoding
         associated with the specified model.
-    quiet : bool, optional
-        If True, suppress progress updates (default is False).
 
     Returns
     -------
@@ -377,6 +408,16 @@ def GetEncoding(
     ValueError
         If the provided "model" or "encodingName" is invalid, or if there
         is a mismatch between the model and encoding name.
+
+    Examples
+    --------
+    >>> from core import GetEncoding
+    >>> encoding = GetEncoding(model='gpt-3.5-turbo')
+    >>> print(encoding)
+    <Encoding cl100k_base>
+    >>> encoding = GetEncoding(encodingName='p50k_base')
+    >>> print(encoding)
+    <Encoding p50k_base>
     """
 
     if model is not None and not isinstance(model, str):
@@ -469,7 +510,7 @@ def TokenizeStr(
 
     Returns
     -------
-    list[int]
+    list of int
         A list of token IDs representing the tokenized string.
 
     Raises
@@ -482,6 +523,19 @@ def TokenizeStr(
         encoding and the derived encoding.
     RuntimeError
         If an unexpected error occurs during encoding.
+
+    Examples
+    --------
+    >>> from core import TokenizeStr
+    >>> tokens = TokenizeStr("Hello, world!", model="gpt-3.5-turbo")
+    >>> print(tokens)
+    [15496, 11, 995]
+
+    >>> import tiktoken
+    >>> encoding = tiktoken.get_encoding("p50k_base")
+    >>> tokens = TokenizeStr("Sample text for tokenization.", encoding=encoding)
+    >>> print(tokens)
+    [1234, 5678, 91011]
     """
 
     if not isinstance(string, str):
@@ -596,7 +650,7 @@ def TokenizeStr(
     hasBar = False
     taskName = None
 
-    displayString = f"{string[:15]}..." if len(string) > 18 else string
+    displayString = f"{string[:30]}..." if len(string) > 33 else string
 
     if len(_tasks) == 0 and not quiet:
 
@@ -657,6 +711,19 @@ def GetNumTokenStr(
         If the provided "model" or "encodingName" is invalid, or if there is a
         mismatch between the model and encoding name, or between the provided
         encoding and the derived encoding.
+
+    Examples
+    --------
+    >>> from core import GetNumTokenStr
+    >>> num_tokens = GetNumTokenStr("Hello, world!", model="gpt-4")
+    >>> print(num_tokens)
+    3
+
+    >>> import tiktoken
+    >>> encoding = tiktoken.get_encoding("p50k_base")
+    >>> num_tokens = GetNumTokenStr("Another example string.", encoding=encoding)
+    >>> print(num_tokens)
+    5
     """
 
     if not isinstance(string, str):
@@ -686,7 +753,7 @@ def GetNumTokenStr(
     hasBar = False
     taskName = None
 
-    displayString = f"{string[:10]}..." if len(string) > 13 else string
+    displayString = f"{string[:22]}..." if len(string) > 25 else string
 
     if len(_tasks) == 0 and not quiet:
 
@@ -730,33 +797,64 @@ def TokenizeFile(
         The path to the file to tokenize.
     model : str or None, optional
         The name of the model to use for encoding. If provided, the encoding
-        associated with the model will be used.
+        associated with the model will be used. Default is None.
     encodingName : str or None, optional
         The name of the encoding to use. If provided, it must match the encoding
-        associated with the specified model.
+        associated with the specified model. Default is None.
     encoding : tiktoken.Encoding or None, optional
         An existing tiktoken.Encoding object to use for tokenization. If provided,
-        it must match the encoding derived from the model or encodingName.
+        it must match the encoding derived from the model or encodingName. Default is None.
     quiet : bool, optional
-        If True, suppress progress updates (default is False).
+        If True, suppress progress updates. Default is False.
 
     Returns
     -------
-    list[int]
+    list of int
         A list of token IDs representing the tokenized file contents.
 
     Raises
     ------
     TypeError
-        If the types of "filePath", "model", "encodingName", or "encoding" are incorrect.
+        If the types of `filePath`, `model`, `encodingName`, or `encoding` are incorrect.
     ValueError
-        If the provided "model" or "encodingName" is invalid, or if there is a
+        If the provided `model` or `encodingName` is invalid, or if there is a
         mismatch between the model and encoding name, or between the provided
         encoding and the derived encoding.
     UnsupportedEncodingError
-        If the file's encoding is not supported (i.e., not UTF-8 or ASCII).
+        If the file's encoding is not supported (i.e., not UTF-8, ASCII, or another
+        text encoding format supported by the chardet package).
     FileNotFoundError
         If the specified file does not exist.
+
+    Examples
+    --------
+    Tokenizing a file with a specified model:
+
+    >>> tokens = TokenizeFile('example.txt', model='gpt-3.5-turbo')
+    >>> print(tokens)
+    [15496, 11, 995, ...]
+
+    Tokenizing a file with an existing encoding object:
+
+    >>> from tiktoken import Encoding
+    >>> encoding = Encoding.load('gpt-3.5-turbo')
+    >>> tokens = TokenizeFile('example.txt', encoding=encoding)
+    >>> print(tokens)
+    [1234, 5678, 91011, ...]
+
+    Handling a non-existent file:
+
+    >>> TokenizeFile('non_existent.txt')
+    Traceback (most recent call last):
+        ...
+    FileNotFoundError: File not found: /absolute/path/to/non_existent.txt
+
+    Using a mismatched encoding and model:
+
+    >>> TokenizeFile('example.txt', model='gpt-3.5-turbo', encodingName='wrong-encoding')
+    Traceback (most recent call last):
+        ...
+    ValueError: Encoding name "wrong-encoding" does not match the encoding associated with model "gpt-3.5-turbo".
     """
 
     if not isinstance(filePath, (str, Path)):
@@ -860,9 +958,35 @@ def GetNumTokenFile(
         mismatch between the model and encoding name, or between the provided
         encoding and the derived encoding.
     UnsupportedEncodingError
-        If the file's encoding is not supported (i.e., not UTF-8 or ASCII).
+        If the file's encoding is not supported (i.e., not UTF-8, ASCII, or another
+        text encoding format supported by the chardet package).
     FileNotFoundError
         If the specified file does not exist.
+
+    Examples
+    --------
+    >>> from core import GetNumTokenFile
+    >>> num_tokens = GetNumTokenFile('example.txt', model='gpt-4')
+    >>> print(num_tokens)
+    150
+
+    >>> import tiktoken
+    >>> encoding = tiktoken.get_encoding('p50k_base')
+    >>> num_tokens = GetNumTokenFile('sample.txt', encoding=encoding)
+    >>> print(num_tokens)
+    200
+
+    >>> # Handling a non-existent file
+    >>> GetNumTokenFile('non_existent.txt')
+    Traceback (most recent call last):
+        ...
+    FileNotFoundError: File not found: /absolute/path/to/non_existent.txt
+
+    >>> # Using a mismatched encoding and model
+    >>> GetNumTokenFile('example.txt', model='gpt-3.5-turbo', encodingName='wrong-encoding')
+    Traceback (most recent call last):
+        ...
+    ValueError: Encoding name "wrong-encoding" does not match the encoding associated with model "gpt-3.5-turbo".
     """
 
     if not isinstance(filePath, (str, Path)):
@@ -953,7 +1077,7 @@ def TokenizeDir(
 
     Returns
     -------
-    list[int or list] or list[int]
+    list of int or list
         A nested list where each element is either a list of token IDs representing
         a tokenized file or a sublist for a subdirectory. If recursive is False, returns
         a list of token IDs for each file in the directory.
@@ -966,6 +1090,24 @@ def TokenizeDir(
         If the provided "dirPath" is not a directory.
     RuntimeError
         If an unexpected error occurs during tokenization.
+
+    Examples
+    --------
+    >>> from core import TokenizeDir
+    >>> tokenized_dir = TokenizeDir('/path/to/directory', model='gpt-4')
+    >>> print(tokenized_dir)
+    [[15496, 11, 995], [1234, 5678, 91011], ...]
+
+    >>> import tiktoken
+    >>> encoding = tiktoken.get_encoding('p50k_base')
+    >>> tokenized_dir = TokenizeDir('/path/to/directory', encoding=encoding, recursive=False)
+    >>> print(tokenized_dir)
+    [[1234, 5678], [91011, 1213], ...]
+
+    >>> # Tokenizing with recursion
+    >>> tokenized_dir = TokenizeDir('/path/to/directory', model='gpt-3.5-turbo', recursive=True)
+    >>> print(tokenized_dir)
+    [[[15496, 11, 995], [1234, 5678, 91011]], [[2345, 6789], [3456, 7890]]]
     """
 
     if not isinstance(dirPath, (str, Path)):
@@ -1188,6 +1330,24 @@ def GetNumTokenDir(
         If the provided "dirPath" is not a directory.
     RuntimeError
         If an unexpected error occurs during token counting.
+
+    Examples
+    --------
+    >>> from core import GetNumTokenDir
+    >>> total_tokens = GetNumTokenDir('/path/to/directory', model='gpt-4')
+    >>> print(total_tokens)
+    1500
+
+    >>> import tiktoken
+    >>> encoding = tiktoken.get_encoding('p50k_base')
+    >>> total_tokens = GetNumTokenDir('/path/to/directory', encoding=encoding, recursive=False)
+    >>> print(total_tokens)
+    2000
+
+    >>> # Counting tokens with recursion
+    >>> total_tokens = GetNumTokenDir('/path/to/directory', model='gpt-3.5-turbo', recursive=True)
+    >>> print(total_tokens)
+    3000
     """
 
     if not isinstance(dirPath, (str, Path)):
@@ -1370,6 +1530,7 @@ def TokenizeFiles(
     encoding: tiktoken.Encoding | None = None,
     recursive: bool = True,
     quiet: bool = False,
+    exitOnListEror: bool = True,
 ) -> list[int | list] | list[list[int]] | list[int]:
     """
     Tokenize multiple files or all files within a directory into lists of token IDs.
@@ -1395,7 +1556,7 @@ def TokenizeFiles(
 
     Returns
     -------
-    list[int or list] or list[list[int]] or list[int]
+    list of int or list
         - If inputPath is a file, returns a list of token IDs for that file.
         - If inputPath is a list of files, returns a list where each element is a
           list of token IDs for each file.
@@ -1415,9 +1576,40 @@ def TokenizeFiles(
         If any of the provided file paths in a list are not files, or if a provided
         directory path is not a directory.
     UnsupportedEncodingError
-        If any of the files to be tokenized have an unsupported encoding (i.e., not UTF-8 or ASCII).
+        If any of the files to be tokenized have an unsupported encoding (i.e., not UTF-8, ASCII, or another
+        text encoding format supported by the chardet package).
     RuntimeError
         If the provided inputPath is neither a file, a directory, nor a list.
+
+    Examples
+    --------
+    Tokenizing a list of files with a specified model:
+
+    >>> from core import TokenizeFiles
+    >>> tokens = TokenizeFiles(['file1.txt', 'file2.txt'], model='gpt-4')
+    >>> print(tokens)
+    [[15496, 11, 995], [1234, 5678, 91011]]
+
+    Tokenizing a directory with a specific encoding and non-recursive:
+
+    >>> import tiktoken
+    >>> encoding = tiktoken.get_encoding('p50k_base')
+    >>> tokens = TokenizeFiles('/path/to/directory', encoding=encoding, recursive=False)
+    >>> print(tokens)
+    [[1234, 5678], [91011, 1213], ...]
+
+    Handling a list with a non-file entry:
+
+    >>> TokenizeFiles(['file1.txt', 'directory'])
+    Traceback (most recent call last):
+        ...
+    ValueError: Given list contains non-file entries: [Path('directory')]
+
+    Tokenizing a directory with recursion:
+
+    >>> tokens = TokenizeFiles('/path/to/directory', model='gpt-3.5-turbo', recursive=True)
+    >>> print(tokens)
+    [[[15496, 11, 995], [1234, 5678, 91011]], [[2345, 6789], [3456, 7890]]]
     """
 
     if not isinstance(inputPath, (str, Path, list)):
@@ -1489,7 +1681,7 @@ def TokenizeFiles(
                         quiet=quiet,
                     )
 
-                try:
+                if exitOnListEror:
 
                     tokenizedFiles.append(
                         TokenizeFile(
@@ -1510,18 +1702,41 @@ def TokenizeFiles(
                             quiet=quiet,
                         )
 
-                except UnsupportedEncodingError:
+                else:
 
-                    if not quiet:
+                    try:
 
-                        _UpdateTask(
-                            taskName=taskName,
-                            advance=1,
-                            description=f"Skipping {file.name}",
-                            quiet=quiet,
+                        tokenizedFiles.append(
+                            TokenizeFile(
+                                filePath=file,
+                                model=model,
+                                encodingName=encodingName,
+                                encoding=encoding,
+                                quiet=quiet,
+                            )
                         )
 
-                    continue
+                        if not quiet:
+
+                            _UpdateTask(
+                                taskName=taskName,
+                                advance=1,
+                                description=f"Done Tokenizing {file.name}",
+                                quiet=quiet,
+                            )
+
+                    except UnsupportedEncodingError:
+
+                        if not quiet:
+
+                            _UpdateTask(
+                                taskName=taskName,
+                                advance=1,
+                                description=f"Skipping {file.name}",
+                                quiet=quiet,
+                            )
+
+                        continue
 
             return tokenizedFiles
 
@@ -1565,6 +1780,7 @@ def GetNumTokenFiles(
     encoding: tiktoken.Encoding | None = None,
     recursive: bool = True,
     quiet: bool = False,
+    exitOnListError: bool = True,
 ) -> int:
     """
     Get the number of tokens in multiple files or all files within a directory.
@@ -1602,9 +1818,40 @@ def GetNumTokenFiles(
         If any of the provided file paths in a list are not files, or if a provided
         directory path is not a directory.
     UnsupportedEncodingError
-        If any of the files to be tokenized have an unsupported encoding (i.e., not UTF-8 or ASCII).
+        If any of the files to be tokenized have an unsupported encoding (i.e., not UTF-8, ASCII, or another
+        text encoding format supported by the chardet package).
     RuntimeError
         If the provided inputPath is neither a file, a directory, nor a list.
+
+    Examples
+    --------
+    Tokenizing a list of files with a specified model:
+
+    >>> from core import GetNumTokenFiles
+    >>> total_tokens = GetNumTokenFiles(['file1.txt', 'file2.txt'], model='gpt-4')
+    >>> print(total_tokens)
+    3000
+
+    Tokenizing a directory with a specific encoding and non-recursive:
+
+    >>> import tiktoken
+    >>> encoding = tiktoken.get_encoding('p50k_base')
+    >>> total_tokens = GetNumTokenFiles('/path/to/directory', encoding=encoding, recursive=False)
+    >>> print(total_tokens)
+    4000
+
+    Handling a list with a non-file entry:
+
+    >>> GetNumTokenFiles(['file1.txt', 'directory'])
+    Traceback (most recent call last):
+        ...
+    ValueError: Given list contains non-file entries: [Path('directory')]
+
+    Counting tokens in a directory with recursion:
+
+    >>> total_tokens = GetNumTokenFiles('/path/to/directory', model='gpt-3.5-turbo', recursive=True)
+    >>> print(total_tokens)
+    5000
     """
 
     if not isinstance(inputPath, (str, Path, list)):
@@ -1676,7 +1923,7 @@ def GetNumTokenFiles(
                         quiet=quiet,
                     )
 
-                try:
+                if exitOnListError:
 
                     runningTokenTotal += GetNumTokenFile(
                         filePath=file,
@@ -1695,18 +1942,39 @@ def GetNumTokenFiles(
                             quiet=quiet,
                         )
 
-                except UnsupportedEncodingError:
+                else:
 
-                    if not quiet:
+                    try:
 
-                        _UpdateTask(
-                            taskName=taskName,
-                            advance=1,
-                            description=f"Skipping {file.name}",
+                        runningTokenTotal += GetNumTokenFile(
+                            filePath=file,
+                            model=model,
+                            encodingName=encodingName,
+                            encoding=encoding,
                             quiet=quiet,
                         )
 
-                    continue
+                        if not quiet:
+
+                            _UpdateTask(
+                                taskName=taskName,
+                                advance=1,
+                                description=f"Done Counting Tokens in {file.name}",
+                                quiet=quiet,
+                            )
+
+                    except UnsupportedEncodingError:
+
+                        if not quiet:
+
+                            _UpdateTask(
+                                taskName=taskName,
+                                advance=1,
+                                description=f"Skipping {file.name}",
+                                quiet=quiet,
+                            )
+
+                        continue
 
             return runningTokenTotal
 
