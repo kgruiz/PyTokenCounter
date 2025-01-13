@@ -26,6 +26,7 @@ Key Functions
 
 """
 
+from collections import OrderedDict
 from pathlib import Path
 
 import tiktoken
@@ -238,14 +239,14 @@ def _CountDirFiles(dirPath: Path, recursive: bool = True) -> int:
     return numFiles
 
 
-def GetModelMappings() -> dict:
+def GetModelMappings() -> OrderedDict:
     """
     Get the mappings between models and their encodings.
 
     Returns
     -------
-    dict
-        A dictionary where keys are model names and values are their corresponding encodings.
+    OrderedDict
+        A OrderedDictionary where keys are model names and values are their corresponding encodings.
 
     Examples
     --------
@@ -589,12 +590,220 @@ def GetEncoding(
     return tiktoken.get_encoding(encoding_name=_encodingName)
 
 
+def MapTokens(
+    tokens: list[int] | OrderedDict[str, list[int] | OrderedDict],
+    model: str | None = None,
+    encodingName: str | None = None,
+    encoding: tiktoken.Encoding | None = None,
+) -> OrderedDict[str, int] | OrderedDict[str, OrderedDict[str, int] | OrderedDict]:
+    """
+    Maps tokens to their corresponding decoded strings based on a specified encoding.
+
+    Parameters
+    ----------
+    tokens : list[int] or OrderedDict[str, list[int] or OrderedDict]
+        The tokens to be mapped. This can either be:
+        - A list of integer tokens to decode.
+        - An `OrderedDict` with string keys and values that are either:
+          - A list of integer tokens.
+          - Another nested `OrderedDict` with the same structure.
+
+    model : str, optional
+        The model name to use for determining the encoding. If provided, the model
+        must be valid and compatible with the specified encoding or encoding name.
+
+    encodingName : str, optional
+        The name of the encoding to use. Must be compatible with the provided model
+        if both are specified.
+
+    encoding : tiktoken.Encoding, optional
+        The encoding object to use. Must match the specified model and/or encoding name
+        if they are provided.
+
+    Returns
+    -------
+    OrderedDict[str, int] or OrderedDict[str, OrderedDict[str, int] or OrderedDict]
+        A mapping of decoded strings to their corresponding integer tokens.
+        If `tokens` is a nested structure, the result will maintain the same nested
+        structure with decoded mappings.
+
+    Raises
+    ------
+    TypeError
+        - If `model` is not a string.
+        - If `encodingName` is not a string.
+        - If `encoding` is not a `tiktoken.Encoding` instance.
+        - If `tokens` contains invalid types (e.g., non-integer tokens in a list or non-string keys in a dictionary).
+
+    ValueError
+        - If an invalid model or encoding name is provided.
+        - If the encoding does not match the model or encoding name.
+
+    RuntimeError
+        - If an unexpected error occurs while validating the encoding.
+
+    Notes
+    -----
+    - Either `model`, `encodingName`, or `encoding` must be provided.
+    - The function validates compatibility between the provided model, encoding name, and encoding object.
+    - Nested dictionaries are processed recursively to preserve structure.
+    """
+
+    if model is not None and not isinstance(model, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "model". Expected type: str. Given type: {type(model)}'
+        )
+
+    if encodingName is not None and not isinstance(encodingName, str):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encodingName". Expected type: str. Given type: {type(encodingName)}'
+        )
+
+    if encoding is not None and not isinstance(encoding, tiktoken.Encoding):
+
+        raise TypeError(
+            f'Unexpected type for parameter "encoding". Expected type: tiktoken.Encoding. Given type: {type(encoding)}'
+        )
+
+    _encodingName = None
+
+    if model is not None:
+
+        if model not in VALID_MODELS:
+
+            raise ValueError(
+                f"Invalid model: {model}\n\nValid models:\n{VALID_MODELS_STR}"
+            )
+
+        else:
+
+            _encodingName = tiktoken.encoding_name_for_model(model_name=model)
+
+    if encodingName is not None:
+
+        if encodingName not in VALID_ENCODINGS:
+
+            raise ValueError(
+                f"Invalid encoding name: {encodingName}\n\nValid encoding names:\n{VALID_ENCODINGS_STR}"
+            )
+
+        if model is not None and _encodingName != encodingName:
+
+            if model not in VALID_MODELS:
+
+                raise ValueError(
+                    f"Invalid model: {model}\n\nValid models:\n{VALID_MODELS_STR}"
+                )
+
+            else:
+
+                raise ValueError(
+                    f'Model {model} does not have encoding name {encodingName}\n\nValid encoding names for model {model}: "{MODEL_MAPPINGS[model]}"'
+                )
+
+        else:
+
+            _encodingName = encodingName
+
+    _encoding = None
+
+    if _encodingName is not None:
+
+        _encoding = tiktoken.get_encoding(encoding_name=_encodingName)
+
+    if encoding is not None:
+
+        if _encodingName is not None and _encoding != encoding:
+
+            if encodingName is not None and model is not None:
+
+                raise ValueError(
+                    f"Model {model} does not have encoding {encoding}.\n\nValid encoding name for model {model}: \n{_encodingName}\n"
+                )
+
+            elif encodingName is not None:
+
+                raise ValueError(
+                    f'Encoding name {encodingName} does not match provided encoding "{encoding}"'
+                )
+
+            elif model is not None:
+
+                raise ValueError(
+                    f'Model {model} does not have provided encoding "{encoding}".\n\nValid encoding name for model {model}: \n{_encodingName}\n'
+                )
+
+            else:
+
+                raise RuntimeError(
+                    f'Unexpected error. Given model "{model}" and encoding name "{encodingName}" resulted in encoding "{_encoding}".\nFor unknown reasons, this encoding doesn\'t match given encoding "{encoding}".\nPlease report this error.'
+                )
+
+        else:
+
+            _encoding = encoding
+
+        if _encodingName is None and _encoding is None:
+
+            raise ValueError(
+                "Either model, encoding name, or encoding must be provided. Valid models:\n"
+                f"{VALID_MODELS_STR}\n\nValid encodings:\n{VALID_ENCODINGS_STR}"
+            )
+
+    if isinstance(tokens, list):
+
+        mappedTokens = OrderedDict()
+
+        nonInts = [token for token in tokens if not isinstance(token, int)]
+
+        if len(nonInts) > 0:
+
+            raise TypeError(
+                f"Tokens must be integers. Found non-integer tokens: {nonInts}"
+            )
+
+        for token in tokens:
+
+            decoded = _encoding.decode_single_token_bytes(token)
+
+            mappedTokens[decoded.decode("utf-8")] = token
+
+        return mappedTokens
+
+    elif isinstance(tokens, dict):
+
+        mappedTokens = OrderedDict()
+
+        nonStrNames = [entry for entry in tokens.keys() if not isinstance(entry, str)]
+
+        if len(nonStrNames) > 0:
+
+            raise TypeError(
+                f"Directory and file names must be strings. Found non-string names: {nonStrNames}"
+            )
+
+        for entryName, content in tokens.items():
+
+            mappedTokens[entryName] = MapTokens(content, model, encodingName, encoding)
+
+        return mappedTokens
+
+    else:
+
+        raise TypeError(
+            f'Unexpected type for parameter "tokens". Expected type: list of int or OrderedDict. Given type: {type(tokens)}'
+        )
+
+
 def TokenizeStr(
     string: str,
     model: str | None = None,
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
     quiet: bool = False,
+    mapTokens: bool = True,
 ) -> list[int]:
     """
     Tokenize a string into a list of token IDs using the specified model or encoding.
@@ -775,6 +984,10 @@ def TokenizeStr(
             quiet=quiet,
         )
 
+    if mapTokens:
+
+        tokenizedStr = MapTokens(tokenizedStr, model, encodingName, encoding)
+
     return tokenizedStr
 
 
@@ -893,6 +1106,7 @@ def TokenizeFile(
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
     quiet: bool = False,
+    mapTokens: bool = True,
 ) -> list[int]:
     """
     Tokenize the contents of a file into a list of token IDs using the specified model or encoding.
@@ -1139,7 +1353,8 @@ def TokenizeDir(
     encoding: tiktoken.Encoding | None = None,
     recursive: bool = True,
     quiet: bool = False,
-) -> dict[str, list[int] | dict]:
+    mapTokens: bool = True,
+) -> OrderedDict[str, list[int] | OrderedDict]:
     """
     Tokenize all files in a directory into lists of token IDs using the specified model or encoding.
 
@@ -1163,10 +1378,10 @@ def TokenizeDir(
 
     Returns
     -------
-    dict[str, list[int] | dict]
-        A nested dictionary where each key is a file or subdirectory name:
+    OrderedDict[str, list[int] | OrderedDict]
+        A nested OrderedDictionary where each key is a file or subdirectory name:
         - If the key is a file, its value is a list of token IDs.
-        - If the key is a subdirectory, its value is another dictionary following the same structure.
+        - If the key is a subdirectory, its value is another OrderedDictionary following the same structure.
 
     Raises
     ------
@@ -1290,7 +1505,7 @@ def TokenizeDir(
 
         taskName = None
 
-    tokenizedDir: dict[str, list[int] | dict] = {}
+    tokenizedDir: OrderedDict[str, list[int] | OrderedDict] = {}
     subDirPaths: list[Path] = []
 
     for entry in dirPath.iterdir():
@@ -1547,7 +1762,8 @@ def TokenizeFiles(
     recursive: bool = True,
     quiet: bool = False,
     exitOnListError: bool = True,
-) -> list[int] | dict[str, list[int] | dict]:
+    mapTokens: bool = True,
+) -> list[int] | OrderedDict[str, list[int] | OrderedDict]:
     """
     Tokenize multiple files or all files within a directory into lists of token IDs using the specified model or encoding.
 
@@ -1575,14 +1791,14 @@ def TokenizeFiles(
 
     Returns
     -------
-    list[int] | dict[str, list[int] | dict]
+    list[int] | OrderedDict[str, list[int] | OrderedDict]
         - If `inputPath` is a file, returns a list of token IDs for that file.
-        - If `inputPath` is a list of files, returns a dictionary where each key is
+        - If `inputPath` is a list of files, returns a OrderedDictionary where each key is
           the file name and the value is the list of token IDs for that file.
         - If `inputPath` is a directory:
-          - If `recursive` is True, returns a nested dictionary where each key is a
-            file or subdirectory name with corresponding token lists or sub-dictionaries.
-          - If `recursive` is False, returns a dictionary with file names as keys and
+          - If `recursive` is True, returns a nested OrderedDictionary where each key is a
+            file or subdirectory name with corresponding token lists or sub-OrderedDictionaries.
+          - If `recursive` is False, returns a OrderedDictionary with file names as keys and
             their token lists as values.
 
     Raises
@@ -1743,7 +1959,7 @@ def TokenizeFiles(
 
         else:
 
-            tokenizedFiles: dict[str, list[int]] = dict()
+            tokenizedFiles: OrderedDict[str, list[int]] = OrderedDict()
             numFiles = len(inputPath)
 
             if not quiet:
