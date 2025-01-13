@@ -12,6 +12,7 @@ PyTokenCounter is a Python library designed to simplify text tokenization and to
   - [Utility Functions](#utility-functions)
   - [String Tokenization and Counting](#string-tokenization-and-counting)
   - [File and Directory Tokenization and Counting](#file-and-directory-tokenization-and-counting)
+  - [Token Mapping](#token-mapping)
 - [Maintainers](#maintainers)
 - [Acknowledgements](#acknowledgements)
 - [Contributing](#contributing)
@@ -63,6 +64,27 @@ encoding = tc.GetEncoding(model="gpt-4o")
 # Tokenize a string using a specific encoding for LLM input
 tokens = tc.TokenizeStr(string="This is another test.", encoding=encoding)
 print(f"Token IDs: {tokens}")
+
+# Map tokens to their decoded strings
+mappedTokens = tc.MapTokens(tokens=tokens, encoding=encoding)
+print(f"Mapped tokens: {mappedTokens}")
+
+# Count tokens in a string using the default model
+numTokens = tc.GetNumTokenStr(string="This is a test string.")
+print(f"Number of tokens: {numTokens}")
+
+# Count tokens in a file using the default model
+filePath = Path("./TestFile.txt")
+numTokensFile = tc.GetNumTokenFile(filePath=filePath)
+print(f"Number of tokens in file: {numTokensFile}")
+
+# Tokenize a string using the default model
+tokens = tc.TokenizeStr(string="This is another test.")
+print(f"Token IDs: {tokens}")
+
+# Map tokens to their decoded strings using the default model
+mappedTokens = tc.MapTokens(tokens=tokens)
+print(f"Mapped tokens: {mappedTokens}")
 ```
 
 ### CLI
@@ -73,38 +95,74 @@ PyTokenCounter can also be used as a command-line tool, making it convenient to 
 # Example usage for tokenizing a string for an LLM
 tokencount tokenize-str "Hello, world!" --model gpt-4o
 
+# Example usage for tokenizing a string using the default model
+tokencount tokenize-str "Hello, world!"
+
 # Example usage for tokenizing a file for an LLM
 tokencount tokenize-file TestFile.txt --model gpt-4o
+
+# Example usage for tokenizing a file using the default model
+tokencount tokenize-file TestFile.txt
 
 # Example usage for tokenizing multiple files for an LLM
 tokencount tokenize-files TestFile1.txt TestFile2.txt --model gpt-4o
 
+# Example usage for tokenizing multiple files using the default model
+tokencount tokenize-files TestFile1.txt TestFile2.txt
+
 # Example usage for tokenizing a directory of files for an LLM
-tokencount tokenize-files MyDirectory -m gpt-4o -nr
+tokencount tokenize-files MyDirectory --model gpt-4o --no-recursive
+
+# Example usage for tokenizing a directory of files using the default model
+tokencount tokenize-files MyDirectory --no-recursive
 
 # Example usage for tokenizing a directory of files for an LLM (alternative)
-tokencount tokenize-dir MyDirectory -m gpt-4o -nr
+tokencount tokenize-dir MyDirectory --model gpt-4o --no-recursive
+
+# Example usage for tokenizing a directory of files using the default model (alternative)
+tokencount tokenize-dir MyDirectory --no-recursive
 
 # Example usage for counting tokens in a string for an LLM
 tokencount count-str "This is a test string." --model gpt-4o
 
+# Example usage for counting tokens in a string using the default model
+tokencount count-str "This is a test string."
+
 # Example usage for counting tokens in a file for an LLM
 tokencount count-file TestFile.txt --model gpt-4o
+
+# Example usage for counting tokens in a file using the default model
+tokencount count-file TestFile.txt
 
 # Example usage for counting tokens in multiple files for an LLM
 tokencount count-files TestFile1.txt TestFile2.txt --model gpt-4o
 
+# Example usage for counting tokens in multiple files using the default model
+tokencount count-files TestFile1.txt TestFile2.txt
+
 # Example usage for counting tokens in a directory for an LLM
 tokencount count-files TestDir --model gpt-4o --no-recursive
 
+# Example usage for counting tokens in a directory using the default model
+tokencount count-files TestDir --no-recursive
+
 # Example usage for counting tokens in a directory for an LLM (alternative)
 tokencount count-dir TestDir --model gpt-4o --no-recursive
+
+# Example usage for counting tokens in a directory using the default model (alternative)
+tokencount count-dir TestDir --no-recursive
 
 # Example to get the model associated with an encoding
 tokencount get-model cl100k_base
 
 # Example to get the encoding associated with a model
 tokencount get-encoding gpt-4o
+
+# Example to map tokens to strings for an LLM
+tokencount map-tokens 123,456,789 --model gpt-4o
+
+# Example to map tokens to strings using the default model
+tokencount map-tokens 123,456,789
 ```
 
 **CLI Usage Details:**
@@ -115,33 +173,48 @@ The `tokencount` CLI provides several subcommands for tokenizing and counting to
 
 - `tokenize-str`: Tokenizes a provided string.
   - `tokencount tokenize-str "Your string here" --model gpt-4o`
+  - `tokencount tokenize-str "Your string here"`
 - `tokenize-file`: Tokenizes the contents of a file.
   - `tokencount tokenize-file Path/To/Your/File.txt --model gpt-4o`
+  - `tokencount tokenize-file Path/To/Your/File.txt`
 - `tokenize-files`: Tokenizes the contents of multiple specified files or all files within a directory.
     - `tokencount tokenize-files Path/To/Your/File1.txt Path/To/Your/File2.txt --model gpt-4o`
+    - `tokencount tokenize-files Path/To/Your/File1.txt Path/To/Your/File2.txt`
     - `tokencount tokenize-files Path/To/Your/Directory --model gpt-4o --no-recursive`
+    - `tokencount tokenize-files Path/To/Your/Directory --no-recursive`
 - `tokenize-dir`: Tokenizes all files within a specified directory into lists of token IDs.
     - `tokencount tokenize-dir Path/To/Your/Directory --model gpt-4o --no-recursive`
+    - `tokencount tokenize-dir Path/To/Your/Directory --no-recursive`
 - `count-str`: Counts the number of tokens in a provided string.
   - `tokencount count-str "Your string here" --model gpt-4o`
+  - `tokencount count-str "Your string here"`
 - `count-file`: Counts the number of tokens in a file.
   - `tokencount count-file Path/To/Your/File.txt --model gpt-4o`
+  - `tokencount count-file Path/To/Your/File.txt`
 - `count-files`: Counts the number of tokens in multiple specified files or all files within a directory.
   - `tokencount count-files Path/To/Your/File1.txt Path/To/Your/File2.txt --model gpt-4o`
+  - `tokencount count-files Path/To/Your/File1.txt Path/To/Your/File2.txt`
   - `tokencount count-files Path/To/Your/Directory --model gpt-4o --no-recursive`
+  - `tokencount count-files Path/To/Your/Directory --no-recursive`
 - `count-dir`: Counts the total number of tokens across all files in a specified directory.
   - `tokencount count-dir Path/To/Your/Directory --model gpt-4o --no-recursive`
+  - `tokencount count-dir Path/To/Your/Directory --no-recursive`
 - `get-model`: Retrieves the model name from the provided encoding.
   - `tokencount get-model cl100k_base`
 - `get-encoding`: Retrieves the encoding name from the provided model.
   - `tokencount get-encoding gpt-4o`
+- `map-tokens`: Maps a list of token integers to their decoded strings.
+    - `tokencount map-tokens 123,456,789 --model gpt-4o`
+    - `tokencount map-tokens 123,456,789`
 
 **Options:**
 
-- `-m`, `--model`: Specifies the model to use for encoding, aligning with **LLM** specifications.
+- `-m`, `--model`: Specifies the model to use for encoding. **Default: `gpt-4o`**
 - `-e`, `--encoding`: Specifies the encoding to use directly.
-- `-nr`, `--no-recursive`: When used with `tokenize-files`, `tokenize-dir`, `count-files` or `count-dir` for a directory, it prevents the tool from processing subdirectories recursively.
-- `-q`, `--quiet`: When used with any of the above commands, it prevents the tool from showing the progress bar.
+- `-nr`, `--no-recursive`: When used with `tokenize-files`, `tokenize-dir`, `count-files`, or `count-dir` for a directory, it prevents the tool from processing subdirectories recursively.
+- `-q`, `--quiet`: When used with any of the above commands, it prevents the tool from showing progress bars and minimizes output.
+- `-M`, `--mapTokens`: When used with the `tokenize-str`, `tokenize-file`, `tokenize-files`, or `tokenize-dir` commands, outputs mapped tokens instead of raw token integers.
+- `-o`, `--output`: When used with any of the commands, specifies an output JSON file to save the results to.
 
 **Note:** For detailed help on each subcommand, use `tokencount <subcommand> -h`.
 
@@ -320,7 +393,7 @@ print(encodingName)
 
 #### `GetEncoding(model: str | None = None, encodingName: str | None = None) -> tiktoken.Encoding`
 
-Obtains the `tiktoken` encoding based on the specified model or encoding name, tailored for **LLM** usage.
+Obtains the `tiktoken` encoding based on the specified model or encoding name, tailored for **LLM** usage. If neither `model` nor `encodingName` is provided, it defaults to the encoding associated with the `"gpt-4o"` model.
 
 **Parameters:**
 
@@ -345,26 +418,31 @@ encoding = tc.GetEncoding(model="gpt-4o")
 print(encoding)
 encoding = tc.GetEncoding(encodingName="p50k_base")
 print(encoding)
+encoding = tc.GetEncoding()
+print(encoding)
 ```
 
 ---
 
 ### String Tokenization and Counting
 
-#### `TokenizeStr(string: str, model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None) -> list[int]`
+#### `TokenizeStr(string: str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, quiet: bool = False, mapTokens: bool = True) -> list[int] | dict[str, int]`
 
-Tokenizes a string into a list of token IDs, preparing text for input into an **LLM**.
+Tokenizes a string into a list of token IDs or a mapping of decoded strings to tokens, preparing text for input into an **LLM**.
 
 **Parameters:**
 
 - `string` (`str`): The string to tokenize.
-- `model` (`str`, optional): The name of the model.
+- `model` (`str`, optional): The name of the model. **Default: `"gpt-4o"`**
 - `encodingName` (`str`, optional): The name of the encoding.
 - `encoding` (`tiktoken.Encoding`, optional): A `tiktoken` encoding object.
+- `quiet` (`bool`, optional): If `True`, suppresses progress updates.
+- `mapTokens` (`bool`, optional): If `True`, outputs a dictionary mapping decoded strings to their token IDs.
 
 **Returns:**
 
 - `list[int]`: A list of token IDs.
+- `dict[str, int]`: A dictionary mapping decoded strings to token IDs if `mapTokens` is `True`.
 
 **Raises:**
 
@@ -378,24 +456,32 @@ import PyTokenCounter as tc
 tokens = tc.TokenizeStr(string="Hail to the Victors!", model="gpt-4o")
 print(tokens)
 
+tokens = tc.TokenizeStr(string="Hail to the Victors!")
+print(tokens)
+
+
 import tiktoken
 encoding = tiktoken.get_encoding("cl100k_base")
-tokens = tc.TokenizeStr(string="2024 National Champions", encoding=encoding)
+tokens = tc.TokenizeStr(string="2024 National Champions", encoding=encoding, mapTokens=True)
+print(tokens)
+
+tokens = tc.TokenizeStr(string="2024 National Champions", mapTokens=True)
 print(tokens)
 ```
 
 ---
 
-#### `GetNumTokenStr(string: str, model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None) -> int`
+#### `GetNumTokenStr(string: str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, quiet: bool = False) -> int`
 
 Counts the number of tokens in a string.
 
 **Parameters:**
 
 - `string` (`str`): The string to count tokens in.
-- `model` (`str`, optional): The name of the model.
+- `model` (`str`, optional): The name of the model. **Default: `"gpt-4o"`**
 - `encodingName` (`str`, optional): The name of the encoding.
 - `encoding` (`tiktoken.Encoding`, optional): A `tiktoken.Encoding` object.
+- `quiet` (`bool`, optional): If `True`, suppresses progress updates.
 
 **Returns:**
 
@@ -413,7 +499,13 @@ import PyTokenCounter as tc
 numTokens = tc.GetNumTokenStr(string="Hail to the Victors!", model="gpt-4o")
 print(numTokens)
 
+numTokens = tc.GetNumTokenStr(string="Hail to the Victors!")
+print(numTokens)
+
 numTokens = tc.GetNumTokenStr(string="Corum 4 Heisman", encoding=tiktoken.get_encoding("cl100k_base"))
+print(numTokens)
+
+numTokens = tc.GetNumTokenStr(string="Corum 4 Heisman")
 print(numTokens)
 ```
 
@@ -421,27 +513,30 @@ print(numTokens)
 
 ### File and Directory Tokenization and Counting
 
-#### `TokenizeFile(filePath: Path | str, model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None) -> list[int]`
+#### `TokenizeFile(filePath: Path | str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, quiet: bool = False, mapTokens: bool = True) -> list[int] | dict[str, int]`
 
-Tokenizes the contents of a file into a list of token IDs.
+Tokenizes the contents of a file into a list of token IDs or a mapping of decoded strings to tokens.
 
 **Parameters:**
 
 - `filePath` (`Path | str`): The path to the file to tokenize.
-- `model` (`str`, optional): The name of the model to use for encoding.
+- `model` (`str`, optional): The name of the model to use for encoding. **Default: `"gpt-4o"`**
 - `encodingName` (`str`, optional): The name of the encoding to use.
 - `encoding` (`tiktoken.Encoding`, optional): An existing `tiktoken.Encoding` object to use for tokenization.
+- `quiet` (`bool`, optional): If `True`, suppresses progress updates.
+- `mapTokens` (`bool`, optional): If `True`, outputs a dictionary mapping decoded strings to their token IDs.
 
 **Returns:**
 
 - `list[int]`: A list of token IDs representing the tokenized file contents.
+- `dict[str, int]`: A dictionary mapping decoded strings to token IDs if `mapTokens` is `True`.
 
 **Raises:**
 
 - `TypeError`: If the types of input parameters are incorrect.
 - `ValueError`: If the provided model or encoding is invalid.
 - `UnsupportedEncodingError`: If the file encoding is not supported.
-- `FileNotFoundError`: If the file does not exist
+- `FileNotFoundError`: If the file does not exist.
 
 **Example:**
 
@@ -453,25 +548,34 @@ filePath = Path("TestFile1.txt")
 tokens = tc.TokenizeFile(filePath=filePath, model="gpt-4o")
 print(tokens)
 
+filePath = Path("TestFile1.txt")
+tokens = tc.TokenizeFile(filePath=filePath)
+print(tokens)
+
 import tiktoken
 encoding = tiktoken.get_encoding("p50k_base")
 filePath = Path("TestFile2.txt")
-tokens = tc.TokenizeFile(filePath=filePath, encoding=encoding)
+tokens = tc.TokenizeFile(filePath=filePath, encoding=encoding, mapTokens=True)
+print(tokens)
+
+filePath = Path("TestFile2.txt")
+tokens = tc.TokenizeFile(filePath=filePath, mapTokens=True)
 print(tokens)
 ```
 
 ---
 
-#### `GetNumTokenFile(filePath: Path | str, model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None) -> int`
+#### `GetNumTokenFile(filePath: Path | str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, quiet: bool = False) -> int`
 
 Counts the number of tokens in a file based on the specified model or encoding.
 
 **Parameters:**
 
 - `filePath` (`Path | str`): The path to the file to count tokens for.
-- `model` (`str`, optional): The name of the model to use for encoding.
+- `model` (`str`, optional): The name of the model to use for encoding. **Default: `"gpt-4o"`**
 - `encodingName` (`str`, optional): The name of the encoding to use.
 - `encoding` (`tiktoken.Encoding`, optional): An existing `tiktoken.Encoding` object to use for tokenization.
+- `quiet` (`bool`, optional): If `True`, suppresses progress updates.
 
 **Returns:**
 
@@ -481,8 +585,8 @@ Counts the number of tokens in a file based on the specified model or encoding.
 
 - `TypeError`: If the types of `filePath`, `model`, `encodingName`, or `encoding` are incorrect.
 - `ValueError`: If the provided `model` or `encodingName` is invalid, or if there is a mismatch between the model and encoding name, or between the provided encoding and the derived encoding.
-- `UnsupportedEncodingError`: If the file's encoding cannot be determined
-- `FileNotFoundError`: If the file does not exist
+- `UnsupportedEncodingError`: If the file's encoding cannot be determined.
+- `FileNotFoundError`: If the file does not exist.
 
 **Example:**
 
@@ -494,26 +598,35 @@ filePath = Path("TestFile1.txt")
 numTokens = tc.GetNumTokenFile(filePath=filePath, model="gpt-4o")
 print(numTokens)
 
+filePath = Path("TestFile1.txt")
+numTokens = tc.GetNumTokenFile(filePath=filePath)
+print(numTokens)
+
 filePath = Path("TestFile2.txt")
 numTokens = tc.GetNumTokenFile(filePath=filePath, model="gpt-4o")
+print(numTokens)
+
+filePath = Path("TestFile2.txt")
+numTokens = tc.GetNumTokenFile(filePath=filePath)
 print(numTokens)
 ```
 
 ---
 
-#### `TokenizeFiles(inputPath: Path | str | list[Path | str], model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False, exitOnListError: bool = True) -> list[int] | dict[str, list[int] | dict]`
+#### `TokenizeFiles(inputPath: Path | str | list[Path | str], model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False, exitOnListError: bool = True, mapTokens: bool = True) -> list[int] | dict[str, list[int] | dict]`
 
-Tokenizes multiple files or all files within a directory into lists of token IDs.
+Tokenizes multiple files or all files within a directory into lists of token IDs or a mapping of decoded strings to tokens.
 
 **Parameters:**
 
 - `inputPath` (`Path | str | list[Path | str]`): The path to a file or directory, or a list of file paths to tokenize.
-- `model` (`str`, optional): The name of the model to use for encoding.
+- `model` (`str`, optional): The name of the model to use for encoding. **Default: `"gpt-4o"`**
 - `encodingName` (`str`, optional): The name of the encoding to use.
 - `encoding` (`tiktoken.Encoding`, optional): An existing `tiktoken.Encoding` object to use for tokenization.
-- `recursive` (`bool`, optional): If `inputPath` is a directory, whether to tokenize files in subdirectories recursively. Defaults to `True`.
-- `quiet` (`bool`, optional): If `True`, suppress progress updates. Default is False.
-- `exitOnListError` (`bool`, optional): If `True`, stop processing the list upon encountering an error. If False, skip files that cause errors. Default is True.
+- `recursive` (`bool`, optional): If `inputPath` is a directory, whether to tokenize files in subdirectories recursively. **Default: `True`**
+- `quiet` (`bool`, optional): If `True`, suppresses progress updates. **Default: `False`**
+- `exitOnListError` (`bool`, optional): If `True`, stop processing the list upon encountering an error. If `False`, skip files that cause errors. **Default: `True`**
+- `mapTokens` (`bool`, optional): If `True`, outputs a dictionary mapping decoded strings to their token IDs for each file.
 
 **Returns:**
 
@@ -521,8 +634,8 @@ Tokenizes multiple files or all files within a directory into lists of token IDs
    - If `inputPath` is a file, returns a list of token IDs for that file.
    - If `inputPath` is a list of files, returns a dictionary where each key is the file name and the value is the list of token IDs for that file.
    - If `inputPath` is a directory:
-    - If `recursive` is True, returns a nested dictionary where each key is a file or subdirectory name with corresponding token lists or sub-dictionaries.
-    - If `recursive` is False, returns a dictionary with file names as keys and their token lists as values.
+    - If `recursive` is `True`, returns a nested dictionary where each key is a file or subdirectory name with corresponding token lists or sub-dictionaries.
+    - If `recursive` is `False`, returns a dictionary with file names as keys and their token lists as values.
 
 **Raises:**
 
@@ -544,29 +657,46 @@ inputFiles = [
 tokens = tc.TokenizeFiles(inputPath=inputFiles, model="gpt-4o")
 print(tokens)
 
+tokens = tc.TokenizeFiles(inputPath=inputFiles)
+print(tokens)
+
+# Tokenizing multiple files using the default model
+tokens = tc.TokenizeFiles(inputPath=inputFiles)
+print(tokens)
+
 import tiktoken
 encoding = tiktoken.get_encoding('p50k_base')
 dirPath = Path("TestDir")
 tokens = tc.TokenizeFiles(inputPath=dirPath, encoding=encoding, recursive=False)
 print(tokens)
 
-tokens = tc.TokenizeFiles(inputPath=dirPath, model="gpt-4o", recursive=True)
+tokens = tc.TokenizeFiles(inputPath=dirPath, model="gpt-4o", recursive=True, mapTokens=True)
+print(tokens)
+
+tokens = tc.TokenizeFiles(inputPath=dirPath, recursive=True, mapTokens=True)
+print(tokens)
+
+
+# Tokenizing a directory using the default model
+tokens = tc.TokenizeFiles(inputPath=dirPath, recursive=True, mapTokens=True)
 print(tokens)
 ```
 
 ---
 
-#### `GetNumTokenFiles(inputPath: Path | str | list[Path | str], model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True) -> int`
+#### `GetNumTokenFiles(inputPath: Path | str | list[Path | str], model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False, exitOnListError: bool = True) -> int`
 
 Counts the number of tokens across multiple files or in all files within a directory.
 
 **Parameters:**
 
 - `inputPath` (`Path | str | list[Path | str]`): The path to a file or directory, or a list of file paths to count tokens for.
-- `model` (`str`, optional): The name of the model to use for encoding.
+- `model` (`str`, optional): The name of the model to use for encoding. **Default: `"gpt-4o"`**
 - `encodingName` (`str`, optional): The name of the encoding to use.
 - `encoding` (`tiktoken.Encoding`, optional): An existing `tiktoken.Encoding` object to use for tokenization.
-- `recursive` (`bool`, optional): If `inputPath` is a directory, whether to count tokens in files in subdirectories recursively. Defaults to `True`.
+- `recursive` (`bool`, optional): If `inputPath` is a directory, whether to count tokens in files in subdirectories recursively. **Default: `True`**
+- `quiet` (`bool`, optional): If `True`, suppresses progress updates. **Default: `False`**
+- `exitOnListError` (`bool`, optional): If `True`, stop processing the list upon encountering an error. If `False`, skip files that cause errors. **Default: `True`**
 
 **Returns:**
 
@@ -593,6 +723,14 @@ numTokens = tc.GetNumTokenFiles(inputPath=inputFiles, model='gpt-4o')
 print(numTokens)
 
 
+numTokens = tc.GetNumTokenFiles(inputPath=inputFiles)
+print(numTokens)
+
+# Counting tokens in multiple files using the default model
+numTokens = tc.GetNumTokenFiles(inputPath=inputFiles)
+print(numTokens)
+
+
 import tiktoken
 encoding = tiktoken.get_encoding('p50k_base')
 dirPath = Path("TestDir")
@@ -600,21 +738,27 @@ numTokens = tc.GetNumTokenFiles(inputPath=dirPath, encoding=encoding, recursive=
 print(numTokens)
 numTokens = tc.GetNumTokenFiles(inputPath=dirPath, model='gpt-4o', recursive=True)
 print(numTokens)
+
+# Counting tokens in a directory using the default model
+numTokens = tc.GetNumTokenFiles(inputPath=dirPath, recursive=True)
+print(numTokens)
 ```
 
 ---
 
-#### `TokenizeDir(dirPath: Path | str, model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True) -> dict[str, list[int] | dict]`
+#### `TokenizeDir(dirPath: Path | str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False, mapTokens: bool = True) -> dict[str, list[int] | dict]`
 
-Tokenizes all files within a directory into lists of token IDs.
+Tokenizes all files within a directory into lists of token IDs or a mapping of decoded strings to tokens.
 
 **Parameters:**
 
 - `dirPath` (`Path | str`): The path to the directory to tokenize.
-- `model` (`str`, optional): The name of the model to use for encoding.
+- `model` (`str`, optional): The name of the model to use for encoding. **Default: `"gpt-4o"`**
 - `encodingName` (`str`, optional): The name of the encoding to use.
 - `encoding` (`tiktoken.Encoding`, optional): An existing `tiktoken.Encoding` object to use for tokenization.
-- `recursive` (`bool`, optional): Whether to tokenize files in subdirectories recursively. Defaults to `True`.
+- `recursive` (`bool`, optional): Whether to tokenize files in subdirectories recursively. **Default: `True`**
+- `quiet` (`bool`, optional): If `True`, suppresses progress updates. **Default: `False`**
+- `mapTokens` (`bool`, optional): If `True`, outputs a dictionary mapping decoded strings to their token IDs for each file.
 
 **Returns:**
 
@@ -639,23 +783,42 @@ dirPath = Path("TestDir")
 tokenizedDir = tc.TokenizeDir(dirPath=dirPath, model="gpt-4o", recursive=True)
 print(tokenizedDir)
 
+tokenizedDir = tc.TokenizeDir(dirPath=dirPath, recursive=True)
+print(tokenizedDir)
+
+# Tokenizing a directory using the default model
+tokenizedDir = tc.TokenizeDir(dirPath=dirPath, recursive=True)
+print(tokenizedDir)
+
 tokenizedDir = tc.TokenizeDir(dirPath=dirPath, model="gpt-4o", recursive=False)
+print(tokenizedDir)
+
+tokenizedDir = tc.TokenizeDir(dirPath=dirPath, recursive=False)
+print(tokenizedDir)
+
+
+tokenizedDir = tc.TokenizeDir(dirPath=dirPath, model="gpt-4o", recursive=True, mapTokens=True)
+print(tokenizedDir)
+
+# Tokenizing a directory using the default model with token mapping
+tokenizedDir = tc.TokenizeDir(dirPath=dirPath, recursive=True, mapTokens=True)
 print(tokenizedDir)
 ```
 
 ---
 
-#### `GetNumTokenDir(dirPath: Path | str, model: str | None = None, encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True) -> int`
+#### `GetNumTokenDir(dirPath: Path | str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False) -> int`
 
 Counts the number of tokens in all files within a directory.
 
 **Parameters:**
 
 - `dirPath` (`Path | str`): The path to the directory to count tokens for.
-- `model` (`str`, optional): The name of the model to use for encoding.
+- `model` (`str`, optional): The name of the model to use for encoding. **Default: `"gpt-4o"`**
 - `encodingName` (`str`, optional): The name of the encoding to use.
 - `encoding` (`tiktoken.Encoding`, optional): An existing `tiktoken.Encoding` object to use for tokenization.
-- `recursive` (`bool`, optional): Whether to count tokens in subdirectories recursively. Defaults to `True`.
+- `recursive` (`bool`, optional): Whether to count tokens in subdirectories recursively. **Default: `True`**
+- `quiet` (`bool`, optional): If `True`, suppresses progress updates. **Default: `False`**
 
 **Returns:**
 
@@ -677,8 +840,75 @@ from pathlib import Path
 dirPath = Path("TestDir")
 numTokensDir = tc.GetNumTokenDir(dirPath=dirPath, model="gpt-4o", recursive=True)
 print(numTokensDir)
+
+# Counting tokens in a directory using the default model
+numTokensDir = tc.GetNumTokenDir(dirPath=dirPath, recursive=True)
+print(numTokensDir)
+
 numTokensDir = tc.GetNumTokenDir(dirPath=dirPath, model="gpt-4o", recursive=False)
 print(numTokensDir)
+
+numTokensDir = tc.GetNumTokenDir(dirPath=dirPath, recursive=False)
+print(numTokensDir)
+```
+
+---
+
+### Token Mapping
+
+#### `MapTokens(tokens: list[int] | OrderedDict[str, list[int] | OrderedDict], model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None) -> OrderedDict[str, int] | OrderedDict[str, OrderedDict[str, int] | OrderedDict]`
+
+Maps tokens to their corresponding decoded strings based on a specified encoding.
+
+**Parameters:**
+
+- `tokens` (`list[int] | OrderedDict[str, list[int] | OrderedDict]`): The tokens to be mapped. This can either be:
+    - A list of integer tokens to decode.
+    - An `OrderedDict` with string keys and values that are either:
+        - A list of integer tokens.
+        - Another nested `OrderedDict` with the same structure.
+- `model` (`str`, optional): The model name to use for determining the encoding. **Default: `"gpt-4o"`**
+- `encodingName` (`str`, optional): The name of the encoding to use.
+- `encoding` (`tiktoken.Encoding`, optional): The encoding object to use.
+
+**Returns:**
+
+- `OrderedDict[str, int] | OrderedDict[str, OrderedDict[str, int] | OrderedDict]`: A mapping of decoded strings to their corresponding integer tokens. If `tokens` is a nested structure, the result will maintain the same nested structure with decoded mappings.
+
+**Raises:**
+
+- `TypeError`: If `tokens` is not a list of integers or an `OrderedDict` of strings mapped to tokens.
+- `ValueError`: If an invalid model or encoding name is provided, or if the encoding does not match the model or encoding name.
+- `KeyError`: If a token is not in the given encoding's vocabulary.
+- `RuntimeError`: If an unexpected error occurs while validating the encoding.
+
+**Example:**
+
+```python
+import PyTokenCounter as tc
+import tiktoken
+from collections import OrderedDict
+
+encoding = tiktoken.get_encoding("cl100k_base")
+tokens = [123,456,789]
+mapped = tc.MapTokens(tokens=tokens, encoding=encoding)
+print(mapped)
+
+tokens = OrderedDict({
+    "file1": [123,456,789],
+    "file2": [987,654,321],
+    "subdir": OrderedDict({
+        "file3": [246, 135, 798],
+        "file4": [951, 753, 864]
+    })
+})
+
+mapped = tc.MapTokens(tokens=tokens, encoding=encoding)
+print(mapped)
+
+# Mapping tokens using the default model
+mapped = tc.MapTokens(tokens=tokens)
+print(mapped)
 ```
 
 ---

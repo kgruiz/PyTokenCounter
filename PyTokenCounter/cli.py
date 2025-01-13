@@ -25,7 +25,7 @@ Subcommands:
     map-tokens     Map a list of token integers to their decoded strings.
 
 Options:
-    -m, --model          Model to use for encoding.
+    -m, --model          Model to use for encoding. (default: gpt-4o)
     -e, --encoding       Encoding to use directly.
     -nr, --no-recursive  Do not tokenize files in subdirectories if a directory is given.
     -q, --quiet          Silence progress bars and minimize output.
@@ -152,8 +152,10 @@ def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
     subParser : argparse.ArgumentParser
         The subparser to which the arguments will be added.
     """
-    model_help = "Model to use for encoding.\nValid options are:\n" + FormatChoices(
-        VALID_MODELS
+    model_help = (
+        "Model to use for encoding.\nValid options are:\n"
+        + FormatChoices(VALID_MODELS)
+        + "\n(default: gpt-4o)"
     )
     encoding_help = "Encoding to use directly.\nValid options are:\n" + FormatChoices(
         VALID_ENCODINGS
@@ -166,6 +168,7 @@ def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
         choices=VALID_MODELS,
         metavar="MODEL",
         help=model_help,
+        default="gpt-4o",  # Set default model here
     )
     subParser.add_argument(
         "-e",

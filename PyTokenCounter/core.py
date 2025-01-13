@@ -691,7 +691,7 @@ def GetEncoding(
 
 def MapTokens(
     tokens: list[int] | OrderedDict[str, list[int] | OrderedDict],
-    model: str | None = None,
+    model: str | None = "gpt-4o",
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
 ) -> OrderedDict[str, int] | OrderedDict[str, OrderedDict[str, int] | OrderedDict]:
@@ -707,15 +707,15 @@ def MapTokens(
           - A list of integer tokens.
           - Another nested `OrderedDict` with the same structure.
 
-    model : str, optional
+    model : str or None, optional, default="gpt-4o"
         The model name to use for determining the encoding. If provided, the model
-        must be valid and compatible with the specified encoding or encoding name.
+        must be valid and compatible with the specified encoding or encoding name
 
-    encodingName : str, optional
+    encodingName : str or None, optional
         The name of the encoding to use. Must be compatible with the provided model
         if both are specified.
 
-    encoding : tiktoken.Encoding, optional
+    encoding : tiktoken.Encoding or None, optional
         The encoding object to use. Must match the specified model and/or encoding name
         if they are provided.
 
@@ -901,7 +901,7 @@ def MapTokens(
 
 def TokenizeStr(
     string: str,
-    model: str | None = None,
+    model: str | None = "gpt-4o",
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
     quiet: bool = False,
@@ -914,7 +914,7 @@ def TokenizeStr(
     ----------
     string : str
         The string to tokenize.
-    model : str or None, optional
+    model : str or None, optional, default="gpt-4o"
         The name of the model to use for encoding. If provided, the encoding
         associated with the model will be used.
     encodingName : str or None, optional
@@ -1095,7 +1095,7 @@ def TokenizeStr(
 
 def GetNumTokenStr(
     string: str,
-    model: str | None = None,
+    model: str | None = "gpt-4o",
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
     quiet: bool = False,
@@ -1107,7 +1107,7 @@ def GetNumTokenStr(
     ----------
     string : str
         The string to count tokens for.
-    model : str or None, optional
+    model : str or None, optional, default="gpt-4o"
         The name of the model to use for encoding. If provided, the encoding
         associated with the model will be used.
     encodingName : str or None, optional
@@ -1204,7 +1204,7 @@ def GetNumTokenStr(
 
 def TokenizeFile(
     filePath: Path | str,
-    model: str | None = None,
+    model: str | None = "gpt-4o",
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
     quiet: bool = False,
@@ -1217,7 +1217,7 @@ def TokenizeFile(
     ----------
     filePath : Path or str
         The path to the file to tokenize.
-    model : str or None, optional
+    model : str or None, optional, default="gpt-4o"
         The name of the model to use for encoding. If provided, the encoding
         associated with the model will be used. Default is None.
     encodingName : str or None, optional
@@ -1334,7 +1334,7 @@ def TokenizeFile(
 
 def GetNumTokenFile(
     filePath: Path | str,
-    model: str | None = None,
+    model: str | None = "gpt-4o",
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
     quiet: bool = False,
@@ -1346,7 +1346,7 @@ def GetNumTokenFile(
     ----------
     filePath : Path or str
         The path to the file to count tokens for.
-    model : str or None, optional
+    model : str or None, optional, default="gpt-4o"
         The name of the model to use for encoding. If provided, the encoding
         associated with the model will be used.
     encodingName : str or None, optional
@@ -1450,7 +1450,7 @@ def GetNumTokenFile(
 
 def TokenizeDir(
     dirPath: Path | str,
-    model: str | None = None,
+    model: str | None = "gpt-4o",
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
     recursive: bool = True,
@@ -1464,7 +1464,7 @@ def TokenizeDir(
     ----------
     dirPath : Path or str
         The path to the directory to tokenize.
-    model : str or None, optional
+    model : str or None, optional, default="gpt-4o"
         The name of the model to use for encoding. If provided, the encoding
         associated with the model will be used.
     encodingName : str or None, optional
@@ -1682,7 +1682,7 @@ def TokenizeDir(
 
 def GetNumTokenDir(
     dirPath: Path | str,
-    model: str | None = None,
+    model: str | None = "gpt-4o",
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
     recursive: bool = True,
@@ -1695,7 +1695,7 @@ def GetNumTokenDir(
     ----------
     dirPath : Path or str
         The path to the directory to count tokens for.
-    model : str or None, optional
+    model : str or None, optional, default="gpt-4o"
         The name of the model to use for encoding. If provided, the encoding
         associated with the model will be used.
     encodingName : str or None, optional
@@ -1858,7 +1858,7 @@ def GetNumTokenDir(
 def TokenizeFiles(
     inputPath: Path | str | list[Path | str],
     /,
-    model: str | None = None,
+    model: str | None = "gpt-4o",
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
     recursive: bool = True,
@@ -1873,7 +1873,7 @@ def TokenizeFiles(
     ----------
     inputPath : Path, str, or list of Path or str
         The path to a file or directory, or a list of file paths to tokenize.
-    model : str or None, optional
+    model : str or None, optional, default="gpt-4o"
         The name of the model to use for encoding. If provided, the encoding
         associated with the model will be used.
     encodingName : str or None, optional
@@ -2171,7 +2171,7 @@ def TokenizeFiles(
 def GetNumTokenFiles(
     inputPath: Path | str | list[Path | str],
     /,
-    model: str | None = None,
+    model: str | None = "gpt-4o",
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
     recursive: bool = True,
@@ -2185,7 +2185,7 @@ def GetNumTokenFiles(
     ----------
     inputPath : Path, str, or list of Path or str
         The path to a file or directory, or a list of file paths to count tokens for.
-    model : str or None, optional
+    model : str or None, optional, default="gpt-4o"
         The name of the model to use for encoding. If provided, the encoding
         associated with the model will be used.
     encodingName : str or None, optional
