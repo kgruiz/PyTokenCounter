@@ -551,13 +551,13 @@ Multiple files can be separated by spaces or commas.
                 encodingName=args.encoding,
                 encoding=encoding,
                 quiet=args.quiet,
-                mapTokens=args.mapTokens,  # Pass mapTokens flag
+                mapTokens=args.mapTokens,
             )
 
             if args.output:
                 SaveOutput(tokens, args.output)
             else:
-                print(tokens)
+                print(json.dumps(tokens, ensure_ascii=False, indent=4))
 
         elif args.command == "tokenize-file":
 
@@ -569,13 +569,13 @@ Multiple files can be separated by spaces or commas.
                 encodingName=args.encoding,
                 encoding=encoding,
                 quiet=args.quiet,
-                mapTokens=args.mapTokens,  # Pass mapTokens flag
+                mapTokens=args.mapTokens,
             )
 
             if args.output:
                 SaveOutput(tokens, args.output)
             else:
-                print(tokens)
+                print(json.dumps(tokens, ensure_ascii=False, indent=4))
 
         elif args.command == "tokenize-files":
 
@@ -593,7 +593,7 @@ Multiple files can be separated by spaces or commas.
                     encoding=encoding,
                     recursive=not args.no_recursive,
                     quiet=args.quiet,
-                    mapTokens=args.mapTokens,  # Pass mapTokens flag
+                    mapTokens=args.mapTokens,
                 )
 
             else:
@@ -604,13 +604,13 @@ Multiple files can be separated by spaces or commas.
                     encodingName=args.encoding,
                     encoding=encoding,
                     quiet=args.quiet,
-                    mapTokens=args.mapTokens,  # Pass mapTokens flag
+                    mapTokens=args.mapTokens,
                 )
 
             if args.output:
                 SaveOutput(tokenLists, args.output)
             else:
-                print(tokenLists)
+                print(json.dumps(tokenLists, ensure_ascii=False, indent=4))
 
         elif args.command == "tokenize-dir":
 
@@ -621,13 +621,13 @@ Multiple files can be separated by spaces or commas.
                 encoding=encoding,
                 recursive=not args.no_recursive,
                 quiet=args.quiet,
-                mapTokens=args.mapTokens,  # Pass mapTokens flag
+                mapTokens=args.mapTokens,
             )
 
             if args.output:
                 SaveOutput(tokenizedDir, args.output)
             else:
-                print(tokenizedDir)
+                print(json.dumps(tokenizedDir, ensure_ascii=False, indent=4))
 
         elif args.command == "count-str":
 
@@ -717,7 +717,7 @@ Multiple files can be separated by spaces or commas.
             if args.output:
                 SaveOutput(mapped, args.output)
             else:
-                print(mapped)
+                print(json.dumps(mapped, ensure_ascii=False, indent=4))
 
     except Exception as e:
 
