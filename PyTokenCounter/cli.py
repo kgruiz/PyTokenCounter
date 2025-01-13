@@ -22,14 +22,15 @@ Subcommands:
     count-dir      Count tokens in all files within a directory.
     get-model      Retrieves the model name from the provided encoding.
     get-encoding   Retrieves the encoding name from the provided model.
+    map-tokens     Map a list of token integers to their decoded strings.
 
 Options:
-    -m, --model      Model to use for encoding.
-    -e, --encoding   Encoding to use directly.
-    -nr, --no-recursive Do not tokenize files in subdirectories
-                        if a directory is given.
-    -q, --quiet      Silence progress bars and minimize output.
-
+    -m, --model          Model to use for encoding.
+    -e, --encoding       Encoding to use directly.
+    -nr, --no-recursive  Do not tokenize files in subdirectories if a directory is given.
+    -q, --quiet          Silence progress bars and minimize output.
+    -M, --mapTokens      Output mapped tokens instead of raw token integers.
+    -o, --output         Specify an output JSON file to save the results.
 
 For detailed help on each subcommand, use:
 
@@ -38,17 +39,24 @@ For detailed help on each subcommand, use:
 Example:
     tokencount tokenize-str "Hello, world!" -m gpt-4o
     tokencount tokenize-files ./file1.txt ./file2.txt -m gpt-4o
-    tokencount tokenize-files ./my_directory -m gpt-4o -nr
-    tokencount tokenize-dir ./my_directory -m gpt-4o -nr
-    tokencount count-files ./my_directory -m gpt-4o
-    tokencount count-dir ./my_directory -m gpt-4o
+    tokencount tokenize-files ./myDirectory -m gpt-4o -nr
+    tokencount tokenize-dir ./myDirectory -m gpt-4o -nr
+    tokencount count-files ./myDirectory -m gpt-4o
+    tokencount count-dir ./myDirectory -m gpt-4o
     tokencount get-model cl100k_base
     tokencount get-encoding gpt-4o
+    tokencount map-tokens 123 456 789 -m gpt-4o
+    tokencount map-tokens 123,456,789 -m gpt-4o
+    tokencount map-tokens 123,456 789 -m gpt-4o
+    tokencount tokenize-files ./file1.txt,./file2.txt -m gpt-4o -o tokens.json
+    tokencount map-tokens 123,456,789 -m gpt-4o -o mappedTokens.json
 """
 
 import argparse
+import json
 import logging
 import sys
+from collections import OrderedDict
 from pathlib import Path
 
 from .core import (
@@ -59,6 +67,7 @@ from .core import (
     GetNumTokenDir,
     GetNumTokenFiles,
     GetNumTokenStr,
+    MapTokens,
     TokenizeDir,
     TokenizeFiles,
     TokenizeStr,
@@ -99,7 +108,6 @@ def FormatChoices(choices):
     str
         A formatted string with each choice on a new line, preceded by a bullet.
     """
-
     return "\n".join(f"  - {choice}" for choice in choices)
 
 
@@ -112,7 +120,6 @@ def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
     subParser : argparse.ArgumentParser
         The subparser to which the arguments will be added.
     """
-
     modelHelp = "Model to use for encoding.\nValid options are:\n" + FormatChoices(
         VALID_MODELS
     )
@@ -142,6 +149,139 @@ def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
         action="store_true",
         help="Silence progress bars and minimize output.",
     )
+    subParser.add_argument(
+        "-M",
+        "--mapTokens",
+        action="store_true",
+        help="Output mapped tokens instead of raw token integers.",
+    )
+    subParser.add_argument(
+        "-o",
+        "--output",
+        type=str,
+        metavar="OUTPUT_FILE",
+        help="Specify an output JSON file to save the results.",
+    )
+
+
+def ParseFiles(fileArgs: list[str]) -> list[str]:
+    """
+    Parses a list of file arguments, allowing for comma-separated values.
+
+    Parameters
+    ----------
+    fileArgs : list of str
+        The raw file arguments from the command line.
+
+    Returns
+    -------
+    list of str
+        The list of parsed file paths.
+
+    Raises
+    ------
+    ValueError
+        If any file path is invalid or does not exist.
+    """
+
+    files = []
+
+    for arg in fileArgs:
+
+        # Split each argument by commas
+        parts = arg.split(",")
+
+        for part in parts:
+
+            part = part.strip()
+
+            if part:
+
+                path = Path(part)
+
+                if not path.exists():
+
+                    raise ValueError(f"File or directory '{part}' does not exist.")
+
+                files.append(str(path))
+
+    return files
+
+
+def ParseTokens(tokenArgs: list[str]) -> list[int]:
+    """
+    Parses a list of token arguments, allowing for comma-separated values.
+
+    Parameters
+    ----------
+    tokenArgs : list of str
+        The raw token arguments from the command line.
+
+    Returns
+    -------
+    list of int
+        The list of parsed integer tokens.
+
+    Raises
+    ------
+    ValueError
+        If any token cannot be converted to an integer.
+    """
+
+    tokens = []
+
+    for arg in tokenArgs:
+
+        # Split each argument by commas
+        parts = arg.split(",")
+
+        for part in parts:
+
+            part = part.strip()
+
+            if part:
+
+                try:
+
+                    token = int(part)
+                    tokens.append(token)
+
+                except ValueError:
+
+                    raise ValueError(
+                        f"Invalid token '{part}'. Tokens must be integers."
+                    )
+    return tokens
+
+
+def SaveOutput(data: any, outputFile: str) -> None:
+    """
+    Saves the provided data to a JSON file.
+
+    Parameters
+    ----------
+    data : any
+        The data to save.
+    outputFile : str
+        The path to the output JSON file.
+
+    Raises
+    ------
+    IOError
+        If the file cannot be written.
+    """
+
+    try:
+
+        with open(outputFile, "w", encoding="utf-8") as f:
+
+            json.dump(data, f, ensure_ascii=False, indent=4)
+
+        logger.info(f"Output successfully saved to '{outputFile}'.")
+
+    except IOError as e:
+
+        raise IOError(f"Failed to write to '{outputFile}': {e}")
 
 
 def main() -> None:
@@ -166,7 +306,7 @@ def main() -> None:
     parserTokenizeStr = subParsers.add_parser(
         "tokenize-str",
         help="Tokenize a provided string.",
-        description="Tokenize a given string into a list of token IDs using the specified model or encoding.",
+        description="Tokenize a given string into a list of token IDs or mapped tokens using the specified model or encoding.",
         formatter_class=CustomFormatter,
     )
     AddCommonArgs(parserTokenizeStr)
@@ -176,21 +316,21 @@ def main() -> None:
     parserTokenizeFile = subParsers.add_parser(
         "tokenize-file",
         help="Tokenize the contents of a file.",
-        description="Tokenize the contents of a specified file into a list of token IDs using the given model or encoding.",
+        description="Tokenize the contents of a specified file into a list of token IDs or mapped tokens using the given model or encoding.",
         formatter_class=CustomFormatter,
     )
     AddCommonArgs(parserTokenizeFile)
     parserTokenizeFile.add_argument(
         "file",
         type=str,
-        help="Path to the file to tokenize.",
+        help="Path to the file to tokenize. Multiple files can be separated by commas.",
     )
 
     # Subparser for tokenizing multiple files or a directory
     parserTokenizeFiles = subParsers.add_parser(
         "tokenize-files",
         help="Tokenize the contents of multiple files or a directory.",
-        description="Tokenize the contents of multiple specified files or all files within a directory into lists of token IDs using the given model or encoding.",
+        description="Tokenize the contents of multiple specified files or all files within a directory into lists of token IDs or mapped tokens using the given model or encoding.",
         formatter_class=CustomFormatter,
     )
     AddCommonArgs(parserTokenizeFiles)
@@ -214,7 +354,7 @@ Multiple files can be separated by spaces or commas.
     parserTokenizeDir = subParsers.add_parser(
         "tokenize-dir",
         help="Tokenize all files in a directory.",
-        description="Tokenize all files within a specified directory into lists of token IDs using the chosen model or encoding.",
+        description="Tokenize all files within a specified directory into lists of token IDs or mapped tokens using the chosen model or encoding.",
         formatter_class=CustomFormatter,
     )
     AddCommonArgs(parserTokenizeDir)
@@ -253,7 +393,7 @@ Multiple files can be separated by spaces or commas.
     parserCountFile.add_argument(
         "file",
         type=str,
-        help="Path to the file to count tokens for.",
+        help="Path to the file to count tokens for. Multiple files can be separated by commas.",
     )
 
     # Subparser for counting tokens in multiple files or a directory
@@ -332,6 +472,23 @@ Multiple files can be separated by spaces or commas.
         + FormatChoices(VALID_MODELS),
     )
 
+    # Subparser for mapping tokens
+    parserMapTokens = subParsers.add_parser(
+        "map-tokens",
+        help="Map a list of token integers to their decoded strings.",
+        description="Map a provided list of integer tokens to their corresponding decoded strings using the specified model or encoding.",
+        formatter_class=CustomFormatter,
+    )
+    # Common arguments for encoding/model
+    AddCommonArgs(parserMapTokens)
+    # Positional arguments: list of token integers (allow comma-separated)
+    parserMapTokens.add_argument(
+        "tokens",
+        type=str,
+        nargs="+",
+        help="List of integer tokens to map. Tokens can be separated by spaces or commas.",
+    )
+
     # Parse the arguments
 
     if len(sys.argv) == 1:
@@ -341,7 +498,6 @@ Multiple files can be separated by spaces or commas.
     args = parser.parse_args()
 
     try:
-
         encoding = None
         if args.model and args.encoding:
             encoding = GetEncoding(model=args.model, encodingName=args.encoding)
@@ -350,7 +506,7 @@ Multiple files can be separated by spaces or commas.
         elif args.encoding:
             encoding = GetEncoding(encodingName=args.encoding)
         else:
-            encoding = GetEncoding(model="gpt-4o")
+            encoding = GetEncoding(model="gpt-4o")  # Default model
 
         if args.command == "tokenize-str":
 
@@ -360,28 +516,40 @@ Multiple files can be separated by spaces or commas.
                 encodingName=args.encoding,
                 encoding=encoding,
                 quiet=args.quiet,
+                mapTokens=args.mapTokens,  # Pass mapTokens flag
             )
-            print(tokens)
+
+            if args.output:
+                SaveOutput(tokens, args.output)
+            else:
+                print(tokens)
 
         elif args.command == "tokenize-file":
 
+            files = ParseFiles([args.file])
+
             tokens = TokenizeFiles(
-                args.file,
+                files,
                 model=args.model,
                 encodingName=args.encoding,
                 encoding=encoding,
                 quiet=args.quiet,
+                mapTokens=args.mapTokens,  # Pass mapTokens flag
             )
 
-            print(tokens)
+            if args.output:
+                SaveOutput(tokens, args.output)
+            else:
+                print(tokens)
 
         elif args.command == "tokenize-files":
 
             # Handle both multiple files and directory
             # Split inputs by commas and flatten the list
-            inputPaths = [Path(p.strip()) for arg in args.input for p in arg.split(",")]
+            inputPaths = ParseFiles(args.input)
 
-            if len(inputPaths) == 1 and inputPaths[0].is_dir():
+            # Check if the input is a single directory
+            if len(inputPaths) == 1 and Path(inputPaths[0]).is_dir():
 
                 tokenLists = TokenizeFiles(
                     inputPaths[0],
@@ -390,6 +558,7 @@ Multiple files can be separated by spaces or commas.
                     encoding=encoding,
                     recursive=not args.no_recursive,
                     quiet=args.quiet,
+                    mapTokens=args.mapTokens,  # Pass mapTokens flag
                 )
 
             else:
@@ -400,8 +569,13 @@ Multiple files can be separated by spaces or commas.
                     encodingName=args.encoding,
                     encoding=encoding,
                     quiet=args.quiet,
+                    mapTokens=args.mapTokens,  # Pass mapTokens flag
                 )
-            print(tokenLists)
+
+            if args.output:
+                SaveOutput(tokenLists, args.output)
+            else:
+                print(tokenLists)
 
         elif args.command == "tokenize-dir":
 
@@ -412,9 +586,13 @@ Multiple files can be separated by spaces or commas.
                 encoding=encoding,
                 recursive=not args.no_recursive,
                 quiet=args.quiet,
+                mapTokens=args.mapTokens,  # Pass mapTokens flag
             )
 
-            print(tokenizedDir)
+            if args.output:
+                SaveOutput(tokenizedDir, args.output)
+            else:
+                print(tokenizedDir)
 
         elif args.command == "count-str":
 
@@ -429,8 +607,10 @@ Multiple files can be separated by spaces or commas.
 
         elif args.command == "count-file":
 
+            files = ParseFiles([args.file])
+
             count = GetNumTokenFiles(
-                args.file,
+                files,
                 model=args.model,
                 encodingName=args.encoding,
                 encoding=encoding,
@@ -442,9 +622,9 @@ Multiple files can be separated by spaces or commas.
         elif args.command == "count-files":
 
             # Split inputs by commas and flatten the list
-            inputPaths = [Path(p.strip()) for arg in args.input for p in arg.split(",")]
+            inputPaths = ParseFiles(args.input)
 
-            if len(inputPaths) == 1 and inputPaths[0].is_dir():
+            if len(inputPaths) == 1 and Path(inputPaths[0]).is_dir():
 
                 totalCount = GetNumTokenFiles(
                     inputPaths[0],
@@ -480,12 +660,29 @@ Multiple files can be separated by spaces or commas.
             print(count)
 
         elif args.command == "get-model":
-            model_name = GetModelForEncodingName(encodingName=args.encoding)
-            print(model_name)
+            modelName = GetModelForEncodingName(encodingName=args.encoding)
+            print(modelName)
 
         elif args.command == "get-encoding":
-            encoding_name = GetEncoding(model=args.model).name
-            print(encoding_name)
+            encodingName = GetEncoding(model=args.model).name
+            print(encodingName)
+
+        elif args.command == "map-tokens":
+
+            # Parse tokens allowing for comma-separated inputs
+            tokens = ParseTokens(args.tokens)
+
+            mapped = MapTokens(
+                tokens,
+                model=args.model,
+                encodingName=args.encoding,
+                encoding=encoding,
+            )
+
+            if args.output:
+                SaveOutput(mapped, args.output)
+            else:
+                print(mapped)
 
     except Exception as e:
 

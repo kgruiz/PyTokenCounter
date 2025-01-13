@@ -639,6 +639,9 @@ def MapTokens(
         - If an invalid model or encoding name is provided.
         - If the encoding does not match the model or encoding name.
 
+    KeyError
+        - If a token is not in the given encoding's vocabulary.
+
     RuntimeError
         - If an unexpected error occurs while validating the encoding.
 
