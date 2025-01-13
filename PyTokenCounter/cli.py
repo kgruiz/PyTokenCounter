@@ -59,6 +59,8 @@ import sys
 from collections import OrderedDict
 from pathlib import Path
 
+from colorlog import ColoredFormatter
+
 from .core import (
     VALID_ENCODINGS,
     VALID_MODELS,
@@ -74,13 +76,43 @@ from .core import (
 )
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)],
-)
-
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.propagate = False  # Prevent logs from being propagated to the root logger
+
+if not logger.handlers:
+    # Define log format with color support
+    log_format = (
+        "%(log_color)s%(asctime)s - %(levelname)s - %(name)s - "
+        "%(funcName)s:%(lineno)d - %(message)s"
+    )
+    date_format = "%Y-%m-%d %H:%M:%S"
+
+    # Define color scheme for different log levels
+    color_scheme = {
+        "DEBUG": "cyan",
+        "INFO": "green",
+        "WARNING": "yellow",
+        "ERROR": "red",
+        "CRITICAL": "bold_red",
+    }
+
+    # Create ColoredFormatter
+    formatter = ColoredFormatter(
+        log_format,
+        datefmt=date_format,
+        log_colors=color_scheme,
+        reset=True,
+        style="%",
+    )
+
+    # Create console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(formatter)
+
+    # Add handler to the logger
+    logger.addHandler(console_handler)
 
 
 class CustomFormatter(
@@ -94,13 +126,13 @@ class CustomFormatter(
     pass
 
 
-def FormatChoices(choices):
+def FormatChoices(choices: list[str]) -> str:
     """
     Formats a list of choices into a bulleted list.
 
     Parameters
     ----------
-    choices : list
+    choices : list[str]
         The list of choices to format.
 
     Returns
@@ -120,10 +152,10 @@ def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
     subParser : argparse.ArgumentParser
         The subparser to which the arguments will be added.
     """
-    modelHelp = "Model to use for encoding.\nValid options are:\n" + FormatChoices(
+    model_help = "Model to use for encoding.\nValid options are:\n" + FormatChoices(
         VALID_MODELS
     )
-    encodingHelp = "Encoding to use directly.\nValid options are:\n" + FormatChoices(
+    encoding_help = "Encoding to use directly.\nValid options are:\n" + FormatChoices(
         VALID_ENCODINGS
     )
 
@@ -133,7 +165,7 @@ def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
         type=str,
         choices=VALID_MODELS,
         metavar="MODEL",
-        help=modelHelp,
+        help=model_help,
     )
     subParser.add_argument(
         "-e",
@@ -141,7 +173,7 @@ def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
         type=str,
         choices=VALID_ENCODINGS,
         metavar="ENCODING",
-        help=encodingHelp,
+        help=encoding_help,
     )
     subParser.add_argument(
         "-q",
@@ -164,18 +196,18 @@ def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
     )
 
 
-def ParseFiles(fileArgs: list[str]) -> list[str]:
+def ParseFiles(file_args: list[str]) -> list[str]:
     """
     Parses a list of file arguments, allowing for comma-separated values.
 
     Parameters
     ----------
-    fileArgs : list of str
+    file_args : list[str]
         The raw file arguments from the command line.
 
     Returns
     -------
-    list of str
+    list[str]
         The list of parsed file paths.
 
     Raises
@@ -186,7 +218,7 @@ def ParseFiles(fileArgs: list[str]) -> list[str]:
 
     files = []
 
-    for arg in fileArgs:
+    for arg in file_args:
 
         # Split each argument by commas
         parts = arg.split(",")
@@ -208,18 +240,18 @@ def ParseFiles(fileArgs: list[str]) -> list[str]:
     return files
 
 
-def ParseTokens(tokenArgs: list[str]) -> list[int]:
+def ParseTokens(token_args: list[str]) -> list[int]:
     """
     Parses a list of token arguments, allowing for comma-separated values.
 
     Parameters
     ----------
-    tokenArgs : list of str
+    token_args : list[str]
         The raw token arguments from the command line.
 
     Returns
     -------
-    list of int
+    list[int]
         The list of parsed integer tokens.
 
     Raises
@@ -230,7 +262,7 @@ def ParseTokens(tokenArgs: list[str]) -> list[int]:
 
     tokens = []
 
-    for arg in tokenArgs:
+    for arg in token_args:
 
         # Split each argument by commas
         parts = arg.split(",")
@@ -686,7 +718,7 @@ Multiple files can be separated by spaces or commas.
 
     except Exception as e:
 
-        logger.error(f"Error: {e}")
+        logger.error(f"Error: {e}", exc_info=True)
         sys.exit(1)
 
 

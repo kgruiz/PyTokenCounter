@@ -1,6 +1,6 @@
 [project]
 name = "PyTokenCounter"
-version = "1.3.0"
+version = "1.4.dev0"
 description = "A Python library for tokenizing text and counting tokens using various encoding schemes."
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.11"
@@ -12,6 +12,7 @@ dependencies = [
     "tiktoken>=0.8.0",
     "rich>=13.9.4",
     "chardet>=5.2.0",
+    "colorlog>=6.9.0",
 ]
 
 classifiers = [
