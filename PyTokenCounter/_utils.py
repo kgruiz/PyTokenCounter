@@ -63,7 +63,7 @@ def ReadTextFile(filePath: Path | str) -> str:
     FileNotFoundError
         Raised if the specified file does not exist.
     UnsupportedEncodingError
-        Raised if the file's encoding cannot be determined.
+        Raised if the file's encoding cannot be determined or is invalid.
 
     Examples
     --------
@@ -114,9 +114,16 @@ def ReadTextFile(filePath: Path | str) -> str:
 
     if encoding:
 
+        actualEncoding = encoding
         encoding = "utf-8"
 
-        return file.read_text(encoding=encoding)
+        try:
+
+            return file.read_text(encoding=encoding)
+
+        except UnicodeDecodeError as e:
+
+            raise UnsupportedEncodingError(encoding=actualEncoding, filePath=filePath)
 
     else:
 

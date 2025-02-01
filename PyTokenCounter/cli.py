@@ -56,7 +56,6 @@ import argparse
 import json
 import logging
 import sys
-from collections import OrderedDict
 from pathlib import Path
 
 from colorlog import ColoredFormatter
@@ -82,14 +81,14 @@ logger.propagate = False  # Prevent logs from being propagated to the root logge
 
 if not logger.handlers:
     # Define log format with color support
-    log_format = (
+    logFormat = (
         "%(log_color)s%(asctime)s - %(levelname)s - %(name)s - "
         "%(funcName)s:%(lineno)d - %(message)s"
     )
-    date_format = "%Y-%m-%d %H:%M:%S"
+    dateFormat = "%Y-%m-%d %H:%M:%S"
 
     # Define color scheme for different log levels
-    color_scheme = {
+    colorScheme = {
         "DEBUG": "cyan",
         "INFO": "green",
         "WARNING": "yellow",
@@ -99,9 +98,9 @@ if not logger.handlers:
 
     # Create ColoredFormatter
     formatter = ColoredFormatter(
-        log_format,
-        datefmt=date_format,
-        log_colors=color_scheme,
+        logFormat,
+        datefmt=dateFormat,
+        log_colors=colorScheme,
         reset=True,
         style="%",
     )
