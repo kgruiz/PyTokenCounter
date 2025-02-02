@@ -79,6 +79,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.propagate = False  # Prevent propagation
 
+
 if not logger.handlers:
 
     # Log format
@@ -238,12 +239,14 @@ def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
         "--include-binary",
         action="store_true",
         dest="includeBinary",
+        default=False,
         help="Include binary files in processing. (Default: binary files are excluded.)",
     )
     subParser.add_argument(
         "--include-hidden",
         action="store_true",
         dest="includeHidden",
+        default=False,
         help="Include hidden files and directories in processing. (Default: hidden files and directories are skipped.)",
     )
 
