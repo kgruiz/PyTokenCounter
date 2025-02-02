@@ -166,14 +166,14 @@ tokencount map-tokens 123,456,789 --model gpt-4o
 # Map tokens to strings using the default model
 tokencount map-tokens 123,456,789
 
-# Do not exclude binary files
-tokencount tokenize-files MyDirectory --model gpt-4o --no-exclude-binary
+# Include binary files
+tokencount tokenize-files MyDirectory --model gpt-4o -b
 
 # Include hidden files and directories
-tokencount tokenize-files MyDirectory --model gpt-4o --include-hidden
+tokencount tokenize-files MyDirectory --model gpt-4o -H
 
-# Combine both options: do not exclude binary files and include hidden files
-tokencount tokenize-files MyDirectory --model gpt-4o --no-exclude-binary --include-hidden
+# Combine both options: include binary files and include hidden files
+tokencount tokenize-files MyDirectory --model gpt-4o -b -H
 ```
 
 **CLI Usage Details:**
@@ -226,8 +226,8 @@ The `tokencount` CLI provides several subcommands for tokenizing and counting to
 - `-q`, `--quiet`: When used with any of the above commands, it prevents the tool from showing progress bars and minimizes output.
 - `-M`, `--mapTokens`: When used with the `tokenize-str`, `tokenize-file`, `tokenize-files`, or `tokenize-dir` commands, outputs mapped tokens instead of raw token integers.
 - `-o`, `--output`: When used with any of the commands, specifies an output JSON file to save the results to.
-- `--no-exclude-binary`: Do not exclude binary files. (By default, binary files are excluded.)
-- `--include-hidden`: Include hidden files and directories. (By default, hidden files and directories are skipped.)
+- `-b`, `--include-binary`: Include binary files in processing. (Default: binary files are excluded.)
+- `-H`, `--include-hidden`: Include hidden files and directories. (Default: hidden files and directories are skipped.)
 
 ## API
 

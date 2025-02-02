@@ -31,6 +31,8 @@ Options:
     -q, --quiet          Silence progress bars and minimize output.
     -M, --mapTokens      Output mapped tokens instead of raw token integers.
     -o, --output         Specify an output JSON file to save the results.
+    -b, --include-binary Include binary files in processing. (default: binary files are excluded)
+    -H, --include-hidden Include hidden files and directories in processing. (default: hidden files and directories are skipped)
 
 For detailed help on each subcommand, use:
 
@@ -236,6 +238,7 @@ def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
         help="Specify an output JSON file to save the results.",
     )
     subParser.add_argument(
+        "-b",
         "--include-binary",
         action="store_true",
         dest="includeBinary",
@@ -243,6 +246,7 @@ def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
         help="Include binary files in processing. (Default: binary files are excluded.)",
     )
     subParser.add_argument(
+        "-H",
         "--include-hidden",
         action="store_true",
         dest="includeHidden",
