@@ -1,4 +1,3 @@
-```markdown
 # PyTokenCounter
 
 PyTokenCounter is a Python library designed to simplify text tokenization and token counting. It supports various encoding schemes, with a focus on those used by **Large Language Models (LLMs)**, particularly those developed by OpenAI. Leveraging the `tiktoken` library for efficient processing, PyTokenCounter facilitates seamless integration with LLM workflows. This project is based on the [`tiktoken` library](https://github.com/openai/tiktoken) created by [OpenAI](https://github.com/openai/tiktoken).
@@ -966,5 +965,4 @@ Contributions are welcome! Feel free to [open an issue](https://github.com/kgrui
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
-```
+This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) file for more details.
