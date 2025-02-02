@@ -176,6 +176,119 @@ VALID_ENCODINGS = [
 VALID_MODELS_STR = "\n".join(VALID_MODELS)
 VALID_ENCODINGS_STR = "\n".join(VALID_ENCODINGS)
 
+BINARY_EXTENSIONS = {
+    # Image formats
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".bmp",
+    ".webp",
+    ".avif",
+    ".tiff",
+    ".tif",
+    ".ico",
+    ".svgz",  # Compressed SVG
+    # Video formats
+    ".mp4",
+    ".mkv",
+    ".mov",
+    ".avi",
+    ".wmv",
+    ".flv",
+    ".webm",
+    ".m4v",
+    ".mpeg",
+    ".mpg",
+    ".3gp",
+    ".3g2",
+    # Audio formats
+    ".mp3",
+    ".wav",
+    ".flac",
+    ".ogg",
+    ".aac",
+    ".m4a",
+    ".wma",
+    ".aiff",
+    ".ape",
+    ".opus",
+    # Compressed archives
+    ".zip",
+    ".rar",
+    ".7z",
+    ".tar",
+    ".gz",
+    ".bz2",
+    ".xz",
+    ".lz",
+    ".zst",  # Zstandard compression
+    ".cab",
+    ".deb",
+    ".rpm",
+    ".pkg",
+    # Disk images
+    ".iso",
+    ".dmg",
+    ".img",
+    ".vhd",
+    ".vmdk",
+    # Executables and libraries
+    ".exe",
+    ".msi",
+    ".bat",  # Batch files may be readable but executed directly
+    ".dll",
+    ".so",
+    ".bin",
+    ".o",  # Compiled object files
+    ".a",  # Static libraries
+    ".dylib",  # macOS dynamic library
+    # Fonts
+    ".ttf",
+    ".otf",
+    ".woff",
+    ".woff2",
+    ".eot",
+    # Documents
+    ".pdf",
+    ".ps",  # PostScript
+    ".eps",  # Encapsulated PostScript
+    # Design and graphics
+    ".psd",
+    ".ai",
+    ".indd",
+    ".sketch",
+    # 3D and CAD files
+    ".blend",
+    ".stl",
+    ".step",
+    ".iges",
+    ".fbx",
+    ".glb",
+    ".gltf",
+    ".3ds",
+    ".obj",
+    ".cad",
+    # Virtual machines and firmware
+    ".qcow2",
+    ".vdi",
+    ".vhdx",
+    ".rom",
+    ".bin",  # Generic binary firmware
+    ".img",
+    # Miscellaneous binary formats
+    ".dat",
+    ".pak",  # Game resource package files
+    ".sav",  # Save game files
+    ".nes",  # ROM file for NES emulator
+    ".gba",  # Game Boy Advance ROM
+    ".nds",  # Nintendo DS ROM
+    ".iso",  # CD/DVD disk image
+    ".jar",  # Java Archive (binary format)
+    ".class",  # Compiled Java class file
+    ".wasm",  # WebAssembly binary format
+}
+
 
 _progressInstance = Progress(
     TextColumn(
@@ -713,11 +826,19 @@ def MapTokens(
 
     encodingName : str or None, optional
         The name of the encoding to use. Must be compatible with the provided model
+
+
         if both are specified.
+
+
 
     encoding : tiktoken.Encoding or None, optional
         The encoding object to use. Must match the specified model and/or encoding name
+
+
         if they are provided.
+
+
 
     Returns
     -------
@@ -1456,6 +1577,8 @@ def TokenizeDir(
     recursive: bool = True,
     quiet: bool = False,
     mapTokens: bool = True,
+    excludeBinary: bool = True,
+    includeHidden: bool = False,
 ) -> OrderedDict[str, list[int] | OrderedDict]:
     """
     Tokenize all files in a directory into lists of token IDs using the specified model or encoding.
@@ -1477,6 +1600,12 @@ def TokenizeDir(
         Whether to tokenize files in subdirectories recursively.
     quiet : bool, default False
         If True, suppress progress updates.
+    excludeBinary : bool, default True
+        Excludes any binary files by skipping over them.
+    includeHidden : bool, default False
+        Skips over hidden files and directories, including subdirectories and files of a hidden directory.
+    mapTokens : bool, default True
+        [Existing parameter description.]
 
     Returns
     -------
@@ -1507,56 +1636,54 @@ def TokenizeDir(
             ],
             'TestDir2.txt': {
                 'numTokens': 132,
-            'tokens':
-            [
-                976,
-                5030,
-                45940,
-                295,
-                483,
-               ...,
-               1665,
-               4717,
-               13
-            ]
-        },
-        'TestDir3.txt': {
-            'numTokens': 140,
-            'tokens':
-            [
-                976, 29011, 38841, 306, 483,  ..., 16592, 316, 21846, 4194, 483, 290, 69214, 13
-            ]
-        },
-        'TestSubDir': {
-            'TestDir4.txt': {
-                'numTokens': 127,
                 'tokens': [
                     976,
-                    21689,
-                    12761,
-                    50217,
-                    71327,
-                    412,
-                    ...,
-                    10740,
-                    13
-                ]
-            },
-            'TestDir5.txt': {
-                'numTokens': 128,
-                'tokens': [
-                    65307,
-                    16953,
-                    34531,
-                    290,
-                    37603,
-                    306,
+                    5030,
+                    45940,
+                    295,
+                    483,
                    ...,
-                   34618,
+                   1665,
+                   4717,
                    13
                 ]
+            },
+            'TestDir3.txt': {
+                'numTokens': 140,
+                'tokens': [
+                    976, 29011, 38841, 306, 483,  ..., 16592, 316, 21846, 4194, 483, 290, 69214, 13
+                ]
+            },
+            'TestSubDir': {
+                'TestDir4.txt': {
+                    'numTokens': 127,
+                    'tokens': [
+                        976,
+                        21689,
+                        12761,
+                        50217,
+                        71327,
+                        412,
+                        ...,
+                        10740,
+                        13
+                    ]
+                },
+                'TestDir5.txt': {
+                    'numTokens': 128,
+                    'tokens': [
+                        65307,
+                        16953,
+                        34531,
+                        290,
+                        37603,
+                        306,
+                       ...,
+                       34618,
+                       13
+                    ]
+                }
             }
-        }
     }
     """
 
@@ -1592,6 +1719,11 @@ def TokenizeDir(
 
     dirPath = Path(dirPath).resolve()
 
+    # Skip processing if the directory itself is hidden and hidden files are not to be included.
+    if not includeHidden and dirPath.name.startswith("."):
+
+        return OrderedDict()
+
     if not dirPath.is_dir():
 
         raise ValueError(f'Given directory path "{dirPath}" is not a directory.')
@@ -1612,11 +1744,30 @@ def TokenizeDir(
 
     for entry in dirPath.iterdir():
 
+        # Skip hidden files and directories if includeHidden is False.
+        if not includeHidden and entry.name.startswith("."):
+
+            continue
+
         if entry.is_dir():
 
             subDirPaths.append(entry)
 
         else:
+
+            # Skip binary files if excludeBinary is True.
+            if excludeBinary and entry.suffix.lower() in BINARY_EXTENSIONS:
+
+                if not quiet:
+
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=1,
+                        description=f"Skipping binary file {entry.relative_to(dirPath)}",
+                        quiet=quiet,
+                    )
+
+                continue
 
             if not quiet:
 
@@ -1671,6 +1822,8 @@ def TokenizeDir(
                 encoding=encoding,
                 recursive=recursive,
                 quiet=quiet,
+                excludeBinary=excludeBinary,
+                includeHidden=includeHidden,
             )
 
             if tokenizedSubDir:
@@ -1687,6 +1840,8 @@ def GetNumTokenDir(
     encoding: tiktoken.Encoding | None = None,
     recursive: bool = True,
     quiet: bool = False,
+    excludeBinary: bool = True,
+    includeHidden: bool = False,
 ) -> int:
     """
     Get the number of tokens in all files within a directory based on the specified model or encoding.
@@ -1708,6 +1863,10 @@ def GetNumTokenDir(
         Whether to count tokens in files in subdirectories recursively.
     quiet : bool, default False
         If True, suppress progress updates.
+    excludeBinary : bool, default True
+        Excludes any binary files by skipping over them.
+    includeHidden : bool, default False
+        Skips over hidden files and directories, including subdirectories and files of a hidden directory.
 
     Returns
     -------
@@ -1774,6 +1933,11 @@ def GetNumTokenDir(
 
     dirPath = Path(dirPath).resolve()
 
+    # Skip processing if the directory itself is hidden and hidden files are not to be included.
+    if not includeHidden and dirPath.name.startswith("."):
+
+        return 0
+
     if not dirPath.is_dir():
 
         raise ValueError(f'Given directory path "{dirPath}" is not a directory.')
@@ -1794,11 +1958,30 @@ def GetNumTokenDir(
 
     for entry in dirPath.iterdir():
 
+        # Skip hidden files and directories if includeHidden is False.
+        if not includeHidden and entry.name.startswith("."):
+
+            continue
+
         if entry.is_dir():
 
             subDirPaths.append(entry)
 
         else:
+
+            # Skip binary files if excludeBinary is True.
+            if excludeBinary and entry.suffix.lower() in BINARY_EXTENSIONS:
+
+                if not quiet:
+
+                    _UpdateTask(
+                        taskName=taskName,
+                        advance=1,
+                        description=f"Skipping binary file {entry.relative_to(dirPath)}",
+                        quiet=quiet,
+                    )
+
+                continue
 
             if not quiet:
 
@@ -1850,6 +2033,8 @@ def GetNumTokenDir(
             encoding=encoding,
             recursive=recursive,
             quiet=quiet,
+            excludeBinary=excludeBinary,
+            includeHidden=includeHidden,
         )
 
     return runningTokenTotal
@@ -1865,7 +2050,9 @@ def TokenizeFiles(
     quiet: bool = False,
     exitOnListError: bool = True,
     mapTokens: bool = True,
-) -> list[int] | OrderedDict[str, list[int] | OrderedDict]:
+    excludeBinary: bool = True,
+    includeHidden: bool = False,
+) -> "list[int] | OrderedDict[str, list[int] | OrderedDict]":
     """
     Tokenize multiple files or all files within a directory into lists of token IDs using the specified model or encoding.
 
@@ -1890,17 +2077,23 @@ def TokenizeFiles(
     exitOnListError : bool, default True
         If True, stop processing the list upon encountering an error. If False,
         skip files that cause errors.
+    excludeBinary : bool, default True
+        Excludes any binary files by skipping over them.
+    includeHidden : bool, default False
+        Skips over hidden files and directories, including subdirectories and files of a hidden directory.
+    mapTokens : bool, default True
+        [Existing parameter description.]
 
     Returns
     -------
     list[int] | OrderedDict[str, list[int] | OrderedDict]
         - If `inputPath` is a file, returns a list of token IDs for that file.
-        - If `inputPath` is a list of files, returns a OrderedDictionary where each key is
+        - If `inputPath` is a list of files, returns an OrderedDictionary where each key is
           the file name and the value is the list of token IDs for that file.
         - If `inputPath` is a directory:
           - If `recursive` is True, returns a nested OrderedDictionary where each key is a
             file or subdirectory name with corresponding token lists or sub-OrderedDictionaries.
-          - If `recursive` is False, returns a OrderedDictionary with file names as keys and
+          - If `recursive` is False, returns an OrderedDictionary with file names as keys and
             their token lists as values.
 
     Raises
@@ -1962,56 +2155,54 @@ def TokenizeFiles(
             'TestDir1.txt': [976, 19458, 5831, 23757, 306, 290, ..., 26321, 13],
             'TestDir2.txt': {
                 'numTokens': 132,
-            'tokens':
-            [
-                976,
-                5030,
-                45940,
-                295,
-                483,
-               ...,
-               1665,
-               4717,
-               13
-            ]
-        },
-        'TestDir3.txt': {
-            'numTokens': 140,
-            'tokens':
-            [
-                976, 29011, 38841, 306, 483,  ..., 16592, 316, 21846, 4194, 483, 290, 69214, 13
-            ]
-        },
-        'TestSubDir': {
-            'TestDir4.txt': {
-                'numTokens': 127,
                 'tokens': [
                     976,
-                    21689,
-                    12761,
-                    50217,
-                    71327,
-                    412,
-                    ...,
-                    10740,
-                    13
-                ]
-            },
-            'TestDir5.txt': {
-                'numTokens': 128,
-                'tokens': [
-                    65307,
-                    16953,
-                    34531,
-                    290,
-                    37603,
-                    306,
+                    5030,
+                    45940,
+                    295,
+                    483,
                    ...,
-                   34618,
+                   1665,
+                   4717,
                    13
                 ]
+            },
+            'TestDir3.txt': {
+                'numTokens': 140,
+                'tokens': [
+                    976, 29011, 38841, 306, 483,  ..., 16592, 316, 21846, 4194, 483, 290, 69214, 13
+                ]
+            },
+            'TestSubDir': {
+                'TestDir4.txt': {
+                    'numTokens': 127,
+                    'tokens': [
+                        976,
+                        21689,
+                        12761,
+                        50217,
+                        71327,
+                        412,
+                        ...,
+                        10740,
+                        13
+                    ]
+                },
+                'TestDir5.txt': {
+                    'numTokens': 128,
+                    'tokens': [
+                        65307,
+                        16953,
+                        34531,
+                        290,
+                        37603,
+                        306,
+                       ...,
+                       34618,
+                       13
+                    ]
+                }
             }
-        }
     }
     """
 
@@ -2061,7 +2252,7 @@ def TokenizeFiles(
 
         else:
 
-            tokenizedFiles: OrderedDict[str, list[int]] = OrderedDict()
+            tokenizedFiles: "OrderedDict[str, list[int]]" = OrderedDict()
             numFiles = len(inputPath)
 
             if not quiet:
@@ -2071,6 +2262,32 @@ def TokenizeFiles(
                 )
 
             for file in inputPath:
+
+                if not includeHidden and file.name.startswith("."):
+
+                    if not quiet:
+
+                        _UpdateTask(
+                            taskName="Tokenizing File List",
+                            advance=1,
+                            description=f"Skipping hidden file {file.name}",
+                            quiet=quiet,
+                        )
+
+                    continue
+
+                if excludeBinary and file.suffix.lower() in BINARY_EXTENSIONS:
+
+                    if not quiet:
+
+                        _UpdateTask(
+                            taskName="Tokenizing File List",
+                            advance=1,
+                            description=f"Skipping binary file {file.name}",
+                            quiet=quiet,
+                        )
+
+                    continue
 
                 if not quiet:
 
@@ -2142,6 +2359,14 @@ def TokenizeFiles(
 
     if inputPath.is_file():
 
+        if not includeHidden and inputPath.name.startswith("."):
+
+            return []
+
+        if excludeBinary and inputPath.suffix.lower() in BINARY_EXTENSIONS:
+
+            return []
+
         return TokenizeFile(
             filePath=inputPath,
             model=model,
@@ -2159,6 +2384,8 @@ def TokenizeFiles(
             encoding=encoding,
             recursive=recursive,
             quiet=quiet,
+            excludeBinary=excludeBinary,
+            includeHidden=includeHidden,
         )
 
     else:
@@ -2177,6 +2404,8 @@ def GetNumTokenFiles(
     recursive: bool = True,
     quiet: bool = False,
     exitOnListError: bool = True,
+    excludeBinary: bool = True,
+    includeHidden: bool = False,
 ) -> int:
     """
     Get the number of tokens in multiple files or all files within a directory based on the specified model or encoding.
@@ -2202,6 +2431,10 @@ def GetNumTokenFiles(
     exitOnListError : bool, default True
         If True, stop processing the list upon encountering an error. If False,
         skip files that cause errors.
+    excludeBinary : bool, default True
+        Excludes any binary files by skipping over them.
+    includeHidden : bool, default False
+        Skips over hidden files and directories, including subdirectories and files of a hidden directory.
 
     Returns
     -------
@@ -2301,6 +2534,32 @@ def GetNumTokenFiles(
 
             for file in inputPath:
 
+                if not includeHidden and file.name.startswith("."):
+
+                    if not quiet:
+
+                        _UpdateTask(
+                            taskName="Counting Tokens in File List",
+                            advance=1,
+                            description=f"Skipping hidden file {file.name}",
+                            quiet=quiet,
+                        )
+
+                    continue
+
+                if excludeBinary and file.suffix.lower() in BINARY_EXTENSIONS:
+
+                    if not quiet:
+
+                        _UpdateTask(
+                            taskName="Counting Tokens in File List",
+                            advance=1,
+                            description=f"Skipping binary file {file.name}",
+                            quiet=quiet,
+                        )
+
+                    continue
+
                 if not quiet:
 
                     _UpdateTask(
@@ -2371,6 +2630,14 @@ def GetNumTokenFiles(
 
     if inputPath.is_file():
 
+        if not includeHidden and inputPath.name.startswith("."):
+
+            return 0
+
+        if excludeBinary and inputPath.suffix.lower() in BINARY_EXTENSIONS:
+
+            return 0
+
         return GetNumTokenFile(
             filePath=inputPath,
             model=model,
@@ -2388,6 +2655,8 @@ def GetNumTokenFiles(
             encoding=encoding,
             recursive=recursive,
             quiet=quiet,
+            excludeBinary=excludeBinary,
+            includeHidden=includeHidden,
         )
 
     else:

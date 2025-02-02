@@ -31,6 +31,8 @@ Options:
     -q, --quiet          Silence progress bars and minimize output.
     -M, --mapTokens      Output mapped tokens instead of raw token integers.
     -o, --output         Specify an output JSON file to save the results.
+    -b, --include-binary Include binary files in processing. (default: binary files are excluded)
+    -H, --include-hidden Include hidden files and directories in processing. (default: hidden files and directories are skipped)
 
 For detailed help on each subcommand, use:
 
@@ -56,7 +58,6 @@ import argparse
 import json
 import logging
 import sys
-from collections import OrderedDict
 from pathlib import Path
 
 from colorlog import ColoredFormatter
@@ -78,18 +79,20 @@ from .core import (
 # Configure logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-logger.propagate = False  # Prevent logs from being propagated to the root logger
+logger.propagate = False  # Prevent propagation
+
 
 if not logger.handlers:
-    # Define log format with color support
-    log_format = (
+
+    # Log format
+    logFormat = (
         "%(log_color)s%(asctime)s - %(levelname)s - %(name)s - "
         "%(funcName)s:%(lineno)d - %(message)s"
     )
-    date_format = "%Y-%m-%d %H:%M:%S"
+    dateFormat = "%Y-%m-%d %H:%M:%S"
 
-    # Define color scheme for different log levels
-    color_scheme = {
+    # Color scheme
+    colorScheme = {
         "DEBUG": "cyan",
         "INFO": "green",
         "WARNING": "yellow",
@@ -97,30 +100,34 @@ if not logger.handlers:
         "CRITICAL": "bold_red",
     }
 
-    # Create ColoredFormatter
+    # Formatter
+
     formatter = ColoredFormatter(
-        log_format,
-        datefmt=date_format,
-        log_colors=color_scheme,
+        logFormat,
+        datefmt=dateFormat,
+        log_colors=colorScheme,
         reset=True,
         style="%",
     )
 
-    # Create console handler
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(formatter)
+    # Console handler
+    consoleHandler = logging.StreamHandler(sys.stdout)
+    consoleHandler.setLevel(logging.INFO)
+    consoleHandler.setFormatter(formatter)
 
-    # Add handler to the logger
-    logger.addHandler(console_handler)
+    # Add handler
+    logger.addHandler(consoleHandler)
 
 
 class CustomFormatter(
     argparse.ArgumentDefaultsHelpFormatter, argparse.RawTextHelpFormatter
 ):
     """
-    Custom formatter to combine ArgumentDefaultsHelpFormatter and RawTextHelpFormatter.
-    This allows for multiline help messages and inclusion of default values.
+    Custom formatter combining defaults and raw text.
+
+    Parameters
+    ----------
+    None
     """
 
     pass
@@ -128,47 +135,80 @@ class CustomFormatter(
 
 def FormatChoices(choices: list[str]) -> str:
     """
-    Formats a list of choices into a bulleted list.
+    Format a list of choices into multiple rows and columns.
 
     Parameters
     ----------
     choices : list[str]
-        The list of choices to format.
+        List of choices.
 
     Returns
     -------
     str
-        A formatted string with each choice on a new line, preceded by a bullet.
+        Formatted string with choices in columns.
     """
-    return "\n".join(f"  - {choice}" for choice in choices)
+    numColumns = 4 if len(choices) >= 4 else len(choices)
+    rows = [choices[i : i + numColumns] for i in range(0, len(choices), numColumns)]
+    colWidths = [0] * numColumns
+
+    for row in rows:
+
+        for colIndex, item in enumerate(row):
+
+            itemWidth = len("- " + item)
+
+            if itemWidth > colWidths[colIndex]:
+
+                colWidths[colIndex] = itemWidth
+
+    formattedRows = []
+
+    for row in rows:
+
+        formattedItems = []
+
+        for colIndex, item in enumerate(row):
+
+            text = f"- {item}"
+
+            if colIndex < numColumns - 1:
+
+                formattedItems.append(text.ljust(colWidths[colIndex] + 2))
+
+            else:
+
+                formattedItems.append(text)
+
+        formattedRows.append("".join(formattedItems))
+
+    return "\n".join(formattedRows)
 
 
 def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
     """
-    Adds common arguments to a subparser.
+    Add common arguments to a subparser.
 
     Parameters
     ----------
     subParser : argparse.ArgumentParser
-        The subparser to which the arguments will be added.
+        Subparser object.
     """
-    model_help = (
+    modelHelp = (
         "Model to use for encoding.\nValid options are:\n"
         + FormatChoices(VALID_MODELS)
         + "\n(default: gpt-4o)"
     )
-    encoding_help = "Encoding to use directly.\nValid options are:\n" + FormatChoices(
+    encodingHelp = "Encoding to use directly.\nValid options are:\n" + FormatChoices(
         VALID_ENCODINGS
     )
-
     subParser.add_argument(
         "-m",
         "--model",
         type=str,
         choices=VALID_MODELS,
         metavar="MODEL",
-        help=model_help,
-        default="gpt-4o",  # Set default model here
+        help=modelHelp,
+        default="gpt-4o",
     )
     subParser.add_argument(
         "-e",
@@ -176,7 +216,7 @@ def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
         type=str,
         choices=VALID_ENCODINGS,
         metavar="ENCODING",
-        help=encoding_help,
+        help=encodingHelp,
     )
     subParser.add_argument(
         "-q",
@@ -197,33 +237,47 @@ def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
         metavar="OUTPUT_FILE",
         help="Specify an output JSON file to save the results.",
     )
+    subParser.add_argument(
+        "-b",
+        "--include-binary",
+        action="store_true",
+        dest="includeBinary",
+        default=False,
+        help="Include binary files in processing. (Default: binary files are excluded.)",
+    )
+    subParser.add_argument(
+        "-H",
+        "--include-hidden",
+        action="store_true",
+        dest="includeHidden",
+        default=False,
+        help="Include hidden files and directories in processing. (Default: hidden files and directories are skipped.)",
+    )
 
 
-def ParseFiles(file_args: list[str]) -> list[str]:
+def ParseFiles(fileArgs: list[str]) -> list[str]:
     """
-    Parses a list of file arguments, allowing for comma-separated values.
+    Parse file arguments, allowing comma-separated values.
 
     Parameters
     ----------
-    file_args : list[str]
-        The raw file arguments from the command line.
+    fileArgs : list[str]
+        Raw file arguments.
 
     Returns
     -------
     list[str]
-        The list of parsed file paths.
+        List of file paths.
 
     Raises
     ------
     ValueError
-        If any file path is invalid or does not exist.
+        If a path does not exist.
     """
-
     files = []
 
-    for arg in file_args:
+    for arg in fileArgs:
 
-        # Split each argument by commas
         parts = arg.split(",")
 
         for part in parts:
@@ -243,31 +297,29 @@ def ParseFiles(file_args: list[str]) -> list[str]:
     return files
 
 
-def ParseTokens(token_args: list[str]) -> list[int]:
+def ParseTokens(tokenArgs: list[str]) -> list[int]:
     """
-    Parses a list of token arguments, allowing for comma-separated values.
+    Parse token arguments, allowing comma-separated values.
 
     Parameters
     ----------
-    token_args : list[str]
-        The raw token arguments from the command line.
+    tokenArgs : list[str]
+        Raw token arguments.
 
     Returns
     -------
     list[int]
-        The list of parsed integer tokens.
+        List of integer tokens.
 
     Raises
     ------
     ValueError
-        If any token cannot be converted to an integer.
+        If a token is not an integer.
     """
-
     tokens = []
 
-    for arg in token_args:
+    for arg in tokenArgs:
 
-        # Split each argument by commas
         parts = arg.split(",")
 
         for part in parts:
@@ -286,24 +338,25 @@ def ParseTokens(token_args: list[str]) -> list[int]:
                     raise ValueError(
                         f"Invalid token '{part}'. Tokens must be integers."
                     )
+
     return tokens
 
 
 def SaveOutput(data: any, outputFile: str) -> None:
     """
-    Saves the provided data to a JSON file.
+    Save data to a JSON file.
 
     Parameters
     ----------
     data : any
-        The data to save.
+        Data to save.
     outputFile : str
-        The path to the output JSON file.
+        Output file path.
 
     Raises
     ------
     IOError
-        If the file cannot be written.
+        If writing fails.
     """
 
     try:
@@ -311,7 +364,6 @@ def SaveOutput(data: any, outputFile: str) -> None:
         with open(outputFile, "w", encoding="utf-8") as f:
 
             json.dump(data, f, ensure_ascii=False, indent=4)
-
         logger.info(f"Output successfully saved to '{outputFile}'.")
 
     except IOError as e:
@@ -321,23 +373,20 @@ def SaveOutput(data: any, outputFile: str) -> None:
 
 def main() -> None:
     """
-    Entry point for the CLI. Parses command-line arguments and invokes the appropriate
-    tokenization or counting functions based on the provided subcommand.
+    CLI entry point. Parses arguments and calls tokenization/counting functions.
 
     Raises
     ------
     SystemExit
-        Exits the program with a status code of 1 if an error occurs.
+        If an error occurs.
     """
-
     parser = argparse.ArgumentParser(
         description="Tokenize strings, files, or directories using specified models or encodings.",
         formatter_class=CustomFormatter,
     )
-
     subParsers = parser.add_subparsers(title="Commands", dest="command", required=True)
 
-    # Subparser for tokenizing a string
+    # Tokenize string
     parserTokenizeStr = subParsers.add_parser(
         "tokenize-str",
         help="Tokenize a provided string.",
@@ -347,7 +396,7 @@ def main() -> None:
     AddCommonArgs(parserTokenizeStr)
     parserTokenizeStr.add_argument("string", type=str, help="The string to tokenize.")
 
-    # Subparser for tokenizing a file
+    # Tokenize file
     parserTokenizeFile = subParsers.add_parser(
         "tokenize-file",
         help="Tokenize the contents of a file.",
@@ -361,7 +410,7 @@ def main() -> None:
         help="Path to the file to tokenize. Multiple files can be separated by commas.",
     )
 
-    # Subparser for tokenizing multiple files or a directory
+    # Tokenize multiple files or directory
     parserTokenizeFiles = subParsers.add_parser(
         "tokenize-files",
         help="Tokenize the contents of multiple files or a directory.",
@@ -385,7 +434,7 @@ Multiple files can be separated by spaces or commas.
         help="Do not tokenize files in subdirectories if a directory is given.",
     )
 
-    # Subparser for tokenizing a directory
+    # Tokenize directory
     parserTokenizeDir = subParsers.add_parser(
         "tokenize-dir",
         help="Tokenize all files in a directory.",
@@ -405,7 +454,7 @@ Multiple files can be separated by spaces or commas.
         help="Do not tokenize files in subdirectories.",
     )
 
-    # Subparser for counting tokens in a string
+    # Count tokens in string
     parserCountStr = subParsers.add_parser(
         "count-str",
         help="Count tokens in a provided string.",
@@ -417,7 +466,7 @@ Multiple files can be separated by spaces or commas.
         "string", type=str, help="The string to count tokens for."
     )
 
-    # Subparser for counting tokens in a file
+    # Count tokens in file
     parserCountFile = subParsers.add_parser(
         "count-file",
         help="Count tokens in a file.",
@@ -431,7 +480,7 @@ Multiple files can be separated by spaces or commas.
         help="Path to the file to count tokens for. Multiple files can be separated by commas.",
     )
 
-    # Subparser for counting tokens in multiple files or a directory
+    # Count tokens in multiple files or directory
     parserCountFiles = subParsers.add_parser(
         "count-files",
         help="Count tokens in multiple files or a directory.",
@@ -455,7 +504,7 @@ Multiple files can be separated by spaces or commas.
         help="Do not count tokens in subdirectories if a directory is given.",
     )
 
-    # Subparser for counting tokens in a directory
+    # Count tokens in directory
     parserCountDir = subParsers.add_parser(
         "count-dir",
         help="Count tokens in all files within a directory.",
@@ -475,7 +524,7 @@ Multiple files can be separated by spaces or commas.
         help="Do not count tokens in subdirectories.",
     )
 
-    # Subparser for getting the model from an encoding
+    # Get model from encoding
     parserGetModel = subParsers.add_parser(
         "get-model",
         help="Retrieves the model name from the provided encoding.",
@@ -491,7 +540,7 @@ Multiple files can be separated by spaces or commas.
         + FormatChoices(VALID_ENCODINGS),
     )
 
-    # Subparser for getting the encoding from a model
+    # Get encoding from model
     parserGetEncoding = subParsers.add_parser(
         "get-encoding",
         help="Retrieves the encoding name from the provided model.",
@@ -507,16 +556,14 @@ Multiple files can be separated by spaces or commas.
         + FormatChoices(VALID_MODELS),
     )
 
-    # Subparser for mapping tokens
+    # Map tokens
     parserMapTokens = subParsers.add_parser(
         "map-tokens",
         help="Map a list of token integers to their decoded strings.",
         description="Map a provided list of integer tokens to their corresponding decoded strings using the specified model or encoding.",
         formatter_class=CustomFormatter,
     )
-    # Common arguments for encoding/model
     AddCommonArgs(parserMapTokens)
-    # Positional arguments: list of token integers (allow comma-separated)
     parserMapTokens.add_argument(
         "tokens",
         type=str,
@@ -524,24 +571,32 @@ Multiple files can be separated by spaces or commas.
         help="List of integer tokens to map. Tokens can be separated by spaces or commas.",
     )
 
-    # Parse the arguments
-
     if len(sys.argv) == 1:
+
         parser.print_help(sys.stderr)
         sys.exit(1)
 
     args = parser.parse_args()
 
     try:
+
         encoding = None
+
         if args.model and args.encoding:
+
             encoding = GetEncoding(model=args.model, encodingName=args.encoding)
+
         elif args.model:
+
             encoding = GetEncoding(model=args.model)
+
         elif args.encoding:
+
             encoding = GetEncoding(encodingName=args.encoding)
+
         else:
-            encoding = GetEncoding(model="gpt-4o")  # Default model
+
+            encoding = GetEncoding(model="gpt-4o")
 
         if args.command == "tokenize-str":
 
@@ -555,14 +610,16 @@ Multiple files can be separated by spaces or commas.
             )
 
             if args.output:
+
                 SaveOutput(tokens, args.output)
+
             else:
+
                 print(json.dumps(tokens, ensure_ascii=False, indent=4))
 
         elif args.command == "tokenize-file":
 
             files = ParseFiles([args.file])
-
             tokens = TokenizeFiles(
                 files,
                 model=args.model,
@@ -570,20 +627,22 @@ Multiple files can be separated by spaces or commas.
                 encoding=encoding,
                 quiet=args.quiet,
                 mapTokens=args.mapTokens,
+                excludeBinary=not args.includeBinary,
+                includeHidden=args.includeHidden,
             )
 
             if args.output:
+
                 SaveOutput(tokens, args.output)
+
             else:
+
                 print(json.dumps(tokens, ensure_ascii=False, indent=4))
 
         elif args.command == "tokenize-files":
 
-            # Handle both multiple files and directory
-            # Split inputs by commas and flatten the list
             inputPaths = ParseFiles(args.input)
 
-            # Check if the input is a single directory
             if len(inputPaths) == 1 and Path(inputPaths[0]).is_dir():
 
                 tokenLists = TokenizeFiles(
@@ -594,6 +653,8 @@ Multiple files can be separated by spaces or commas.
                     recursive=not args.no_recursive,
                     quiet=args.quiet,
                     mapTokens=args.mapTokens,
+                    excludeBinary=not args.includeBinary,
+                    includeHidden=args.includeHidden,
                 )
 
             else:
@@ -605,11 +666,16 @@ Multiple files can be separated by spaces or commas.
                     encoding=encoding,
                     quiet=args.quiet,
                     mapTokens=args.mapTokens,
+                    excludeBinary=not args.includeBinary,
+                    includeHidden=args.includeHidden,
                 )
 
             if args.output:
+
                 SaveOutput(tokenLists, args.output)
+
             else:
+
                 print(json.dumps(tokenLists, ensure_ascii=False, indent=4))
 
         elif args.command == "tokenize-dir":
@@ -622,11 +688,16 @@ Multiple files can be separated by spaces or commas.
                 recursive=not args.no_recursive,
                 quiet=args.quiet,
                 mapTokens=args.mapTokens,
+                excludeBinary=not args.includeBinary,
+                includeHidden=args.includeHidden,
             )
 
             if args.output:
+
                 SaveOutput(tokenizedDir, args.output)
+
             else:
+
                 print(json.dumps(tokenizedDir, ensure_ascii=False, indent=4))
 
         elif args.command == "count-str":
@@ -643,20 +714,19 @@ Multiple files can be separated by spaces or commas.
         elif args.command == "count-file":
 
             files = ParseFiles([args.file])
-
             count = GetNumTokenFiles(
                 files,
                 model=args.model,
                 encodingName=args.encoding,
                 encoding=encoding,
                 quiet=args.quiet,
+                excludeBinary=not args.includeBinary,
+                includeHidden=args.includeHidden,
             )
-
             print(count)
 
         elif args.command == "count-files":
 
-            # Split inputs by commas and flatten the list
             inputPaths = ParseFiles(args.input)
 
             if len(inputPaths) == 1 and Path(inputPaths[0]).is_dir():
@@ -668,6 +738,8 @@ Multiple files can be separated by spaces or commas.
                     encoding=encoding,
                     recursive=not args.no_recursive,
                     quiet=args.quiet,
+                    excludeBinary=not args.includeBinary,
+                    includeHidden=args.includeHidden,
                 )
 
             else:
@@ -678,6 +750,8 @@ Multiple files can be separated by spaces or commas.
                     encodingName=args.encoding,
                     encoding=encoding,
                     quiet=args.quiet,
+                    excludeBinary=not args.includeBinary,
+                    includeHidden=args.includeHidden,
                 )
             print(totalCount)
 
@@ -690,23 +764,24 @@ Multiple files can be separated by spaces or commas.
                 encoding=encoding,
                 recursive=not args.no_recursive,
                 quiet=args.quiet,
+                excludeBinary=not args.includeBinary,
+                includeHidden=args.includeHidden,
             )
-
             print(count)
 
         elif args.command == "get-model":
+
             modelName = GetModelForEncodingName(encodingName=args.encoding)
             print(modelName)
 
         elif args.command == "get-encoding":
+
             encodingName = GetEncoding(model=args.model).name
             print(encodingName)
 
         elif args.command == "map-tokens":
 
-            # Parse tokens allowing for comma-separated inputs
             tokens = ParseTokens(args.tokens)
-
             mapped = MapTokens(
                 tokens,
                 model=args.model,
@@ -715,8 +790,11 @@ Multiple files can be separated by spaces or commas.
             )
 
             if args.output:
+
                 SaveOutput(mapped, args.output)
+
             else:
+
                 print(json.dumps(mapped, ensure_ascii=False, indent=4))
 
     except Exception as e:

@@ -8,20 +8,15 @@ Provides a custom exception for unsupported encodings.
 from pathlib import Path
 
 import chardet
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
 
 
+# Custom exception for unsupported file encodings
 class UnsupportedEncodingError(Exception):
     """
     Exception raised when a file's encoding is not UTF-8 or ASCII.
-
-    Attributes
-    ----------
-    encoding : str | None
-        The detected encoding of the file.
-    filePath : pathlib.Path or str
-        The path to the file that caused the error.
-    message : str
-        A message explaining the error.
     """
 
     def __init__(
@@ -32,67 +27,55 @@ class UnsupportedEncodingError(Exception):
     ):
         self.encoding = encoding
         self.filePath = filePath
-        self.message = (
-            f"{message}. Detected encoding: {encoding}. File path: {filePath}"
+
+        # Build a rich formatted error message
+        errorText = Text()
+        errorText.append(f"{message}", style="bold red")
+        errorText.append("\n\n")
+        errorText.append("Detected encoding: ", style="green")
+        errorText.append(f"{encoding}", style="bold")
+        errorText.append("\n")
+        errorText.append("File path: ", style="green")
+        errorText.append(f"{filePath}", style="bold blue")
+
+        panel = Panel(
+            errorText, title="Encoding Error", title_align="left", border_style="red"
         )
-        super().__init__(self.message)
+
+        console = Console(width=80, color_system="truecolor", record=True)
+
+        with console.capture() as capture:
+
+            console.print("")  # Add a new line before the panel
+            console.print(panel)
+        captured = capture.get()
+
+        # Store the formatted panel; pass a plain message to the base Exception
+        self.message = captured
+        super().__init__(message)
+
+        # Flag to ensure the rich panel is output only once
+        self._printed = False
+
+    def __str__(self) -> str:
+        # Return the rich formatted error message only the first time __str__ is called
+
+        if not self._printed:
+
+            self._printed = True
+
+            return self.message
+
+        return ""
 
 
-# Set the module to 'PyTokenCounter' to reflect in tracebacks
+# Set module for correct traceback display
 UnsupportedEncodingError.__module__ = "PyTokenCounter"
 
 
 def ReadTextFile(filePath: Path | str) -> str:
     """
-    Reads a text file using its detected encoding. Supports any encoding identified by `chardet`.
-
-    Parameters
-    ----------
-    filePath : pathlib.Path or str
-        The path to the file to be read. Can be provided as a string or a `Path` object.
-
-    Returns
-    -------
-    str
-        The content of the file as a string using the detected encoding.
-
-    Raises
-    ------
-    TypeError
-        Raised if the input `filePath` is not of type `str` or `pathlib.Path`.
-    FileNotFoundError
-        Raised if the specified file does not exist.
-    UnsupportedEncodingError
-        Raised if the file's encoding cannot be determined.
-
-    Examples
-    --------
-    Reading a valid text file with a detectable encoding:
-
-    >>> content = ReadTextFile('example.txt')
-    >>> print(content)
-
-    Handling a non-existent file:
-
-    >>> ReadTextFile('non_existent.txt')
-    Traceback (most recent call last):
-        ...
-    FileNotFoundError: File not found: /absolute/path/to/non_existent.txt
-
-    Ensuring type safety:
-
-    >>> ReadTextFile(123)
-    Traceback (most recent call last):
-        ...
-    TypeError: Unexpected type for parameter "filePath". Expected type: str or pathlib.Path. Given type: <class 'int'>
-
-    Handling a file with an undetectable encoding:
-
-    >>> try:
-    ...     content = ReadTextFile('invalid_encoding.txt')
-    ... except UnsupportedEncodingError as e:
-    ...     print(e)
-    Encoding could not be determined. File path: invalid_encoding.txt
+    Reads a text file using its detected encoding.
     """
 
     if not isinstance(filePath, str) and not isinstance(filePath, Path):
@@ -114,9 +97,16 @@ def ReadTextFile(filePath: Path | str) -> str:
 
     if encoding:
 
+        actualEncoding = encoding
         encoding = "utf-8"
 
-        return file.read_text(encoding=encoding)
+        try:
+
+            return file.read_text(encoding=encoding)
+
+        except UnicodeDecodeError:
+
+            raise UnsupportedEncodingError(encoding=actualEncoding, filePath=filePath)
 
     else:
 

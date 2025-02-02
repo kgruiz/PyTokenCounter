@@ -13,6 +13,7 @@ PyTokenCounter is a Python library designed to simplify text tokenization and to
   - [String Tokenization and Counting](#string-tokenization-and-counting)
   - [File and Directory Tokenization and Counting](#file-and-directory-tokenization-and-counting)
   - [Token Mapping](#token-mapping)
+- [Ignored Files](#ignored-files)
 - [Maintainers](#maintainers)
 - [Acknowledgements](#acknowledgements)
 - [Contributing](#contributing)
@@ -92,77 +93,86 @@ print(f"Mapped tokens: {mappedTokens}")
 PyTokenCounter can also be used as a command-line tool, making it convenient to integrate into scripts and workflows that involve **LLMs**:
 
 ```bash
-# Example usage for tokenizing a string for an LLM
+# Tokenize a string for an LLM
 tokencount tokenize-str "Hello, world!" --model gpt-4o
 
-# Example usage for tokenizing a string using the default model
+# Tokenize a string using the default model
 tokencount tokenize-str "Hello, world!"
 
-# Example usage for tokenizing a file for an LLM
+# Tokenize a file for an LLM
 tokencount tokenize-file TestFile.txt --model gpt-4o
 
-# Example usage for tokenizing a file using the default model
+# Tokenize a file using the default model
 tokencount tokenize-file TestFile.txt
 
-# Example usage for tokenizing multiple files for an LLM
+# Tokenize multiple files for an LLM
 tokencount tokenize-files TestFile1.txt TestFile2.txt --model gpt-4o
 
-# Example usage for tokenizing multiple files using the default model
+# Tokenize multiple files using the default model
 tokencount tokenize-files TestFile1.txt TestFile2.txt
 
-# Example usage for tokenizing a directory of files for an LLM
+# Tokenize a directory of files for an LLM (non-recursive)
 tokencount tokenize-files MyDirectory --model gpt-4o --no-recursive
 
-# Example usage for tokenizing a directory of files using the default model
+# Tokenize a directory of files using the default model (non-recursive)
 tokencount tokenize-files MyDirectory --no-recursive
 
-# Example usage for tokenizing a directory of files for an LLM (alternative)
+# Tokenize a directory (alternative command) for an LLM (non-recursive)
 tokencount tokenize-dir MyDirectory --model gpt-4o --no-recursive
 
-# Example usage for tokenizing a directory of files using the default model (alternative)
+# Tokenize a directory (alternative command) using the default model (non-recursive)
 tokencount tokenize-dir MyDirectory --no-recursive
 
-# Example usage for counting tokens in a string for an LLM
+# Count tokens in a string for an LLM
 tokencount count-str "This is a test string." --model gpt-4o
 
-# Example usage for counting tokens in a string using the default model
+# Count tokens in a string using the default model
 tokencount count-str "This is a test string."
 
-# Example usage for counting tokens in a file for an LLM
+# Count tokens in a file for an LLM
 tokencount count-file TestFile.txt --model gpt-4o
 
-# Example usage for counting tokens in a file using the default model
+# Count tokens in a file using the default model
 tokencount count-file TestFile.txt
 
-# Example usage for counting tokens in multiple files for an LLM
+# Count tokens in multiple files for an LLM
 tokencount count-files TestFile1.txt TestFile2.txt --model gpt-4o
 
-# Example usage for counting tokens in multiple files using the default model
+# Count tokens in multiple files using the default model
 tokencount count-files TestFile1.txt TestFile2.txt
 
-# Example usage for counting tokens in a directory for an LLM
+# Count tokens in a directory for an LLM (non-recursive)
 tokencount count-files TestDir --model gpt-4o --no-recursive
 
-# Example usage for counting tokens in a directory using the default model
+# Count tokens in a directory using the default model (non-recursive)
 tokencount count-files TestDir --no-recursive
 
-# Example usage for counting tokens in a directory for an LLM (alternative)
+# Count tokens in a directory (alternative command) for an LLM (non-recursive)
 tokencount count-dir TestDir --model gpt-4o --no-recursive
 
-# Example usage for counting tokens in a directory using the default model (alternative)
+# Count tokens in a directory (alternative command) using the default model (non-recursive)
 tokencount count-dir TestDir --no-recursive
 
-# Example to get the model associated with an encoding
+# Get the model associated with an encoding
 tokencount get-model cl100k_base
 
-# Example to get the encoding associated with a model
+# Get the encoding associated with a model
 tokencount get-encoding gpt-4o
 
-# Example to map tokens to strings for an LLM
+# Map tokens to strings for an LLM
 tokencount map-tokens 123,456,789 --model gpt-4o
 
-# Example to map tokens to strings using the default model
+# Map tokens to strings using the default model
 tokencount map-tokens 123,456,789
+
+# Include binary files
+tokencount tokenize-files MyDirectory --model gpt-4o -b
+
+# Include hidden files and directories
+tokencount tokenize-files MyDirectory --model gpt-4o -H
+
+# Combine both options: include binary files and include hidden files
+tokencount tokenize-files MyDirectory --model gpt-4o -b -H
 ```
 
 **CLI Usage Details:**
@@ -215,8 +225,8 @@ The `tokencount` CLI provides several subcommands for tokenizing and counting to
 - `-q`, `--quiet`: When used with any of the above commands, it prevents the tool from showing progress bars and minimizes output.
 - `-M`, `--mapTokens`: When used with the `tokenize-str`, `tokenize-file`, `tokenize-files`, or `tokenize-dir` commands, outputs mapped tokens instead of raw token integers.
 - `-o`, `--output`: When used with any of the commands, specifies an output JSON file to save the results to.
-
-**Note:** For detailed help on each subcommand, use `tokencount <subcommand> -h`.
+- `-b`, `--include-binary`: Include binary files in processing. (Default: binary files are excluded.)
+- `-H`, `--include-hidden`: Include hidden files and directories. (Default: hidden files and directories are skipped.)
 
 ## API
 
@@ -613,7 +623,7 @@ print(numTokens)
 
 ---
 
-#### `TokenizeFiles(inputPath: Path | str | list[Path | str], model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False, exitOnListError: bool = True, mapTokens: bool = True) -> list[int] | dict[str, list[int] | dict]`
+#### `TokenizeFiles(inputPath: Path | str | list[Path | str], model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False, exitOnListError: bool = True, mapTokens: bool = True, excludeBinary: bool = True, includeHidden: bool = False) -> list[int] | dict[str, list[int] | dict]`
 
 Tokenizes multiple files or all files within a directory into lists of token IDs or a mapping of decoded strings to tokens.
 
@@ -627,6 +637,8 @@ Tokenizes multiple files or all files within a directory into lists of token IDs
 - `quiet` (`bool`, optional): If `True`, suppresses progress updates. **Default: `False`**
 - `exitOnListError` (`bool`, optional): If `True`, stop processing the list upon encountering an error. If `False`, skip files that cause errors. **Default: `True`**
 - `mapTokens` (`bool`, optional): If `True`, outputs a dictionary mapping decoded strings to their token IDs for each file.
+- `excludeBinary` (`bool`, optional): Excludes any binary files by skipping over them. **Default: `True`**
+- `includeHidden` (`bool`, optional): Skips over hidden files and directories, including subdirectories and files of a hidden directory. **Default: `False`**
 
 **Returns:**
 
@@ -634,8 +646,8 @@ Tokenizes multiple files or all files within a directory into lists of token IDs
    - If `inputPath` is a file, returns a list of token IDs for that file.
    - If `inputPath` is a list of files, returns a dictionary where each key is the file name and the value is the list of token IDs for that file.
    - If `inputPath` is a directory:
-    - If `recursive` is `True`, returns a nested dictionary where each key is a file or subdirectory name with corresponding token lists or sub-dictionaries.
-    - If `recursive` is `False`, returns a dictionary with file names as keys and their token lists as values.
+     - If `recursive` is `True`, returns a nested dictionary where each key is a file or subdirectory name with corresponding token lists or sub-dictionaries.
+     - If `recursive` is `False`, returns a dictionary with file names as keys and their token lists as values.
 
 **Raises:**
 
@@ -676,7 +688,6 @@ print(tokens)
 tokens = tc.TokenizeFiles(inputPath=dirPath, recursive=True, mapTokens=True)
 print(tokens)
 
-
 # Tokenizing a directory using the default model
 tokens = tc.TokenizeFiles(inputPath=dirPath, recursive=True, mapTokens=True)
 print(tokens)
@@ -684,7 +695,7 @@ print(tokens)
 
 ---
 
-#### `GetNumTokenFiles(inputPath: Path | str | list[Path | str], model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False, exitOnListError: bool = True) -> int`
+#### `GetNumTokenFiles(inputPath: Path | str | list[Path | str], model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False, exitOnListError: bool = True, excludeBinary: bool = True, includeHidden: bool = False) -> int`
 
 Counts the number of tokens across multiple files or in all files within a directory.
 
@@ -697,6 +708,8 @@ Counts the number of tokens across multiple files or in all files within a direc
 - `recursive` (`bool`, optional): If `inputPath` is a directory, whether to count tokens in files in subdirectories recursively. **Default: `True`**
 - `quiet` (`bool`, optional): If `True`, suppresses progress updates. **Default: `False`**
 - `exitOnListError` (`bool`, optional): If `True`, stop processing the list upon encountering an error. If `False`, skip files that cause errors. **Default: `True`**
+- `excludeBinary` (`bool`, optional): Excludes any binary files by skipping over them. **Default: `True`**
+- `includeHidden` (`bool`, optional): Skips over hidden files and directories, including subdirectories and files of a hidden directory. **Default: `False`**
 
 **Returns:**
 
@@ -746,7 +759,7 @@ print(numTokens)
 
 ---
 
-#### `TokenizeDir(dirPath: Path | str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False, mapTokens: bool = True) -> dict[str, list[int] | dict]`
+#### `TokenizeDir(dirPath: Path | str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False, mapTokens: bool = True, excludeBinary: bool = True, includeHidden: bool = False) -> dict[str, list[int] | dict]`
 
 Tokenizes all files within a directory into lists of token IDs or a mapping of decoded strings to tokens.
 
@@ -759,6 +772,8 @@ Tokenizes all files within a directory into lists of token IDs or a mapping of d
 - `recursive` (`bool`, optional): Whether to tokenize files in subdirectories recursively. **Default: `True`**
 - `quiet` (`bool`, optional): If `True`, suppresses progress updates. **Default: `False`**
 - `mapTokens` (`bool`, optional): If `True`, outputs a dictionary mapping decoded strings to their token IDs for each file.
+- `excludeBinary` (`bool`, optional): Excludes any binary files by skipping over them. **Default: `True`**
+- `includeHidden` (`bool`, optional): Skips over hidden files and directories, including subdirectories and files of a hidden directory. **Default: `False`**
 
 **Returns:**
 
@@ -807,7 +822,7 @@ print(tokenizedDir)
 
 ---
 
-#### `GetNumTokenDir(dirPath: Path | str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False) -> int`
+#### `GetNumTokenDir(dirPath: Path | str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False, excludeBinary: bool = True, includeHidden: bool = False) -> int`
 
 Counts the number of tokens in all files within a directory.
 
@@ -819,6 +834,8 @@ Counts the number of tokens in all files within a directory.
 - `encoding` (`tiktoken.Encoding`, optional): An existing `tiktoken.Encoding` object to use for tokenization.
 - `recursive` (`bool`, optional): Whether to count tokens in subdirectories recursively. **Default: `True`**
 - `quiet` (`bool`, optional): If `True`, suppresses progress updates. **Default: `False`**
+- `excludeBinary` (`bool`, optional): Excludes any binary files by skipping over them. **Default: `True`**
+- `includeHidden` (`bool`, optional): Skips over hidden files and directories, including subdirectories and files of a hidden directory. **Default: `False`**
 
 **Returns:**
 
@@ -913,6 +930,27 @@ print(mapped)
 
 ---
 
+## Ignored Files
+
+When the functions are set to exclude binary files (default behavior), the following file extensions are ignored:
+
+| Category                        | Extensions                                                                                                                                                      |
+|---------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Image formats**               | `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`, `.webp`, `.avif`, `.tiff`, `.tif`, `.ico`, `.svgz`                                                                    |
+| **Video formats**               | `.mp4`, `.mkv`, `.mov`, `.avi`, `.wmv`, `.flv`, `.webm`, `.m4v`, `.mpeg`, `.mpg`, `.3gp`, `.3g2`                                                               |
+| **Audio formats**               | `.mp3`, `.wav`, `.flac`, `.ogg`, `.aac`, `.m4a`, `.wma`, `.aiff`, `.ape`, `.opus`                                                                               |
+| **Compressed archives**         | `.zip`, `.rar`, `.7z`, `.tar`, `.gz`, `.bz2`, `.xz`, `.lz`, `.zst`, `.cab`, `.deb`, `.rpm`, `.pkg`                                                               |
+| **Disk images**                 | `.iso`, `.dmg`, `.img`, `.vhd`, `.vmdk`                                                                                                                           |
+| **Executables & Libraries**     | `.exe`, `.msi`, `.bat`, `.dll`, `.so`, `.bin`, `.o`, `.a`, `.dylib`                                                                                             |
+| **Fonts**                       | `.ttf`, `.otf`, `.woff`, `.woff2`, `.eot`                                                                                                                         |
+| **Documents**                   | `.pdf`, `.ps`, `.eps`                                                                                                                                             |
+| **Design & Graphics**           | `.psd`, `.ai`, `.indd`, `.sketch`                                                                                                                                  |
+| **3D & CAD files**              | `.blend`, `.stl`, `.step`, `.iges`, `.fbx`, `.glb`, `.gltf`, `.3ds`, `.obj`, `.cad`                                                                             |
+| **Virtual Machines & Firmware** | `.qcow2`, `.vdi`, `.vhdx`, `.rom`, `.bin`, `.img`                                                                                                               |
+| **Miscellaneous binaries**      | `.dat`, `.pak`, `.sav`, `.nes`, `.gba`, `.nds`, `.iso`, `.jar`, `.class`, `.wasm`                                                                               |
+
+---
+
 ## Maintainers
 
 - [Kaden Gruizenga](https://github.com/kgruiz)
@@ -927,4 +965,4 @@ Contributions are welcome! Feel free to [open an issue](https://github.com/kgrui
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
+This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) file for more details.
