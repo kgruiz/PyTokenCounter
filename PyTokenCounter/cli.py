@@ -79,7 +79,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.propagate = False  # Prevent propagation
 
-
 if not logger.handlers:
 
     # Log format
@@ -234,6 +233,18 @@ def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
         type=str,
         metavar="OUTPUT_FILE",
         help="Specify an output JSON file to save the results.",
+    )
+    subParser.add_argument(
+        "--include-binary",
+        action="store_true",
+        dest="includeBinary",
+        help="Include binary files in processing. (Default: binary files are excluded.)",
+    )
+    subParser.add_argument(
+        "--include-hidden",
+        action="store_true",
+        dest="includeHidden",
+        help="Include hidden files and directories in processing. (Default: hidden files and directories are skipped.)",
     )
 
 
@@ -609,6 +620,8 @@ Multiple files can be separated by spaces or commas.
                 encoding=encoding,
                 quiet=args.quiet,
                 mapTokens=args.mapTokens,
+                excludeBinary=not args.includeBinary,
+                includeHidden=args.includeHidden,
             )
 
             if args.output:
@@ -633,6 +646,8 @@ Multiple files can be separated by spaces or commas.
                     recursive=not args.no_recursive,
                     quiet=args.quiet,
                     mapTokens=args.mapTokens,
+                    excludeBinary=not args.includeBinary,
+                    includeHidden=args.includeHidden,
                 )
 
             else:
@@ -644,6 +659,8 @@ Multiple files can be separated by spaces or commas.
                     encoding=encoding,
                     quiet=args.quiet,
                     mapTokens=args.mapTokens,
+                    excludeBinary=not args.includeBinary,
+                    includeHidden=args.includeHidden,
                 )
 
             if args.output:
@@ -664,6 +681,8 @@ Multiple files can be separated by spaces or commas.
                 recursive=not args.no_recursive,
                 quiet=args.quiet,
                 mapTokens=args.mapTokens,
+                excludeBinary=not args.includeBinary,
+                includeHidden=args.includeHidden,
             )
 
             if args.output:
@@ -694,6 +713,8 @@ Multiple files can be separated by spaces or commas.
                 encodingName=args.encoding,
                 encoding=encoding,
                 quiet=args.quiet,
+                excludeBinary=not args.includeBinary,
+                includeHidden=args.includeHidden,
             )
             print(count)
 
@@ -710,6 +731,8 @@ Multiple files can be separated by spaces or commas.
                     encoding=encoding,
                     recursive=not args.no_recursive,
                     quiet=args.quiet,
+                    excludeBinary=not args.includeBinary,
+                    includeHidden=args.includeHidden,
                 )
 
             else:
@@ -720,6 +743,8 @@ Multiple files can be separated by spaces or commas.
                     encodingName=args.encoding,
                     encoding=encoding,
                     quiet=args.quiet,
+                    excludeBinary=not args.includeBinary,
+                    includeHidden=args.includeHidden,
                 )
             print(totalCount)
 
@@ -732,6 +757,8 @@ Multiple files can be separated by spaces or commas.
                 encoding=encoding,
                 recursive=not args.no_recursive,
                 quiet=args.quiet,
+                excludeBinary=not args.includeBinary,
+                includeHidden=args.includeHidden,
             )
             print(count)
 
