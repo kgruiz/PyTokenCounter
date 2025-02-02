@@ -90,132 +90,161 @@ print(f"Mapped tokens: {mappedTokens}")
 
 ### CLI
 
-PyTokenCounter can also be used as a command-line tool, making it convenient to integrate into scripts and workflows that involve **LLMs**:
+PyTokenCounter can also be used as a command-line tool. You can use either the `tokencount` entry point or its alias `tc`. Below are examples for both:
 
 ```bash
 # Tokenize a string for an LLM
 tokencount tokenize-str "Hello, world!" --model gpt-4o
+tc tokenize-str "Hello, world!" --model gpt-4o
 
 # Tokenize a string using the default model
 tokencount tokenize-str "Hello, world!"
+tc tokenize-str "Hello, world!"
 
 # Tokenize a file for an LLM
 tokencount tokenize-file TestFile.txt --model gpt-4o
+tc tokenize-file TestFile.txt --model gpt-4o
 
 # Tokenize a file using the default model
 tokencount tokenize-file TestFile.txt
+tc tokenize-file TestFile.txt
 
 # Tokenize multiple files for an LLM
 tokencount tokenize-files TestFile1.txt TestFile2.txt --model gpt-4o
+tc tokenize-files TestFile1.txt TestFile2.txt --model gpt-4o
 
 # Tokenize multiple files using the default model
 tokencount tokenize-files TestFile1.txt TestFile2.txt
+tc tokenize-files TestFile1.txt TestFile2.txt
 
 # Tokenize a directory of files for an LLM (non-recursive)
 tokencount tokenize-files MyDirectory --model gpt-4o --no-recursive
+tc tokenize-files MyDirectory --model gpt-4o --no-recursive
 
 # Tokenize a directory of files using the default model (non-recursive)
 tokencount tokenize-files MyDirectory --no-recursive
+tc tokenize-files MyDirectory --no-recursive
 
 # Tokenize a directory (alternative command) for an LLM (non-recursive)
 tokencount tokenize-dir MyDirectory --model gpt-4o --no-recursive
+tc tokenize-dir MyDirectory --model gpt-4o --no-recursive
 
 # Tokenize a directory (alternative command) using the default model (non-recursive)
 tokencount tokenize-dir MyDirectory --no-recursive
+tc tokenize-dir MyDirectory --no-recursive
 
 # Count tokens in a string for an LLM
 tokencount count-str "This is a test string." --model gpt-4o
+tc count-str "This is a test string." --model gpt-4o
 
 # Count tokens in a string using the default model
 tokencount count-str "This is a test string."
+tc count-str "This is a test string."
 
 # Count tokens in a file for an LLM
 tokencount count-file TestFile.txt --model gpt-4o
+tc count-file TestFile.txt --model gpt-4o
 
 # Count tokens in a file using the default model
 tokencount count-file TestFile.txt
+tc count-file TestFile.txt
 
 # Count tokens in multiple files for an LLM
 tokencount count-files TestFile1.txt TestFile2.txt --model gpt-4o
+tc count-files TestFile1.txt TestFile2.txt --model gpt-4o
 
 # Count tokens in multiple files using the default model
 tokencount count-files TestFile1.txt TestFile2.txt
+tc count-files TestFile1.txt TestFile2.txt
 
 # Count tokens in a directory for an LLM (non-recursive)
 tokencount count-files TestDir --model gpt-4o --no-recursive
+tc count-files TestDir --model gpt-4o --no-recursive
 
 # Count tokens in a directory using the default model (non-recursive)
 tokencount count-files TestDir --no-recursive
+tc count-files TestDir --no-recursive
 
 # Count tokens in a directory (alternative command) for an LLM (non-recursive)
 tokencount count-dir TestDir --model gpt-4o --no-recursive
+tc count-dir TestDir --model gpt-4o --no-recursive
 
 # Count tokens in a directory (alternative command) using the default model (non-recursive)
 tokencount count-dir TestDir --no-recursive
+tc count-dir TestDir --no-recursive
 
 # Get the model associated with an encoding
 tokencount get-model cl100k_base
+tc get-model cl100k_base
 
 # Get the encoding associated with a model
 tokencount get-encoding gpt-4o
+tc get-encoding gpt-4o
 
 # Map tokens to strings for an LLM
 tokencount map-tokens 123,456,789 --model gpt-4o
+tc map-tokens 123,456,789 --model gpt-4o
 
 # Map tokens to strings using the default model
 tokencount map-tokens 123,456,789
+tc map-tokens 123,456,789
 
 # Include binary files
 tokencount tokenize-files MyDirectory --model gpt-4o -b
+tc tokenize-files MyDirectory --model gpt-4o -b
 
 # Include hidden files and directories
 tokencount tokenize-files MyDirectory --model gpt-4o -H
+tc tokenize-files MyDirectory --model gpt-4o -H
 
 # Combine both options: include binary files and include hidden files
 tokencount tokenize-files MyDirectory --model gpt-4o -b -H
+tc tokenize-files MyDirectory --model gpt-4o -b -H
 ```
 
 **CLI Usage Details:**
 
-The `tokencount` CLI provides several subcommands for tokenizing and counting tokens in strings, files, and directories, tailored for use with **LLMs**.
+The `tokencount` (or `tc`) CLI provides several subcommands for tokenizing and counting tokens in strings, files, and directories, tailored for use with **LLMs**.
 
 **Subcommands:**
 
 - `tokenize-str`: Tokenizes a provided string.
   - `tokencount tokenize-str "Your string here" --model gpt-4o`
-  - `tokencount tokenize-str "Your string here"`
+  - `tc tokenize-str "Your string here" --model gpt-4o`
 - `tokenize-file`: Tokenizes the contents of a file.
   - `tokencount tokenize-file Path/To/Your/File.txt --model gpt-4o`
-  - `tokencount tokenize-file Path/To/Your/File.txt`
+  - `tc tokenize-file Path/To/Your/File.txt --model gpt-4o`
 - `tokenize-files`: Tokenizes the contents of multiple specified files or all files within a directory.
     - `tokencount tokenize-files Path/To/Your/File1.txt Path/To/Your/File2.txt --model gpt-4o`
-    - `tokencount tokenize-files Path/To/Your/File1.txt Path/To/Your/File2.txt`
+    - `tc tokenize-files Path/To/Your/File1.txt Path/To/Your/File2.txt --model gpt-4o`
     - `tokencount tokenize-files Path/To/Your/Directory --model gpt-4o --no-recursive`
-    - `tokencount tokenize-files Path/To/Your/Directory --no-recursive`
+    - `tc tokenize-files Path/To/Your/Directory --model gpt-4o --no-recursive`
 - `tokenize-dir`: Tokenizes all files within a specified directory into lists of token IDs.
     - `tokencount tokenize-dir Path/To/Your/Directory --model gpt-4o --no-recursive`
-    - `tokencount tokenize-dir Path/To/Your/Directory --no-recursive`
+    - `tc tokenize-dir Path/To/Your/Directory --model gpt-4o --no-recursive`
 - `count-str`: Counts the number of tokens in a provided string.
   - `tokencount count-str "Your string here" --model gpt-4o`
-  - `tokencount count-str "Your string here"`
+  - `tc count-str "Your string here" --model gpt-4o`
 - `count-file`: Counts the number of tokens in a file.
   - `tokencount count-file Path/To/Your/File.txt --model gpt-4o`
-  - `tokencount count-file Path/To/Your/File.txt`
+  - `tc count-file Path/To/Your/File.txt --model gpt-4o`
 - `count-files`: Counts the number of tokens in multiple specified files or all files within a directory.
   - `tokencount count-files Path/To/Your/File1.txt Path/To/Your/File2.txt --model gpt-4o`
-  - `tokencount count-files Path/To/Your/File1.txt Path/To/Your/File2.txt`
+  - `tc count-files Path/To/Your/File1.txt Path/To/Your/File2.txt --model gpt-4o`
   - `tokencount count-files Path/To/Your/Directory --model gpt-4o --no-recursive`
-  - `tokencount count-files Path/To/Your/Directory --no-recursive`
+  - `tc count-files Path/To/Your/Directory --model gpt-4o --no-recursive`
 - `count-dir`: Counts the total number of tokens across all files in a specified directory.
   - `tokencount count-dir Path/To/Your/Directory --model gpt-4o --no-recursive`
-  - `tokencount count-dir Path/To/Your/Directory --no-recursive`
+  - `tc count-dir Path/To/Your/Directory --model gpt-4o --no-recursive`
 - `get-model`: Retrieves the model name from the provided encoding.
   - `tokencount get-model cl100k_base`
+  - `tc get-model cl100k_base`
 - `get-encoding`: Retrieves the encoding name from the provided model.
   - `tokencount get-encoding gpt-4o`
+  - `tc get-encoding gpt-4o`
 - `map-tokens`: Maps a list of token integers to their decoded strings.
     - `tokencount map-tokens 123,456,789 --model gpt-4o`
-    - `tokencount map-tokens 123,456,789`
+    - `tc map-tokens 123,456,789 --model gpt-4o`
 
 **Options:**
 
