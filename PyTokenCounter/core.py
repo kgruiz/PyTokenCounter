@@ -1720,7 +1720,6 @@ def TokenizeDir(
     dirPath = Path(dirPath).resolve()
 
     # Skip processing if the directory itself is hidden and hidden files are not to be included.
-
     if not includeHidden and dirPath.name.startswith("."):
 
         return OrderedDict()
@@ -1740,13 +1739,12 @@ def TokenizeDir(
 
         taskName = None
 
-    tokenizedDir: "OrderedDict[str, list[int] | OrderedDict]" = {}
+    tokenizedDir: OrderedDict[str, list[int] | OrderedDict] = {}
     subDirPaths: list[Path] = []
 
     for entry in dirPath.iterdir():
 
         # Skip hidden files and directories if includeHidden is False.
-
         if not includeHidden and entry.name.startswith("."):
 
             continue
@@ -1758,7 +1756,6 @@ def TokenizeDir(
         else:
 
             # Skip binary files if excludeBinary is True.
-
             if excludeBinary and entry.suffix.lower() in BINARY_EXTENSIONS:
 
                 if not quiet:
@@ -1937,7 +1934,6 @@ def GetNumTokenDir(
     dirPath = Path(dirPath).resolve()
 
     # Skip processing if the directory itself is hidden and hidden files are not to be included.
-
     if not includeHidden and dirPath.name.startswith("."):
 
         return 0
@@ -1963,7 +1959,6 @@ def GetNumTokenDir(
     for entry in dirPath.iterdir():
 
         # Skip hidden files and directories if includeHidden is False.
-
         if not includeHidden and entry.name.startswith("."):
 
             continue
@@ -1975,7 +1970,6 @@ def GetNumTokenDir(
         else:
 
             # Skip binary files if excludeBinary is True.
-
             if excludeBinary and entry.suffix.lower() in BINARY_EXTENSIONS:
 
                 if not quiet:
