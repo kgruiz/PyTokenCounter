@@ -1,6 +1,6 @@
 [project]
 name = "PyTokenCounter"
-version = "1.6.2"
+version = "1.6.3"
 description = "A Python library for tokenizing text and counting tokens using various encoding schemes."
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.11"
