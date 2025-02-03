@@ -1,4 +1,4 @@
-# core.py
+# PyTokenCounter/core.py
 
 """
 PyTokenCounter Core Module
@@ -451,6 +451,54 @@ def _CountDirFiles(dirPath: Path, recursive: bool = True) -> int:
     return numFiles
 
 
+def _ComputeTotalTokens(structure: any) -> int:
+    """
+    Compute the total number of tokens from a nested token structure.
+
+    This helper recursively processes a token structure that may be:
+    - an integer (in which case it is returned directly),
+    - a list of tokens (returning its length), or
+    - a dictionary (in which case it sums the token counts of its values).
+    If the dictionary has a "numTokens" key, that value is returned.
+
+    Parameters
+    ----------
+    structure : any
+        The token structure which can be an int, list, or dict.
+
+    Returns
+    -------
+    int
+        The total number of tokens represented in the structure.
+    """
+
+    if isinstance(structure, int):
+
+        return structure
+
+    elif isinstance(structure, list):
+
+        return len(structure)
+
+    elif isinstance(structure, dict):
+
+        if "numTokens" in structure:
+
+            return structure["numTokens"]
+
+        total = 0
+
+        for value in structure.values():
+
+            total += _ComputeTotalTokens(value)
+
+        return total
+
+    else:
+
+        return 0
+
+
 def GetModelMappings() -> OrderedDict:
     """
     Get the mappings between models and their encodings.
@@ -828,7 +876,13 @@ def MapTokens(
         The name of the encoding to use. Must be compatible with the provided model
 
 
+
+
+
         if both are specified.
+
+
+
 
 
 
@@ -836,7 +890,13 @@ def MapTokens(
         The encoding object to use. Must match the specified model and/or encoding name
 
 
+
+
+
         if they are provided.
+
+
+
 
 
 
@@ -1330,7 +1390,7 @@ def TokenizeFile(
     encoding: tiktoken.Encoding | None = None,
     quiet: bool = False,
     mapTokens: bool = True,
-) -> list[int]:
+) -> list[int] | OrderedDict[str, list[int] | OrderedDict]:
     """
     Tokenize the contents of a file into a list of token IDs using the specified model or encoding.
 
@@ -1340,32 +1400,37 @@ def TokenizeFile(
         The path to the file to tokenize.
     model : str or None, optional, default="gpt-4o"
         The name of the model to use for encoding. If provided, the encoding
-        associated with the model will be used. Default is None.
+        associated with the model will be used.
     encodingName : str or None, optional
         The name of the encoding to use. If provided, it must match the encoding
-        associated with the specified model. Default is None.
+        associated with the specified model.
     encoding : tiktoken.Encoding or None, optional
         An existing tiktoken.Encoding object to use for tokenization. If provided,
-        it must match the encoding derived from the model or encodingName. Default is None.
+        it must match the encoding derived from the model or encodingName.
     quiet : bool, optional
-        If True, suppress progress updates. Default is False.
+        If True, suppress progress updates (default is False).
+    mapTokens : bool, optional, default=True
+        If True, returns the tokenized result as an OrderedDict with the file name as the key.
+        The associated value is itself an OrderedDict with two keys:
+            - "numTokens": the number of tokens in the file,
+            - "tokens": the list of token IDs.
+        Otherwise, returns a list of token IDs.
 
     Returns
     -------
-    list of int
-        A list of token IDs representing the tokenized file contents.
+    list[int] or OrderedDict[str, list[int] | OrderedDict]
+        If mapTokens is False, a list of token IDs representing the tokenized file contents.
+        If mapTokens is True, an OrderedDict with the file name as the key and as its value another OrderedDict
+
+        with keys "numTokens" and "tokens" corresponding to the token count and token list, respectively.
+
 
     Raises
     ------
     TypeError
         If the types of `filePath`, `model`, `encodingName`, or `encoding` are incorrect.
-    ValueError
-        If the provided `model` or `encodingName` is invalid, or if there is a
-        mismatch between the model and encoding name, or between the provided
-        encoding and the derived encoding.
     UnsupportedEncodingError
-        If the file's encoding is not supported (i.e., not UTF-8, ASCII, or another
-        text encoding format supported by the chardet package).
+        If the file's encoding is not supported.
     FileNotFoundError
         If the specified file does not exist.
 
@@ -1378,7 +1443,12 @@ def TokenizeFile(
     >>> filePath = Path("./PyTokenCounter/Tests/Input/TestFile1.txt")
     >>> tokens = TokenizeFile(filePath=filePath, model="gpt-4o")
     >>> print(tokens)
-    [2305, 290, 7334, 132491, 11, 290, ..., 11526, 13]
+    OrderedDict({
+        "TestFile1.txt": OrderedDict({
+            "numTokens": 221,
+            "tokens": [2305, 290, 7334, 132491, 11, 290, ..., 11526, 13]
+        })
+    })
 
     Tokenizing a file with an existing encoding object:
 
@@ -1389,7 +1459,12 @@ def TokenizeFile(
     >>> filePath = Path("./PyTokenCounter/Tests/Input/TestFile2.txt")
     >>> tokens = TokenizeFile(filePath=filePath, encoding=encoding)
     >>> print(tokens)
-    [976, 13873, 10377, 472, 261, ..., 3333, 13]
+    OrderedDict({
+        "TestFile2.txt": OrderedDict({
+            "numTokens": 213,
+            "tokens": [976, 13873, 10377, 472, 261, ..., 3333, 13]
+        })
+    })
     """
 
     if not isinstance(filePath, (str, Path)):
@@ -1417,7 +1492,6 @@ def TokenizeFile(
         )
 
     filePath = Path(filePath)
-
     fileContents = ReadTextFile(filePath=filePath)
 
     if not isinstance(fileContents, str):
@@ -1439,6 +1513,7 @@ def TokenizeFile(
         encodingName=encodingName,
         encoding=encoding,
         quiet=quiet,
+        mapTokens=mapTokens,
     )
 
     if hasBar:
@@ -1450,7 +1525,18 @@ def TokenizeFile(
             quiet=quiet,
         )
 
-    return tokens
+    if mapTokens:
+
+        # Return an OrderedDict with the file name as key and a nested OrderedDict
+        # containing "numTokens" and "tokens" as keys.
+
+        return OrderedDict(
+            {filePath.name: OrderedDict({"numTokens": len(tokens), "tokens": tokens})}
+        )
+
+    else:
+
+        return tokens
 
 
 def GetNumTokenFile(
@@ -1459,7 +1545,8 @@ def GetNumTokenFile(
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
     quiet: bool = False,
-) -> int:
+    mapTokens: bool = False,
+) -> int | OrderedDict[str, int]:
     """
     Get the number of tokens in a file based on the specified model or encoding.
 
@@ -1478,23 +1565,24 @@ def GetNumTokenFile(
         it must match the encoding derived from the model or encodingName.
     quiet : bool, optional
         If True, suppress progress updates (default is False).
+    mapTokens : bool, optional, default=False
+        If True, returns the token count as an OrderedDict with the file name as the key.
+        Otherwise, returns an integer token count.
 
     Returns
     -------
-    int
-        The number of tokens in the file.
+    int or OrderedDict[str, int]
+        If mapTokens is False, the number of tokens in the file.
+        If mapTokens is True, an OrderedDict mapping the file name to its token count.
 
     Raises
     ------
     TypeError
         If the types of "filePath", "model", "encodingName", or "encoding" are incorrect.
     ValueError
-        If the provided "model" or "encodingName" is invalid, or if there is a
-        mismatch between the model and encoding name, or between the provided
-        encoding and the derived encoding.
+        If the provided "model" or "encodingName" is invalid.
     UnsupportedEncodingError
-        If the file's encoding is not supported (i.e., not UTF-8, ASCII, or another
-        text encoding format supported by the chardet package).
+        If the file's encoding is not supported.
     FileNotFoundError
         If the specified file does not exist.
 
@@ -1547,15 +1635,16 @@ def GetNumTokenFile(
         taskName = f"Counting Tokens in {filePath.name}"
         _InitializeTask(taskName=taskName, total=1, quiet=quiet)
 
-    numTokens = len(
-        TokenizeFile(
-            filePath=filePath,
-            model=model,
-            encodingName=encodingName,
-            encoding=encoding,
-            quiet=quiet,
-        )
+    tokens = TokenizeFile(
+        filePath=filePath,
+        model=model,
+        encodingName=encodingName,
+        encoding=encoding,
+        quiet=quiet,
+        mapTokens=False,
     )
+
+    count = len(tokens)
 
     if hasBar:
 
@@ -1566,7 +1655,13 @@ def GetNumTokenFile(
             quiet=quiet,
         )
 
-    return numTokens
+    if mapTokens:
+
+        return OrderedDict({filePath.name: count})
+
+    else:
+
+        return count
 
 
 def TokenizeDir(
@@ -1600,19 +1695,27 @@ def TokenizeDir(
         Whether to tokenize files in subdirectories recursively.
     quiet : bool, default False
         If True, suppress progress updates.
+    mapTokens : bool, default True
+        If True, returns the tokenized result as a nested OrderedDict with file or directory names as keys.
+        For files, the value is an OrderedDict with the file name as key and the token list as the value.
+        For directories, the value is an OrderedDict with two keys:
+            - "numTokens": the total number of tokens in that directory and its subdirectories,
+            - "tokens": the nested OrderedDict mapping of tokenized contents.
     excludeBinary : bool, default True
         Excludes any binary files by skipping over them.
     includeHidden : bool, default False
         Skips over hidden files and directories, including subdirectories and files of a hidden directory.
-    mapTokens : bool, default True
-        [Existing parameter description.]
 
     Returns
     -------
     OrderedDict[str, list[int] | OrderedDict]
         A nested OrderedDictionary where each key is a file or subdirectory name:
-        - If the key is a file, its value is a list of token IDs.
-        - If the key is a subdirectory, its value is another OrderedDictionary following the same structure.
+        - For a file, if mapTokens is True, the value is an OrderedDict with the file name as key and the token list as the value;
+
+          if mapTokens is False, the value is the list of token IDs.
+
+        - For a subdirectory, if mapTokens is True, the value is an OrderedDict with keys "numTokens" (total tokens in the directory)
+          and "tokens" (the nested token structure); if mapTokens is False, the value is the nested token structure.
 
     Raises
     ------
@@ -1631,59 +1734,13 @@ def TokenizeDir(
     >>> tokenizedDir = TokenizeDir(dirPath=dirPath, model='gpt-4o')
     >>> print(tokenizedDir)
     {
-            'TestDir1.txt': [
-                976, 19458, 5831, 23757, 306, 290, ..., 26321, 13
-            ],
-            'TestDir2.txt': {
-                'numTokens': 132,
-                'tokens': [
-                    976,
-                    5030,
-                    45940,
-                    295,
-                    483,
-                   ...,
-                   1665,
-                   4717,
-                   13
-                ]
-            },
-            'TestDir3.txt': {
-                'numTokens': 140,
-                'tokens': [
-                    976, 29011, 38841, 306, 483,  ..., 16592, 316, 21846, 4194, 483, 290, 69214, 13
-                ]
-            },
-            'TestSubDir': {
-                'TestDir4.txt': {
-                    'numTokens': 127,
-                    'tokens': [
-                        976,
-                        21689,
-                        12761,
-                        50217,
-                        71327,
-                        412,
-                        ...,
-                        10740,
-                        13
-                    ]
-                },
-                'TestDir5.txt': {
-                    'numTokens': 128,
-                    'tokens': [
-                        65307,
-                        16953,
-                        34531,
-                        290,
-                        37603,
-                        306,
-                       ...,
-                       34618,
-                       13
-                    ]
-                }
+        'TestDir1.txt': OrderedDict({'TestDir1.txt': [976, 19458, 5831, 23757, 306, 290, ..., 26321, 13]}),
+        'TestSubDir': OrderedDict({
+            'numTokens': 132,
+            'tokens': {
+                'TestDir2.txt': OrderedDict({'TestDir2.txt': [976, 5030, 45940, 295, 483, ..., 1665, 4717, 13]})
             }
+        })
     }
     """
 
@@ -1720,6 +1777,7 @@ def TokenizeDir(
     dirPath = Path(dirPath).resolve()
 
     # Skip processing if the directory itself is hidden and hidden files are not to be included.
+
     if not includeHidden and dirPath.name.startswith("."):
 
         return OrderedDict()
@@ -1739,12 +1797,13 @@ def TokenizeDir(
 
         taskName = None
 
-    tokenizedDir: OrderedDict[str, list[int] | OrderedDict] = {}
+    tokenizedDir: OrderedDict[str, list[int] | OrderedDict] = OrderedDict()
     subDirPaths: list[Path] = []
 
     for entry in dirPath.iterdir():
 
         # Skip hidden files and directories if includeHidden is False.
+
         if not includeHidden and entry.name.startswith("."):
 
             continue
@@ -1756,6 +1815,7 @@ def TokenizeDir(
         else:
 
             # Skip binary files if excludeBinary is True.
+
             if excludeBinary and entry.suffix.lower() in BINARY_EXTENSIONS:
 
                 if not quiet:
@@ -1778,44 +1838,38 @@ def TokenizeDir(
                     quiet=quiet,
                 )
 
-            try:
+            tokenizedFile = TokenizeFile(
+                filePath=entry,
+                model=model,
+                encodingName=encodingName,
+                encoding=encoding,
+                quiet=quiet,
+                mapTokens=mapTokens,
+            )
 
-                tokenizedFile = TokenizeFile(
-                    filePath=entry,
-                    model=model,
-                    encodingName=encodingName,
-                    encoding=encoding,
-                    quiet=quiet,
-                )
+            if mapTokens:
+
+                # TokenizeFile returns an OrderedDict with the file name as key.
+                tokenizedDir.update(tokenizedFile)
+
+            else:
+
                 tokenizedDir[entry.name] = tokenizedFile
 
-                if not quiet:
+            if not quiet:
 
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=1,
-                        description=f"Done Tokenizing {entry.relative_to(dirPath)}",
-                        quiet=quiet,
-                    )
-
-            except UnsupportedEncodingError as e:
-
-                if not quiet:
-
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=1,
-                        description=f"Skipping {entry.relative_to(dirPath)}",
-                        quiet=quiet,
-                    )
-
-                continue
+                _UpdateTask(
+                    taskName=taskName,
+                    advance=1,
+                    description=f"Done Tokenizing {entry.relative_to(dirPath)}",
+                    quiet=quiet,
+                )
 
     if recursive:
 
         for subDirPath in subDirPaths:
 
-            tokenizedSubDir = TokenizeDir(
+            subStructure = TokenizeDir(
                 dirPath=subDirPath,
                 model=model,
                 encodingName=encodingName,
@@ -1824,11 +1878,19 @@ def TokenizeDir(
                 quiet=quiet,
                 excludeBinary=excludeBinary,
                 includeHidden=includeHidden,
+                mapTokens=mapTokens,
             )
 
-            if tokenizedSubDir:
+            if mapTokens:
 
-                tokenizedDir[subDirPath.name] = tokenizedSubDir
+                totalTokens = _ComputeTotalTokens(subStructure)
+                tokenizedDir[subDirPath.name] = OrderedDict(
+                    {"numTokens": totalTokens, "tokens": subStructure}
+                )
+
+            else:
+
+                tokenizedDir[subDirPath.name] = subStructure
 
     return tokenizedDir
 
@@ -1842,7 +1904,8 @@ def GetNumTokenDir(
     quiet: bool = False,
     excludeBinary: bool = True,
     includeHidden: bool = False,
-) -> int:
+    mapTokens: bool = False,
+) -> int | OrderedDict[str, int | OrderedDict]:
     """
     Get the number of tokens in all files within a directory based on the specified model or encoding.
 
@@ -1867,11 +1930,19 @@ def GetNumTokenDir(
         Excludes any binary files by skipping over them.
     includeHidden : bool, default False
         Skips over hidden files and directories, including subdirectories and files of a hidden directory.
+    mapTokens : bool, default False
+        If True, returns the token counts as a nested OrderedDict mirroring the directory structure.
+        For files, the count is an integer.
+        For directories, the value is an OrderedDict with two keys:
+            - "numTokens": the total number of tokens in that directory and its subdirectories,
+            - "tokens": the nested OrderedDict mapping file/directory names to their token counts.
+        Otherwise, returns the total token count as an integer.
 
     Returns
     -------
-    int
-        The total number of tokens across all files in the directory.
+    int or OrderedDict[str, int | OrderedDict]
+        If mapTokens is False, the total number of tokens across all files in the directory.
+        If mapTokens is True, an OrderedDict mirroring the directory structure with token counts.
 
     Raises
     ------
@@ -1895,7 +1966,6 @@ def GetNumTokenDir(
     >>> total_tokens = GetNumTokenDir(dirPath=dirPath, encoding=encoding, recursive=False)
     >>> print(total_tokens)
     2000
-    >>> # Counting tokens with recursion
     >>> total_tokens = GetNumTokenDir(dirPath=dirPath, model='gpt-3.5-turbo', recursive=True)
     >>> print(total_tokens)
     3000
@@ -1933,10 +2003,9 @@ def GetNumTokenDir(
 
     dirPath = Path(dirPath).resolve()
 
-    # Skip processing if the directory itself is hidden and hidden files are not to be included.
     if not includeHidden and dirPath.name.startswith("."):
 
-        return 0
+        return OrderedDict() if mapTokens else 0
 
     if not dirPath.is_dir():
 
@@ -1953,12 +2022,18 @@ def GetNumTokenDir(
 
         taskName = None
 
-    runningTokenTotal = 0
+    if mapTokens:
+
+        result: OrderedDict[str, int | OrderedDict] = OrderedDict()
+
+    else:
+
+        runningTokenTotal = 0
+
     subDirPaths: list[Path] = []
 
     for entry in dirPath.iterdir():
 
-        # Skip hidden files and directories if includeHidden is False.
         if not includeHidden and entry.name.startswith("."):
 
             continue
@@ -1969,7 +2044,6 @@ def GetNumTokenDir(
 
         else:
 
-            # Skip binary files if excludeBinary is True.
             if excludeBinary and entry.suffix.lower() in BINARY_EXTENSIONS:
 
                 if not quiet:
@@ -1992,57 +2066,71 @@ def GetNumTokenDir(
                     quiet=quiet,
                 )
 
-            try:
+            count = GetNumTokenFile(
+                filePath=entry,
+                model=model,
+                encodingName=encodingName,
+                encoding=encoding,
+                quiet=quiet,
+                mapTokens=False,
+            )
 
-                runningTokenTotal += GetNumTokenFile(
-                    filePath=entry,
-                    model=model,
-                    encodingName=encodingName,
-                    encoding=encoding,
+            if mapTokens:
+
+                result[entry.name] = count
+
+            else:
+
+                runningTokenTotal += count
+
+            if not quiet:
+
+                _UpdateTask(
+                    taskName=taskName,
+                    advance=1,
+                    description=f"Done Counting Tokens in {entry.relative_to(dirPath)}",
                     quiet=quiet,
                 )
 
-                if not quiet:
-
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=1,
-                        description=f"Done Counting Tokens in {entry.relative_to(dirPath)}",
-                        quiet=quiet,
-                    )
-
-            except UnsupportedEncodingError:
-
-                if not quiet:
-
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=1,
-                        description=f"Skipping {entry.relative_to(dirPath)}",
-                        quiet=quiet,
-                    )
-
-                continue
-
     for subDirPath in subDirPaths:
 
-        runningTokenTotal += GetNumTokenDir(
-            dirPath=subDirPath,
-            model=model,
-            encodingName=encodingName,
-            encoding=encoding,
-            recursive=recursive,
-            quiet=quiet,
-            excludeBinary=excludeBinary,
-            includeHidden=includeHidden,
-        )
+        if mapTokens:
 
-    return runningTokenTotal
+            subResult = GetNumTokenDir(
+                dirPath=subDirPath,
+                model=model,
+                encodingName=encodingName,
+                encoding=encoding,
+                recursive=recursive,
+                quiet=quiet,
+                excludeBinary=excludeBinary,
+                includeHidden=includeHidden,
+                mapTokens=True,
+            )
+            subTotal = _ComputeTotalTokens(subResult)
+            result[subDirPath.name] = OrderedDict(
+                {"numTokens": subTotal, "tokens": subResult}
+            )
+
+        else:
+
+            runningTokenTotal += GetNumTokenDir(
+                dirPath=subDirPath,
+                model=model,
+                encodingName=encodingName,
+                encoding=encoding,
+                recursive=recursive,
+                quiet=quiet,
+                excludeBinary=excludeBinary,
+                includeHidden=includeHidden,
+                mapTokens=False,
+            )
+
+    return result if mapTokens else runningTokenTotal
 
 
 def TokenizeFiles(
     inputPath: Path | str | list[Path | str],
-    /,
     model: str | None = "gpt-4o",
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
@@ -2052,14 +2140,14 @@ def TokenizeFiles(
     mapTokens: bool = True,
     excludeBinary: bool = True,
     includeHidden: bool = False,
-) -> "list[int] | OrderedDict[str, list[int] | OrderedDict]":
+) -> list[int] | OrderedDict[str, list[int] | OrderedDict]:
     """
     Tokenize multiple files or all files within a directory into lists of token IDs using the specified model or encoding.
 
     Parameters
     ----------
     inputPath : Path, str, or list of Path or str
-        The path to a file or directory, or a list of file paths to tokenize.
+        The path to a file or directory, or a list of file/directory paths to tokenize.
     model : str or None, optional, default="gpt-4o"
         The name of the model to use for encoding. If provided, the encoding
         associated with the model will be used.
@@ -2070,40 +2158,44 @@ def TokenizeFiles(
         An existing tiktoken.Encoding object to use for tokenization. If provided,
         it must match the encoding derived from the model or encodingName.
     recursive : bool, default True
-        If inputPath is a directory, whether to tokenize files in subdirectories
-        recursively.
+        If inputPath is a directory, whether to tokenize files in subdirectories recursively.
     quiet : bool, default False
         If True, suppress progress updates.
     exitOnListError : bool, default True
         If True, stop processing the list upon encountering an error. If False,
-        skip files that cause errors.
+        skip files/directories that cause errors.
     excludeBinary : bool, default True
         Excludes any binary files by skipping over them.
     includeHidden : bool, default False
         Skips over hidden files and directories, including subdirectories and files of a hidden directory.
     mapTokens : bool, default True
-        [Existing parameter description.]
+        If True, returns the tokenized result as an OrderedDict with file or directory names as keys.
+        For files, the value is an OrderedDict with the file name as key and the token list as the value.
+        For directories, the value is an OrderedDict with two keys:
+            - "numTokens": the total number of tokens in that directory (including subdirectories if recursive is True),
+            - "tokens": the nested OrderedDict mapping file/directory names to their tokenized contents.
+        If False and inputPath is a file, returns a list of token IDs.
 
     Returns
     -------
-    list[int] | OrderedDict[str, list[int] | OrderedDict]
-        - If `inputPath` is a file, returns a list of token IDs for that file.
-        - If `inputPath` is a list of files, returns an OrderedDictionary where each key is
-          the file name and the value is the list of token IDs for that file.
+    list[int] or OrderedDict[str, list[int] | OrderedDict]
+        - If `inputPath` is a file, returns a list of token IDs for that file if mapTokens is False,
+          or an OrderedDict with the file name as the key and the token list as the value if mapTokens is True.
+        - If `inputPath` is a list, returns an OrderedDict mapping each file or directory name to its tokenized output.
+          For directories (when mapTokens is True) the value includes both "numTokens" and "tokens" keys.
         - If `inputPath` is a directory:
-          - If `recursive` is True, returns a nested OrderedDictionary where each key is a
-            file or subdirectory name with corresponding token lists or sub-OrderedDictionaries.
-          - If `recursive` is False, returns an OrderedDictionary with file names as keys and
-            their token lists as values.
+          - If `recursive` is True, returns a nested OrderedDict where for each subdirectory the value is an OrderedDict
+
+            with keys "numTokens" (total tokens in that directory and its subdirectories) and "tokens" (the nested token structure).
+
+          - If `recursive` is False, returns an OrderedDict with file names as keys and their token lists as values.
 
     Raises
     ------
     TypeError
-        If the types of `inputPath`, `model`, `encodingName`, `encoding`, or
-        `recursive` are incorrect.
+        If the types of `inputPath`, `model`, `encodingName`, `encoding`, or `recursive` are incorrect.
     ValueError
-        If any of the provided file paths in a list are not files, or if a provided
-        directory path is not a directory.
+        If any of the provided paths in a list are neither files nor directories.
     UnsupportedEncodingError
         If any of the files to be tokenized have an unsupported encoding.
     RuntimeError
@@ -2111,179 +2203,59 @@ def TokenizeFiles(
 
     Examples
     --------
-    Tokenizing a list of files with a specified model:
-
+    Tokenizing a mixed list of files and directories:
     >>> from PyTokenCounter import TokenizeFiles
     >>> from pathlib import Path
-    >>> tokens = TokenizeFiles(inputPath=[Path("./PyTokenCounter/Tests/Input/TestFile1.txt"), Path("./PyTokenCounter/Tests/Input/TestFile2.txt")], model='gpt-4o')
+    >>> paths = [Path("./TestFile1.txt"), Path("./TestDirectory")]
+    >>> tokens = TokenizeFiles(inputPath=paths, model='gpt-4o', recursive=True)
     >>> print(tokens)
-    {
-        'TestFile1.txt': [2305, 290, 7334, 132491, 11, 290, ..., 11526, 13],
-        'TestFile2.txt': [976, 13873, 10377, 472, 261, ..., 3333, 13]
-    }
-
-    Tokenizing a directory with a specific encoding and non-recursive:
-
-    >>> from PyTokenCounter import TokenizeFiles
-    >>> import tiktoken
-    >>> from pathlib import Path
-    >>> encoding = tiktoken.get_encoding('p50k_base')
-    >>> dirPath = Path("./PyTokenCounter/Tests/Input/TestDirectory")
-    >>> tokens = TokenizeFiles(inputPath=dirPath, encoding=encoding, recursive=False)
-    >>> print(tokens)
-    {
-        'TestDir1.txt': [976, 19458, 5831, 23757, 306, ..., 26321, 13],
-        'TestDir2.txt': [976, 5030, 45940, 295, 483, ..., 48614, 1665, 4717, 13],
-        'TestDir3.txt': [976, 29011, 38841, 306, 483, ..., 16592, 316, 21846, 4194, 483, 290, 69214, 13]
-    }
-
-    Handling a list with a non-file entry:
-
-    >>> TokenizeFiles(inputPath=['./PyTokenCounter/Tests/Input/TestFile1.txt', './PyTokenCounter/Tests/Input/TestDirectory'])
-    Traceback (most recent call last):
-        ...
-    ValueError: Given list contains non-file entries: [Path('./PyTokenCounter/Tests/Input/TestDirectory')]
-
-    Tokenizing a directory with recursion:
-
-    >>> from PyTokenCounter import TokenizeFiles
-    >>> from pathlib import Path
-    >>> dirPath = Path("./PyTokenCounter/Tests/Input/TestDirectory")
-    >>> tokens = TokenizeFiles(inputPath=dirPath, model='gpt-4o', recursive=True)
-    >>> print(tokens)
-    {
-            'TestDir1.txt': [976, 19458, 5831, 23757, 306, 290, ..., 26321, 13],
-            'TestDir2.txt': {
-                'numTokens': 132,
-                'tokens': [
-                    976,
-                    5030,
-                    45940,
-                    295,
-                    483,
-                   ...,
-                   1665,
-                   4717,
-                   13
-                ]
-            },
-            'TestDir3.txt': {
-                'numTokens': 140,
-                'tokens': [
-                    976, 29011, 38841, 306, 483,  ..., 16592, 316, 21846, 4194, 483, 290, 69214, 13
-                ]
-            },
-            'TestSubDir': {
-                'TestDir4.txt': {
-                    'numTokens': 127,
-                    'tokens': [
-                        976,
-                        21689,
-                        12761,
-                        50217,
-                        71327,
-                        412,
-                        ...,
-                        10740,
-                        13
-                    ]
-                },
-                'TestDir5.txt': {
-                    'numTokens': 128,
-                    'tokens': [
-                        65307,
-                        16953,
-                        34531,
-                        290,
-                        37603,
-                        306,
-                       ...,
-                       34618,
-                       13
-                    ]
-                }
-            }
-    }
+    OrderedDict({
+        'TestFile1.txt': OrderedDict({'TestFile1.txt': [2305, 290, 7334, ...]}),
+        'TestDirectory': OrderedDict({
+            'numTokens': 657,
+            'tokens': { ... nested structure ... }
+        })
+    })
     """
-
-    if not isinstance(inputPath, (str, Path, list)):
-
-        raise TypeError(
-            f'Unexpected type for parameter "inputPath". Expected type: str, pathlib.Path, or list. Given type: {type(inputPath)}'
-        )
-
-    if isinstance(inputPath, list):
-
-        if not all(isinstance(item, (str, Path)) for item in inputPath):
-
-            listTypes = set(type(item) for item in inputPath)
-
-            raise TypeError(
-                f'Unexpected type for parameter "inputPath". Expected type: list of str or pathlib.Path. Given list contains types: {listTypes}'
-            )
-
-    if model is not None and not isinstance(model, str):
-
-        raise TypeError(
-            f'Unexpected type for parameter "model". Expected type: str. Given type: {type(model)}'
-        )
-
-    if encodingName is not None and not isinstance(encodingName, str):
-
-        raise TypeError(
-            f'Unexpected type for parameter "encodingName". Expected type: str. Given type: {type(encodingName)}'
-        )
-
-    if encoding is not None and not isinstance(encoding, tiktoken.Encoding):
-
-        raise TypeError(
-            f'Unexpected type for parameter "encoding". Expected type: tiktoken.Encoding. Given type: {type(encoding)}'
-        )
+    # If inputPath is a list, allow files and directories.
 
     if isinstance(inputPath, list):
 
         inputPath = [Path(entry) for entry in inputPath]
+        tokenizedResults: OrderedDict[str, any] = OrderedDict()
+        numEntries = len(inputPath)
 
-        if not all(entry.is_file() for entry in inputPath):
+        if not quiet:
 
-            nonFiles = [entry for entry in inputPath if not entry.is_file()]
+            _InitializeTask(
+                taskName="Tokenizing File/Directory List", total=numEntries, quiet=quiet
+            )
 
-            raise ValueError(f"Given list contains non-file entries: {nonFiles}")
+        for entry in inputPath:
 
-        else:
+            if not includeHidden and entry.name.startswith("."):
 
-            tokenizedFiles: "OrderedDict[str, list[int]]" = OrderedDict()
-            numFiles = len(inputPath)
+                if not quiet:
 
-            if not quiet:
+                    _UpdateTask(
+                        taskName="Tokenizing File/Directory List",
+                        advance=1,
+                        description=f"Skipping hidden entry {entry.name}",
+                        quiet=quiet,
+                    )
 
-                _InitializeTask(
-                    taskName="Tokenizing File List", total=numFiles, quiet=quiet
-                )
+                continue
 
-            for file in inputPath:
+            if entry.is_file():
 
-                if not includeHidden and file.name.startswith("."):
-
-                    if not quiet:
-
-                        _UpdateTask(
-                            taskName="Tokenizing File List",
-                            advance=1,
-                            description=f"Skipping hidden file {file.name}",
-                            quiet=quiet,
-                        )
-
-                    continue
-
-                if excludeBinary and file.suffix.lower() in BINARY_EXTENSIONS:
+                if excludeBinary and entry.suffix.lower() in BINARY_EXTENSIONS:
 
                     if not quiet:
 
                         _UpdateTask(
-                            taskName="Tokenizing File List",
+                            taskName="Tokenizing File/Directory List",
                             advance=1,
-                            description=f"Skipping binary file {file.name}",
+                            description=f"Skipping binary file {entry.name}",
                             quiet=quiet,
                         )
 
@@ -2292,112 +2264,133 @@ def TokenizeFiles(
                 if not quiet:
 
                     _UpdateTask(
-                        taskName="Tokenizing File List",
+                        taskName="Tokenizing File/Directory List",
                         advance=0,
-                        description=f"Tokenizing {file.name}",
+                        description=f"Tokenizing file {entry.name}",
                         quiet=quiet,
                     )
+                result = TokenizeFile(
+                    filePath=entry,
+                    model=model,
+                    encodingName=encodingName,
+                    encoding=encoding,
+                    quiet=quiet,
+                    mapTokens=mapTokens,
+                )
 
-                if exitOnListError:
+                if mapTokens:
 
-                    tokenizedFiles[file.name] = TokenizeFile(
-                        filePath=file,
-                        model=model,
-                        encodingName=encodingName,
-                        encoding=encoding,
-                        quiet=quiet,
-                    )
-
-                    if not quiet:
-
-                        _UpdateTask(
-                            taskName="Tokenizing File List",
-                            advance=1,
-                            description=f"Done Tokenizing {file.name}",
-                            quiet=quiet,
-                        )
+                    tokenizedResults.update(result)
 
                 else:
 
-                    try:
+                    tokenizedResults[entry.name] = result
 
-                        tokenizedFiles[file.name] = TokenizeFile(
-                            filePath=file,
-                            model=model,
-                            encodingName=encodingName,
-                            encoding=encoding,
-                            quiet=quiet,
-                        )
+                if not quiet:
 
-                        if not quiet:
+                    _UpdateTask(
+                        taskName="Tokenizing File/Directory List",
+                        advance=1,
+                        description=f"Done tokenizing file {entry.name}",
+                        quiet=quiet,
+                    )
 
-                            _UpdateTask(
-                                taskName="Tokenizing File List",
-                                advance=1,
-                                description=f"Done Tokenizing {file.name}",
-                                quiet=quiet,
-                            )
+            elif entry.is_dir():
 
-                    except UnsupportedEncodingError:
+                if not quiet:
 
-                        if not quiet:
+                    _UpdateTask(
+                        taskName="Tokenizing File/Directory List",
+                        advance=0,
+                        description=f"Tokenizing directory {entry.name}",
+                        quiet=quiet,
+                    )
+                subMapping = TokenizeDir(
+                    dirPath=entry,
+                    model=model,
+                    encodingName=encodingName,
+                    encoding=encoding,
+                    recursive=recursive,
+                    quiet=quiet,
+                    excludeBinary=excludeBinary,
+                    includeHidden=includeHidden,
+                    mapTokens=mapTokens,
+                )
 
-                            _UpdateTask(
-                                taskName="Tokenizing File List",
-                                advance=1,
-                                description=f"Skipping {file.name}",
-                                quiet=quiet,
-                            )
+                if mapTokens:
 
-                        continue
+                    totalTokens = _ComputeTotalTokens(subMapping)
+                    tokenizedResults[entry.name] = OrderedDict(
+                        {"numTokens": totalTokens, "tokens": subMapping}
+                    )
 
-            return tokenizedFiles
+                else:
+
+                    tokenizedResults[entry.name] = subMapping
+
+                if not quiet:
+
+                    _UpdateTask(
+                        taskName="Tokenizing File/Directory List",
+                        advance=1,
+                        description=f"Done tokenizing directory {entry.name}",
+                        quiet=quiet,
+                    )
+
+            else:
+
+                raise ValueError(f"Entry '{entry}' is neither a file nor a directory.")
+
+        return tokenizedResults
+
+    # Not a list: if inputPath is a file or directory, process as before.
 
     else:
 
         inputPath = Path(inputPath)
 
-    if inputPath.is_file():
+        if inputPath.is_file():
 
-        if not includeHidden and inputPath.name.startswith("."):
+            if not includeHidden and inputPath.name.startswith("."):
 
-            return []
+                return [] if not mapTokens else OrderedDict()
 
-        if excludeBinary and inputPath.suffix.lower() in BINARY_EXTENSIONS:
+            if excludeBinary and inputPath.suffix.lower() in BINARY_EXTENSIONS:
 
-            return []
+                return [] if not mapTokens else OrderedDict()
 
-        return TokenizeFile(
-            filePath=inputPath,
-            model=model,
-            encodingName=encodingName,
-            encoding=encoding,
-            quiet=quiet,
-        )
+            return TokenizeFile(
+                filePath=inputPath,
+                model=model,
+                encodingName=encodingName,
+                encoding=encoding,
+                quiet=quiet,
+                mapTokens=mapTokens,
+            )
 
-    elif inputPath.is_dir():
+        elif inputPath.is_dir():
 
-        return TokenizeDir(
-            dirPath=inputPath,
-            model=model,
-            encodingName=encodingName,
-            encoding=encoding,
-            recursive=recursive,
-            quiet=quiet,
-            excludeBinary=excludeBinary,
-            includeHidden=includeHidden,
-        )
+            return TokenizeDir(
+                dirPath=inputPath,
+                model=model,
+                encodingName=encodingName,
+                encoding=encoding,
+                recursive=recursive,
+                quiet=quiet,
+                excludeBinary=excludeBinary,
+                includeHidden=includeHidden,
+                mapTokens=mapTokens,
+            )
 
-    else:
+        else:
 
-        raise RuntimeError(
-            f'Unexpected error. Given inputPath "{inputPath}" is neither a file, a directory, nor a list.'
-        )
+            raise RuntimeError(
+                f'Unexpected error. Given inputPath "{inputPath}" is neither a file, a directory, nor a list.'
+            )
 
 
 def GetNumTokenFiles(
     inputPath: Path | str | list[Path | str],
-    /,
     model: str | None = "gpt-4o",
     encodingName: str | None = None,
     encoding: tiktoken.Encoding | None = None,
@@ -2406,14 +2399,15 @@ def GetNumTokenFiles(
     exitOnListError: bool = True,
     excludeBinary: bool = True,
     includeHidden: bool = False,
-) -> int:
+    mapTokens: bool = False,
+) -> int | OrderedDict[str, int]:
     """
     Get the number of tokens in multiple files or all files within a directory based on the specified model or encoding.
 
     Parameters
     ----------
     inputPath : Path, str, or list of Path or str
-        The path to a file or directory, or a list of file paths to count tokens for.
+        The path to a file or directory, or a list of file/directory paths to count tokens for.
     model : str or None, optional, default="gpt-4o"
         The name of the model to use for encoding. If provided, the encoding
         associated with the model will be used.
@@ -2424,31 +2418,36 @@ def GetNumTokenFiles(
         An existing tiktoken.Encoding object to use for tokenization. If provided,
         it must match the encoding derived from the model or encodingName.
     recursive : bool, default True
-        If inputPath is a directory, whether to count tokens in files in
-        subdirectories recursively.
+        If inputPath is a directory, whether to count tokens in files in subdirectories recursively.
     quiet : bool, default False
         If True, suppress progress updates.
     exitOnListError : bool, default True
         If True, stop processing the list upon encountering an error. If False,
-        skip files that cause errors.
+        skip files/directories that cause errors.
     excludeBinary : bool, default True
         Excludes any binary files by skipping over them.
     includeHidden : bool, default False
         Skips over hidden files and directories, including subdirectories and files of a hidden directory.
+    mapTokens : bool, default False
+        If True, returns the token counts as an OrderedDict mapping file or directory names to token counts.
+        For files, the count is an integer.
+        For directories, the value is an OrderedDict with two keys:
+            - "numTokens": the total number of tokens in that directory (including subdirectories if recursive is True),
+            - "tokens": the nested OrderedDict mapping file/directory names to their token counts.
+        Otherwise, returns the total token count as an integer.
 
     Returns
     -------
-    int
-        The total number of tokens in the specified files or directory.
+    int or OrderedDict[str, int]
+        If mapTokens is False, the total number of tokens in the specified files or directory.
+        If mapTokens is True, an OrderedDict mapping file or directory names to their token counts.
 
     Raises
     ------
     TypeError
-        If the types of `inputPath`, `model`, `encodingName`, `encoding`, or
-        `recursive` are incorrect.
+        If the types of `inputPath`, `model`, `encodingName`, `encoding`, or `recursive` are incorrect.
     ValueError
-        If any of the provided file paths in a list are not files, or if a provided
-        directory path is not a directory.
+        If any of the provided paths in a list are neither files nor directories.
     UnsupportedEncodingError
         If any of the files to be tokenized have an unsupported encoding.
     RuntimeError
@@ -2456,105 +2455,68 @@ def GetNumTokenFiles(
 
     Examples
     --------
-    Tokenizing a list of files with a specified model:
-
+    Counting tokens in a mixed list of files and directories:
     >>> from PyTokenCounter import GetNumTokenFiles
     >>> from pathlib import Path
-    >>> totalTokens = GetNumTokenFiles(inputPath=[Path("./PyTokenCounter/Tests/Input/TestFile1.txt"), Path("./PyTokenCounter/Tests/Input/TestFile2.txt")], model='gpt-4o')
+    >>> paths = [Path("./TestFile1.txt"), Path("./TestDirectory")]
+    >>> totalTokens = GetNumTokenFiles(inputPath=paths, model='gpt-4o', recursive=True, mapTokens=True)
     >>> print(totalTokens)
-    434
-    >>> import tiktoken
-    >>> encoding = tiktoken.get_encoding('p50k_base')
-    >>> dirPath = Path("./PyTokenCounter/Tests/Input/TestDirectory")
-    >>> totalTokens = GetNumTokenFiles(inputPath=dirPath, encoding=encoding, recursive=False)
-    >>> print(totalTokens)
-    400
-
-    >>> # Counting tokens with recursion
-    >>> dirPath = Path("./PyTokenCounter/Tests/Input/TestDirectory")
-    >>> totalTokens = GetNumTokenFiles(inputPath=dirPath, model='gpt-3.5-turbo', recursive=True)
-    >>> print(totalTokens)
-    657
+    OrderedDict({
+        'TestFile1.txt': 221,
+        'TestDirectory': OrderedDict({
+            "numTokens": 657,
+            "tokens": { ... nested structure ... }
+        })
+    })
     """
-
-    if not isinstance(inputPath, (str, Path, list)):
-
-        raise TypeError(
-            f'Unexpected type for parameter "inputPath". Expected type: str, pathlib.Path, or list. Given type: {type(inputPath)}'
-        )
-
-    if isinstance(inputPath, list):
-
-        if not all(isinstance(item, (str, Path)) for item in inputPath):
-
-            listTypes = set(type(item) for item in inputPath)
-
-            raise TypeError(
-                f'Unexpected type for parameter "inputPath". Expected type: list of str or pathlib.Path. Given list contains types: {listTypes}'
-            )
-
-    if model is not None and not isinstance(model, str):
-
-        raise TypeError(
-            f'Unexpected type for parameter "model". Expected type: str. Given type: {type(model)}'
-        )
-
-    if encodingName is not None and not isinstance(encodingName, str):
-
-        raise TypeError(
-            f'Unexpected type for parameter "encodingName". Expected type: str. Given type: {type(encodingName)}'
-        )
-
-    if encoding is not None and not isinstance(encoding, tiktoken.Encoding):
-
-        raise TypeError(
-            f'Unexpected type for parameter "encoding". Expected type: tiktoken.Encoding. Given type: {type(encoding)}'
-        )
+    # If inputPath is a list, allow files and directories.
 
     if isinstance(inputPath, list):
 
         inputPath = [Path(entry) for entry in inputPath]
 
-        if not all(entry.is_file() for entry in inputPath):
+        if mapTokens:
 
-            nonFiles = [entry for entry in inputPath if not entry.is_file()]
-
-            raise ValueError(f"Given list contains non-file entries: {nonFiles}")
+            result: OrderedDict[str, int | OrderedDict] = OrderedDict()
 
         else:
 
             runningTokenTotal = 0
-            numFiles = len(inputPath)
+        numEntries = len(inputPath)
 
-            if not quiet:
+        if not quiet:
 
-                _InitializeTask(
-                    taskName="Counting Tokens in File List", total=numFiles, quiet=quiet
-                )
+            _InitializeTask(
+                taskName="Counting Tokens in File/Directory List",
+                total=numEntries,
+                quiet=quiet,
+            )
 
-            for file in inputPath:
+        for entry in inputPath:
 
-                if not includeHidden and file.name.startswith("."):
+            if not includeHidden and entry.name.startswith("."):
+
+                if not quiet:
+
+                    _UpdateTask(
+                        taskName="Counting Tokens in File/Directory List",
+                        advance=1,
+                        description=f"Skipping hidden entry {entry.name}",
+                        quiet=quiet,
+                    )
+
+                continue
+
+            if entry.is_file():
+
+                if excludeBinary and entry.suffix.lower() in BINARY_EXTENSIONS:
 
                     if not quiet:
 
                         _UpdateTask(
-                            taskName="Counting Tokens in File List",
+                            taskName="Counting Tokens in File/Directory List",
                             advance=1,
-                            description=f"Skipping hidden file {file.name}",
-                            quiet=quiet,
-                        )
-
-                    continue
-
-                if excludeBinary and file.suffix.lower() in BINARY_EXTENSIONS:
-
-                    if not quiet:
-
-                        _UpdateTask(
-                            taskName="Counting Tokens in File List",
-                            advance=1,
-                            description=f"Skipping binary file {file.name}",
+                            description=f"Skipping binary file {entry.name}",
                             quiet=quiet,
                         )
 
@@ -2563,104 +2525,134 @@ def GetNumTokenFiles(
                 if not quiet:
 
                     _UpdateTask(
-                        taskName="Counting Tokens in File List",
+                        taskName="Counting Tokens in File/Directory List",
                         advance=0,
-                        description=f"Counting Tokens in {file.name}",
+                        description=f"Counting tokens in file {entry.name}",
                         quiet=quiet,
                     )
+                count = GetNumTokenFile(
+                    filePath=entry,
+                    model=model,
+                    encodingName=encodingName,
+                    encoding=encoding,
+                    quiet=quiet,
+                    mapTokens=False,
+                )
 
-                if exitOnListError:
+                if mapTokens:
 
-                    runningTokenTotal += GetNumTokenFile(
-                        filePath=file,
-                        model=model,
-                        encodingName=encodingName,
-                        encoding=encoding,
-                        quiet=quiet,
-                    )
-
-                    if not quiet:
-
-                        _UpdateTask(
-                            taskName="Counting Tokens in File List",
-                            advance=1,
-                            description=f"Done Counting Tokens in {file.name}",
-                            quiet=quiet,
-                        )
+                    result[entry.name] = count
 
                 else:
 
-                    try:
+                    runningTokenTotal += count
 
-                        runningTokenTotal += GetNumTokenFile(
-                            filePath=file,
-                            model=model,
-                            encodingName=encodingName,
-                            encoding=encoding,
-                            quiet=quiet,
-                        )
+                if not quiet:
 
-                        if not quiet:
+                    _UpdateTask(
+                        taskName="Counting Tokens in File/Directory List",
+                        advance=1,
+                        description=f"Done counting tokens in file {entry.name}",
+                        quiet=quiet,
+                    )
 
-                            _UpdateTask(
-                                taskName="Counting Tokens in File List",
-                                advance=1,
-                                description=f"Done Counting Tokens in {file.name}",
-                                quiet=quiet,
-                            )
+            elif entry.is_dir():
 
-                    except UnsupportedEncodingError:
+                if not quiet:
 
-                        if not quiet:
+                    _UpdateTask(
+                        taskName="Counting Tokens in File/Directory List",
+                        advance=0,
+                        description=f"Counting tokens in directory {entry.name}",
+                        quiet=quiet,
+                    )
+                subResult = GetNumTokenDir(
+                    dirPath=entry,
+                    model=model,
+                    encodingName=encodingName,
+                    encoding=encoding,
+                    recursive=recursive,
+                    quiet=quiet,
+                    excludeBinary=excludeBinary,
+                    includeHidden=includeHidden,
+                    mapTokens=True,
+                )
 
-                            _UpdateTask(
-                                taskName="Counting Tokens in File List",
-                                advance=1,
-                                description=f"Skipping {file.name}",
-                                quiet=quiet,
-                            )
+                if mapTokens:
 
-                        continue
+                    subTotal = _ComputeTotalTokens(subResult)
+                    result[entry.name] = OrderedDict(
+                        {"numTokens": subTotal, "tokens": subResult}
+                    )
 
-            return runningTokenTotal
+                else:
+
+                    runningTokenTotal += GetNumTokenDir(
+                        dirPath=entry,
+                        model=model,
+                        encodingName=encodingName,
+                        encoding=encoding,
+                        recursive=recursive,
+                        quiet=quiet,
+                        excludeBinary=excludeBinary,
+                        includeHidden=includeHidden,
+                        mapTokens=False,
+                    )
+
+                if not quiet:
+
+                    _UpdateTask(
+                        taskName="Counting Tokens in File/Directory List",
+                        advance=1,
+                        description=f"Done counting tokens in directory {entry.name}",
+                        quiet=quiet,
+                    )
+
+            else:
+
+                raise ValueError(f"Entry '{entry}' is neither a file nor a directory.")
+
+        return result if mapTokens else runningTokenTotal
 
     else:
 
         inputPath = Path(inputPath)
 
-    if inputPath.is_file():
+        if inputPath.is_file():
 
-        if not includeHidden and inputPath.name.startswith("."):
+            if not includeHidden and inputPath.name.startswith("."):
 
-            return 0
+                return OrderedDict() if mapTokens else 0
 
-        if excludeBinary and inputPath.suffix.lower() in BINARY_EXTENSIONS:
+            if excludeBinary and inputPath.suffix.lower() in BINARY_EXTENSIONS:
 
-            return 0
+                return OrderedDict() if mapTokens else 0
 
-        return GetNumTokenFile(
-            filePath=inputPath,
-            model=model,
-            encodingName=encodingName,
-            encoding=encoding,
-            quiet=quiet,
-        )
+            return GetNumTokenFile(
+                filePath=inputPath,
+                model=model,
+                encodingName=encodingName,
+                encoding=encoding,
+                quiet=quiet,
+                mapTokens=mapTokens,
+            )
 
-    elif inputPath.is_dir():
+        elif inputPath.is_dir():
 
-        return GetNumTokenDir(
-            dirPath=inputPath,
-            model=model,
-            encodingName=encodingName,
-            encoding=encoding,
-            recursive=recursive,
-            quiet=quiet,
-            excludeBinary=excludeBinary,
-            includeHidden=includeHidden,
-        )
+            return GetNumTokenDir(
+                dirPath=inputPath,
+                model=model,
+                encodingName=encodingName,
+                encoding=encoding,
+                recursive=recursive,
+                quiet=quiet,
+                excludeBinary=excludeBinary,
+                includeHidden=includeHidden,
+                mapTokens=mapTokens,
+            )
 
-    else:
+        else:
 
-        raise RuntimeError(
-            f'Unexpected error. Given inputPath "{inputPath}" is neither a file, a directory, nor a list.'
-        )
+            raise RuntimeError(
+                f'Unexpected error. Given inputPath "{inputPath}" is neither a file, a directory, nor a list.'
+            )

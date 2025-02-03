@@ -1,9 +1,18 @@
-"""
-_utils.py
+# PyTokenCounter/_utils.py
 
+"""
 Utilities for file operations, including reading text files with UTF-8 encoding.
 Provides a custom exception for unsupported encodings.
+
+Key Classes
+-----------
+- ``UnsupportedEncodingError`` : Custom exception for unsupported file encodings.
+
+Key Functions
+-------------
+- ``ReadTextFile`` : Reads a text file using its detected encoding.
 """
+
 
 from pathlib import Path
 

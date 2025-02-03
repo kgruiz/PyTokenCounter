@@ -39,6 +39,7 @@ Here are a few examples to get you started with PyTokenCounter, especially in th
 
 ```python
 from pathlib import Path
+from collections import OrderedDict
 
 import PyTokenCounter as tc
 import tiktoken
@@ -83,9 +84,22 @@ print(f"Number of tokens in file: {numTokensFile}")
 tokens = tc.TokenizeStr(string="This is another test.")
 print(f"Token IDs: {tokens}")
 
+# Tokenize a string and map tokens to strings using the default model
+mappedTokensResult = tc.TokenizeStr(string="This is another test.", mapTokens=True)
+print(f"Mapped tokens result: {mappedTokensResult}")
+
 # Map tokens to their decoded strings using the default model
 mappedTokens = tc.MapTokens(tokens=tokens)
 print(f"Mapped tokens: {mappedTokens}")
+
+# Tokenize a directory and get mapped tokens with counts
+dirPath = Path("./TestDir")
+mappedDirTokens = tc.TokenizeDir(dirPath=dirPath, recursive=True, mapTokens=True)
+print(f"Mapped directory tokens: {mappedDirTokens}")
+
+# Count tokens in a directory and get mapped counts
+mappedDirCounts = tc.GetNumTokenDir(dirPath=dirPath, recursive=True, mapTokens=True)
+print(f"Mapped directory counts: {mappedDirCounts}")
 ```
 
 ### CLI
@@ -165,6 +179,18 @@ tokencount map-tokens 123,456,789 --model gpt-4o
 # Map tokens to strings using the default model
 tokencount map-tokens 123,456,789
 
+# Tokenize a string and output mapped tokens
+tokencount tokenize-str "Hello, mapped world!" --model gpt-4o -M
+
+# Tokenize a file and output mapped tokens
+tokencount tokenize-file TestFile.txt --model gpt-4o -M
+
+# Tokenize a directory and output mapped tokens
+tokencount tokenize-dir MyDirectory --model gpt-4o -M
+
+# Count tokens in a directory and output mapped counts
+tokencount count-dir MyDirectory --model gpt-4o -M
+
 # Include binary files
 tokencount tokenize-files MyDirectory --model gpt-4o -b
 
@@ -223,7 +249,7 @@ The `tokencount` CLI provides several subcommands for tokenizing and counting to
 - `-e`, `--encoding`: Specifies the encoding to use directly.
 - `-nr`, `--no-recursive`: When used with `tokenize-files`, `tokenize-dir`, `count-files`, or `count-dir` for a directory, it prevents the tool from processing subdirectories recursively.
 - `-q`, `--quiet`: When used with any of the above commands, it prevents the tool from showing progress bars and minimizes output.
-- `-M`, `--mapTokens`: When used with the `tokenize-str`, `tokenize-file`, `tokenize-files`, or `tokenize-dir` commands, outputs mapped tokens instead of raw token integers.
+- `-M`, `--mapTokens`: When specified, the output will be in a mapped (nested) format. For tokenize commands, this outputs a nested `OrderedDict` mapping decoded strings to their token IDs. For count commands, this outputs a nested `OrderedDict` with token counts, including keys such as `"numTokens"` and `"tokens"`.
 - `-o`, `--output`: When used with any of the commands, specifies an output JSON file to save the results to.
 - `-b`, `--include-binary`: Include binary files in processing. (Default: binary files are excluded.)
 - `-H`, `--include-hidden`: Include hidden files and directories. (Default: hidden files and directories are skipped.)
@@ -436,7 +462,7 @@ print(encoding)
 
 ### String Tokenization and Counting
 
-#### `TokenizeStr(string: str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, quiet: bool = False, mapTokens: bool = True) -> list[int] | dict[str, int]`
+#### `TokenizeStr(string: str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, quiet: bool = False, mapTokens: bool = False) -> list[int] | OrderedDict[str, int]`
 
 Tokenizes a string into a list of token IDs or a mapping of decoded strings to tokens, preparing text for input into an **LLM**.
 
@@ -447,12 +473,12 @@ Tokenizes a string into a list of token IDs or a mapping of decoded strings to t
 - `encodingName` (`str`, optional): The name of the encoding.
 - `encoding` (`tiktoken.Encoding`, optional): A `tiktoken` encoding object.
 - `quiet` (`bool`, optional): If `True`, suppresses progress updates.
-- `mapTokens` (`bool`, optional): If `True`, outputs a dictionary mapping decoded strings to their token IDs.
+- `mapTokens` (`bool`, optional): If `True`, outputs an `OrderedDict` mapping decoded strings to their token IDs. **Default: `False`**
 
 **Returns:**
 
-- `list[int]`: A list of token IDs.
-- `dict[str, int]`: A dictionary mapping decoded strings to token IDs if `mapTokens` is `True`.
+- `list[int]`: A list of token IDs if `mapTokens` is `False`.
+- `OrderedDict[str, int]`: An `OrderedDict` mapping decoded strings to token IDs if `mapTokens` is `True`.
 
 **Raises:**
 
@@ -462,6 +488,7 @@ Tokenizes a string into a list of token IDs or a mapping of decoded strings to t
 
 ```python
 import PyTokenCounter as tc
+from collections import OrderedDict
 
 tokens = tc.TokenizeStr(string="Hail to the Victors!", model="gpt-4o")
 print(tokens)
@@ -472,16 +499,16 @@ print(tokens)
 
 import tiktoken
 encoding = tiktoken.get_encoding("cl100k_base")
-tokens = tc.TokenizeStr(string="2024 National Champions", encoding=encoding, mapTokens=True)
-print(tokens)
+mappedTokens = tc.TokenizeStr(string="2024 National Champions", encoding=encoding, mapTokens=True)
+print(mappedTokens)
 
-tokens = tc.TokenizeStr(string="2024 National Champions", mapTokens=True)
-print(tokens)
+mappedTokens = tc.TokenizeStr(string="2024 National Champions", mapTokens=True)
+print(mappedTokens)
 ```
 
 ---
 
-#### `GetNumTokenStr(string: str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, quiet: bool = False) -> int`
+#### `GetNumTokenStr(string: str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, quiet: bool = False, mapTokens: bool = False) -> int | OrderedDict[str, int]`
 
 Counts the number of tokens in a string.
 
@@ -492,10 +519,12 @@ Counts the number of tokens in a string.
 - `encodingName` (`str`, optional): The name of the encoding.
 - `encoding` (`tiktoken.Encoding`, optional): A `tiktoken.Encoding` object.
 - `quiet` (`bool`, optional): If `True`, suppresses progress updates.
+- `mapTokens` (`bool`, optional): If `True`, outputs an `OrderedDict` mapping decoded strings to their token counts (which are always 1 for strings). Primarily for consistency with other functions.  **Default: `False`**
 
 **Returns:**
 
-- `int`: The number of tokens in the string.
+- `int`: The number of tokens in the string if `mapTokens` is `False`.
+- `OrderedDict[str, int]`: An `OrderedDict` mapping decoded strings to token counts if `mapTokens` is `True`.
 
 **Raises:**
 
@@ -505,6 +534,8 @@ Counts the number of tokens in a string.
 
 ```python
 import PyTokenCounter as tc
+from collections import OrderedDict
+import tiktoken
 
 numTokens = tc.GetNumTokenStr(string="Hail to the Victors!", model="gpt-4o")
 print(numTokens)
@@ -517,15 +548,18 @@ print(numTokens)
 
 numTokens = tc.GetNumTokenStr(string="Corum 4 Heisman")
 print(numTokens)
+
+mappedCounts = tc.GetNumTokenStr(string="Mapped count example", mapTokens=True)
+print(mappedCounts)
 ```
 
 ---
 
 ### File and Directory Tokenization and Counting
 
-#### `TokenizeFile(filePath: Path | str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, quiet: bool = False, mapTokens: bool = True) -> list[int] | dict[str, int]`
+#### `TokenizeFile(filePath: Path | str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, quiet: bool = False, mapTokens: bool = False) -> list[int] | OrderedDict[str, OrderedDict[str, int | list[int]]]`
 
-Tokenizes the contents of a file into a list of token IDs or a mapping of decoded strings to tokens.
+Tokenizes the contents of a file into a list of token IDs or a nested `OrderedDict` structure.
 
 **Parameters:**
 
@@ -534,12 +568,12 @@ Tokenizes the contents of a file into a list of token IDs or a mapping of decode
 - `encodingName` (`str`, optional): The name of the encoding to use.
 - `encoding` (`tiktoken.Encoding`, optional): An existing `tiktoken.Encoding` object to use for tokenization.
 - `quiet` (`bool`, optional): If `True`, suppresses progress updates.
-- `mapTokens` (`bool`, optional): If `True`, outputs a dictionary mapping decoded strings to their token IDs.
+- `mapTokens` (`bool`, optional): If `True`, outputs an `OrderedDict` where the key is the filename and the value is another `OrderedDict` with keys `"tokens"` (the list of token IDs) and `"numTokens"` (the total token count). If `False`, returns just the list of token IDs. **Default: `False`**
 
 **Returns:**
 
-- `list[int]`: A list of token IDs representing the tokenized file contents.
-- `dict[str, int]`: A dictionary mapping decoded strings to token IDs if `mapTokens` is `True`.
+- `list[int]`: A list of token IDs representing the tokenized file contents if `mapTokens` is `False`.
+- `OrderedDict[str, OrderedDict[str, int | list[int]]]`: An `OrderedDict` as described above if `mapTokens` is `True`.
 
 **Raises:**
 
@@ -553,10 +587,16 @@ Tokenizes the contents of a file into a list of token IDs or a mapping of decode
 ```python
 from pathlib import Path
 import PyTokenCounter as tc
+from collections import OrderedDict
+import tiktoken
 
 filePath = Path("TestFile1.txt")
 tokens = tc.TokenizeFile(filePath=filePath, model="gpt-4o")
 print(tokens)
+
+filePath = Path("TestFile1.txt")
+mappedTokensFile = tc.TokenizeFile(filePath=filePath, model="gpt-4o", mapTokens=True)
+print(mappedTokensFile)
 
 filePath = Path("TestFile1.txt")
 tokens = tc.TokenizeFile(filePath=filePath)
@@ -565,17 +605,17 @@ print(tokens)
 import tiktoken
 encoding = tiktoken.get_encoding("p50k_base")
 filePath = Path("TestFile2.txt")
-tokens = tc.TokenizeFile(filePath=filePath, encoding=encoding, mapTokens=True)
-print(tokens)
+mappedTokensFileEncoding = tc.TokenizeFile(filePath=filePath, encoding=encoding, mapTokens=True)
+print(mappedTokensFileEncoding)
 
 filePath = Path("TestFile2.txt")
-tokens = tc.TokenizeFile(filePath=filePath, mapTokens=True)
-print(tokens)
+mappedTokensFileDefault = tc.TokenizeFile(filePath=filePath, mapTokens=True)
+print(mappedTokensFileDefault)
 ```
 
 ---
 
-#### `GetNumTokenFile(filePath: Path | str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, quiet: bool = False) -> int`
+#### `GetNumTokenFile(filePath: Path | str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, quiet: bool = False, mapTokens: bool = False) -> int | OrderedDict[str, int]`
 
 Counts the number of tokens in a file based on the specified model or encoding.
 
@@ -586,10 +626,12 @@ Counts the number of tokens in a file based on the specified model or encoding.
 - `encodingName` (`str`, optional): The name of the encoding to use.
 - `encoding` (`tiktoken.Encoding`, optional): An existing `tiktoken.Encoding` object to use for tokenization.
 - `quiet` (`bool`, optional): If `True`, suppresses progress updates.
+- `mapTokens` (`bool`, optional): If `True`, outputs an `OrderedDict` where the key is the filename and the value is the token count. If `False`, returns just the token count as an integer. **Default: `False`**
 
 **Returns:**
 
-- `int`: The number of tokens in the file.
+- `int`: The number of tokens in the file if `mapTokens` is `False`.
+- `OrderedDict[str, int]`: An `OrderedDict` mapping the filename to its token count if `mapTokens` is `True`.
 
 **Raises:**
 
@@ -603,10 +645,15 @@ Counts the number of tokens in a file based on the specified model or encoding.
 ```python
 import PyTokenCounter as tc
 from pathlib import Path
+from collections import OrderedDict
 
 filePath = Path("TestFile1.txt")
 numTokens = tc.GetNumTokenFile(filePath=filePath, model="gpt-4o")
 print(numTokens)
+
+filePath = Path("TestFile1.txt")
+mappedNumTokensFile = tc.GetNumTokenFile(filePath=filePath, model="gpt-4o", mapTokens=True)
+print(mappedNumTokensFile)
 
 filePath = Path("TestFile1.txt")
 numTokens = tc.GetNumTokenFile(filePath=filePath)
@@ -619,13 +666,17 @@ print(numTokens)
 filePath = Path("TestFile2.txt")
 numTokens = tc.GetNumTokenFile(filePath=filePath)
 print(numTokens)
+
+filePath = Path("TestFile2.txt")
+mappedNumTokensFileDefault = tc.GetNumTokenFile(filePath=filePath, mapTokens=True)
+print(mappedNumTokensFileDefault)
 ```
 
 ---
 
-#### `TokenizeFiles(inputPath: Path | str | list[Path | str], model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False, exitOnListError: bool = True, mapTokens: bool = True, excludeBinary: bool = True, includeHidden: bool = False) -> list[int] | dict[str, list[int] | dict]`
+#### `TokenizeFiles(inputPath: Path | str | list[Path | str], model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False, exitOnListError: bool = True, mapTokens: bool = False, excludeBinary: bool = True, includeHidden: bool = False) -> list[int] | OrderedDict[str, list[int] | OrderedDict]`
 
-Tokenizes multiple files or all files within a directory into lists of token IDs or a mapping of decoded strings to tokens.
+Tokenizes multiple files or all files within a directory into lists of token IDs or a nested `OrderedDict` structure.
 
 **Parameters:**
 
@@ -636,18 +687,22 @@ Tokenizes multiple files or all files within a directory into lists of token IDs
 - `recursive` (`bool`, optional): If `inputPath` is a directory, whether to tokenize files in subdirectories recursively. **Default: `True`**
 - `quiet` (`bool`, optional): If `True`, suppresses progress updates. **Default: `False`**
 - `exitOnListError` (`bool`, optional): If `True`, stop processing the list upon encountering an error. If `False`, skip files that cause errors. **Default: `True`**
-- `mapTokens` (`bool`, optional): If `True`, outputs a dictionary mapping decoded strings to their token IDs for each file.
+- `mapTokens` (`bool`, optional): If `True`, outputs a nested `OrderedDict` structure. For files, the value is an `OrderedDict` with keys `"tokens"` (the list of token IDs) and `"numTokens"` (the total token count). For directories, the output is wrapped with `"tokens"` and `"numTokens"` keys. If `False`, returns a list of token IDs for a single file, or a dictionary mapping filenames to token lists for multiple files. **Default: `False`**
 - `excludeBinary` (`bool`, optional): Excludes any binary files by skipping over them. **Default: `True`**
 - `includeHidden` (`bool`, optional): Skips over hidden files and directories, including subdirectories and files of a hidden directory. **Default: `False`**
 
 **Returns:**
 
-- `list[int] | dict[str, list[int] | dict]`:
-   - If `inputPath` is a file, returns a list of token IDs for that file.
-   - If `inputPath` is a list of files, returns a dictionary where each key is the file name and the value is the list of token IDs for that file.
+- `list[int] | OrderedDict[str, list[int] | OrderedDict]`:
+   - If `inputPath` is a file:
+     - If `mapTokens` is `False`, returns a list of token IDs for that file.
+     - If `mapTokens` is `True`, returns an `OrderedDict` with the structure described in the `mapTokens` parameter description.
+   - If `inputPath` is a list of files, returns a dictionary where each key is the file name and the value depends on `mapTokens`:
+     - If `mapTokens` is `False`, the value is the list of token IDs for that file.
+     - If `mapTokens` is `True`, the value is an `OrderedDict` with the structure described in the `mapTokens` parameter description, wrapped under the key `"tokens"`, and the total token count under the key `"numTokens"` at the top level.
    - If `inputPath` is a directory:
-     - If `recursive` is `True`, returns a nested dictionary where each key is a file or subdirectory name with corresponding token lists or sub-dictionaries.
-     - If `recursive` is `False`, returns a dictionary with file names as keys and their token lists as values.
+     - If `recursive` is `True`, returns a nested `OrderedDict` where each key is a file or subdirectory name with corresponding token lists or sub-dictionaries. If `mapTokens` is `True`, the directory output is wrapped with `"tokens"` and `"numTokens"` keys.
+     - If `recursive` is `False`, returns a dictionary with file names as keys and their token lists as values. If `mapTokens` is `True`, the directory output is wrapped with `"tokens"` and `"numTokens"` keys.
 
 **Raises:**
 
@@ -661,6 +716,8 @@ Tokenizes multiple files or all files within a directory into lists of token IDs
 ```python
 from PyTokenCounter import TokenizeFiles
 from pathlib import Path
+from collections import OrderedDict
+import tiktoken
 
 inputFiles = [
     Path("TestFile1.txt"),
@@ -669,35 +726,38 @@ inputFiles = [
 tokens = tc.TokenizeFiles(inputPath=inputFiles, model="gpt-4o")
 print(tokens)
 
+mappedTokensFiles = tc.TokenizeFiles(inputPath=inputFiles, model="gpt-4o", mapTokens=True)
+print(mappedTokensFiles)
+
 tokens = tc.TokenizeFiles(inputPath=inputFiles)
 print(tokens)
 
 # Tokenizing multiple files using the default model
-tokens = tc.TokenizeFiles(inputPath=inputFiles)
-print(tokens)
+mappedTokensFilesDefault = tc.TokenizeFiles(inputPath=inputFiles, mapTokens=True)
+print(mappedTokensFilesDefault)
 
 import tiktoken
 encoding = tiktoken.get_encoding('p50k_base')
 dirPath = Path("TestDir")
-tokens = tc.TokenizeFiles(inputPath=dirPath, encoding=encoding, recursive=False)
-print(tokens)
+mappedDirTokensNonRecursiveEncoding = tc.TokenizeFiles(inputPath=dirPath, encoding=encoding, recursive=False, mapTokens=True)
+print(mappedDirTokensNonRecursiveEncoding)
 
-tokens = tc.TokenizeFiles(inputPath=dirPath, model="gpt-4o", recursive=True, mapTokens=True)
-print(tokens)
+mappedDirTokensRecursiveModel = tc.TokenizeFiles(inputPath=dirPath, model="gpt-4o", recursive=True, mapTokens=True)
+print(mappedDirTokensRecursiveModel)
 
-tokens = tc.TokenizeFiles(inputPath=dirPath, recursive=True, mapTokens=True)
-print(tokens)
+mappedDirTokensRecursiveDefault = tc.TokenizeFiles(inputPath=dirPath, recursive=True, mapTokens=True)
+print(mappedDirTokensRecursiveDefault)
 
 # Tokenizing a directory using the default model
-tokens = tc.TokenizeFiles(inputPath=dirPath, recursive=True, mapTokens=True)
-print(tokens)
+mappedDirTokensDefaultModel = tc.TokenizeFiles(inputPath=dirPath, recursive=True, mapTokens=True)
+print(mappedDirTokensDefaultModel)
 ```
 
 ---
 
-#### `GetNumTokenFiles(inputPath: Path | str | list[Path | str], model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False, exitOnListError: bool = True, excludeBinary: bool = True, includeHidden: bool = False) -> int`
+#### `GetNumTokenFiles(inputPath: Path | str | list[Path | str], model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False, exitOnListError: bool = True, excludeBinary: bool = True, includeHidden: bool = False, mapTokens: bool = False) -> int | OrderedDict[str, int | OrderedDict]`
 
-Counts the number of tokens across multiple files or in all files within a directory.
+Counts the number of tokens across multiple files or in all files within a directory, or returns a nested `OrderedDict` structure with counts.
 
 **Parameters:**
 
@@ -710,10 +770,12 @@ Counts the number of tokens across multiple files or in all files within a direc
 - `exitOnListError` (`bool`, optional): If `True`, stop processing the list upon encountering an error. If `False`, skip files that cause errors. **Default: `True`**
 - `excludeBinary` (`bool`, optional): Excludes any binary files by skipping over them. **Default: `True`**
 - `includeHidden` (`bool`, optional): Skips over hidden files and directories, including subdirectories and files of a hidden directory. **Default: `False`**
+- `mapTokens` (`bool`, optional): If `True`, outputs a nested `OrderedDict` structure. For files, the value is the token count. For directories, the output is wrapped with `"tokens"` and `"numTokens"` keys, where `"tokens"` contains the nested counts. If `False`, returns the total token count as an integer. **Default: `False`**
 
 **Returns:**
 
-- `int`: The total number of tokens in the specified files or directory.
+- `int`: The total number of tokens in the specified files or directory if `mapTokens` is `False`.
+- `OrderedDict[str, int | OrderedDict]`: An `OrderedDict` mirroring the input structure with token counts if `mapTokens` is `True`.
 
 **Raises:**
 
@@ -727,6 +789,8 @@ Counts the number of tokens across multiple files or in all files within a direc
 ```python
 import PyTokenCounter as tc
 from pathlib import Path
+from collections import OrderedDict
+import tiktoken
 
 inputFiles = [
     Path("TestFile1.txt"),
@@ -735,33 +799,40 @@ inputFiles = [
 numTokens = tc.GetNumTokenFiles(inputPath=inputFiles, model='gpt-4o')
 print(numTokens)
 
+mappedNumTokensFiles = tc.GetNumTokenFiles(inputPath=inputFiles, model='gpt-4o', mapTokens=True)
+print(mappedNumTokensFiles)
+
 
 numTokens = tc.GetNumTokenFiles(inputPath=inputFiles)
 print(numTokens)
 
 # Counting tokens in multiple files using the default model
-numTokens = tc.GetNumTokenFiles(inputPath=inputFiles)
-print(numTokens)
+mappedNumTokensFilesDefault = tc.GetNumTokenFiles(inputPath=inputFiles, mapTokens=True)
+print(mappedNumTokensFilesDefault)
 
 
 import tiktoken
 encoding = tiktoken.get_encoding('p50k_base')
 dirPath = Path("TestDir")
-numTokens = tc.GetNumTokenFiles(inputPath=dirPath, encoding=encoding, recursive=False)
-print(numTokens)
-numTokens = tc.GetNumTokenFiles(inputPath=dirPath, model='gpt-4o', recursive=True)
-print(numTokens)
+mappedNumTokensDirNonRecursiveEncoding = tc.GetNumTokenFiles(inputPath=dirPath, encoding=encoding, recursive=False, mapTokens=True)
+print(mappedNumTokensDirNonRecursiveEncoding)
+numTokensDirRecursiveModel = tc.GetNumTokenFiles(inputPath=dirPath, model='gpt-4o', recursive=True)
+print(numTokensDirRecursiveModel)
+
+mappedNumTokensDirRecursiveModel = tc.GetNumTokenFiles(inputPath=dirPath, model='gpt-4o', recursive=True, mapTokens=True)
+print(mappedNumTokensDirRecursiveModel)
+
 
 # Counting tokens in a directory using the default model
-numTokens = tc.GetNumTokenFiles(inputPath=dirPath, recursive=True)
-print(numTokens)
+mappedNumTokensDirRecursiveDefault = tc.GetNumTokenFiles(inputPath=dirPath, recursive=True, mapTokens=True)
+print(mappedNumTokensDirRecursiveDefault)
 ```
 
 ---
 
-#### `TokenizeDir(dirPath: Path | str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False, mapTokens: bool = True, excludeBinary: bool = True, includeHidden: bool = False) -> dict[str, list[int] | dict]`
+#### `TokenizeDir(dirPath: Path | str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False, mapTokens: bool = False, excludeBinary: bool = True, includeHidden: bool = False) -> OrderedDict[str, list[int] | OrderedDict]`
 
-Tokenizes all files within a directory into lists of token IDs or a mapping of decoded strings to tokens.
+Tokenizes all files within a directory into a nested `OrderedDict` structure or lists of token IDs.
 
 **Parameters:**
 
@@ -771,15 +842,13 @@ Tokenizes all files within a directory into lists of token IDs or a mapping of d
 - `encoding` (`tiktoken.Encoding`, optional): An existing `tiktoken.Encoding` object to use for tokenization.
 - `recursive` (`bool`, optional): Whether to tokenize files in subdirectories recursively. **Default: `True`**
 - `quiet` (`bool`, optional): If `True`, suppresses progress updates. **Default: `False`**
-- `mapTokens` (`bool`, optional): If `True`, outputs a dictionary mapping decoded strings to their token IDs for each file.
+- `mapTokens` (`bool`, optional): If `True`, outputs a nested `OrderedDict` where each key is a file or subdirectory name. For files, the value is an `OrderedDict` with keys `"tokens"` (the list of token IDs) and `"numTokens"` (the total token count). For directories, the output is recursively structured. If `False`, returns a nested `OrderedDict` of token lists without the `"numTokens"` wrapper. **Default: `False`**
 - `excludeBinary` (`bool`, optional): Excludes any binary files by skipping over them. **Default: `True`**
 - `includeHidden` (`bool`, optional): Skips over hidden files and directories, including subdirectories and files of a hidden directory. **Default: `False`**
 
 **Returns:**
 
-- `dict[str, list[int] | dict]`: A nested dictionary where each key is a file or subdirectory name:
-    - If the key is a file, its value is a list of token IDs.
-    - If the key is a subdirectory, its value is another dictionary following the same structure.
+- `OrderedDict[str, list[int] | OrderedDict]`: A nested `OrderedDict` where each key is a file or subdirectory name. If `mapTokens` is `True`, directory entries include `"numTokens"` and `"tokens"` keys.
 
 **Raises:**
 
@@ -793,38 +862,45 @@ Tokenizes all files within a directory into lists of token IDs or a mapping of d
 ```python
 import PyTokenCounter as tc
 from pathlib import Path
+from collections import OrderedDict
 
 dirPath = Path("TestDir")
 tokenizedDir = tc.TokenizeDir(dirPath=dirPath, model="gpt-4o", recursive=True)
 print(tokenizedDir)
 
+mappedTokenizedDir = tc.TokenizeDir(dirPath=dirPath, model="gpt-4o", recursive=True, mapTokens=True)
+print(mappedTokenizedDir)
+
 tokenizedDir = tc.TokenizeDir(dirPath=dirPath, recursive=True)
 print(tokenizedDir)
 
 # Tokenizing a directory using the default model
-tokenizedDir = tc.TokenizeDir(dirPath=dirPath, recursive=True)
-print(tokenizedDir)
+mappedTokenizedDirDefault = tc.TokenizeDir(dirPath=dirPath, recursive=True, mapTokens=True)
+print(mappedTokenizedDirDefault)
 
-tokenizedDir = tc.TokenizeDir(dirPath=dirPath, model="gpt-4o", recursive=False)
-print(tokenizedDir)
+tokenizedDirNonRecursiveModel = tc.TokenizeDir(dirPath=dirPath, model="gpt-4o", recursive=False)
+print(tokenizedDirNonRecursiveModel)
 
-tokenizedDir = tc.TokenizeDir(dirPath=dirPath, recursive=False)
-print(tokenizedDir)
+mappedTokenizedDirNonRecursiveModel = tc.TokenizeDir(dirPath=dirPath, model="gpt-4o", recursive=False, mapTokens=True)
+print(mappedTokenizedDirNonRecursiveModel)
+
+tokenizedDirNonRecursiveDefault = tc.TokenizeDir(dirPath=dirPath, recursive=False)
+print(tokenizedDirNonRecursiveDefault)
 
 
-tokenizedDir = tc.TokenizeDir(dirPath=dirPath, model="gpt-4o", recursive=True, mapTokens=True)
-print(tokenizedDir)
+mappedTokenizedDirRecursiveModel = tc.TokenizeDir(dirPath=dirPath, model="gpt-4o", recursive=True, mapTokens=True)
+print(mappedTokenizedDirRecursiveModel)
 
 # Tokenizing a directory using the default model with token mapping
-tokenizedDir = tc.TokenizeDir(dirPath=dirPath, recursive=True, mapTokens=True)
-print(tokenizedDir)
+mappedTokenizedDirRecursiveDefaultModel = tc.TokenizeDir(dirPath=dirPath, recursive=True, mapTokens=True)
+print(mappedTokenizedDirRecursiveDefaultModel)
 ```
 
 ---
 
-#### `GetNumTokenDir(dirPath: Path | str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False, excludeBinary: bool = True, includeHidden: bool = False) -> int`
+#### `GetNumTokenDir(dirPath: Path | str, model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None, recursive: bool = True, quiet: bool = False, excludeBinary: bool = True, includeHidden: bool = False, mapTokens: bool = False) -> int | OrderedDict[str, int | OrderedDict]`
 
-Counts the number of tokens in all files within a directory.
+Counts the number of tokens in all files within a directory, or returns a nested `OrderedDict` structure with counts.
 
 **Parameters:**
 
@@ -836,10 +912,12 @@ Counts the number of tokens in all files within a directory.
 - `quiet` (`bool`, optional): If `True`, suppresses progress updates. **Default: `False`**
 - `excludeBinary` (`bool`, optional): Excludes any binary files by skipping over them. **Default: `True`**
 - `includeHidden` (`bool`, optional): Skips over hidden files and directories, including subdirectories and files of a hidden directory. **Default: `False`**
+- `mapTokens` (`bool`, optional): If `True`, outputs a nested `OrderedDict` structure mirroring the directory structure. For files, the value is the token count. For directories, the output is wrapped with `"tokens"` and `"numTokens"` keys, where `"tokens"` contains the nested counts. If `False`, returns the total token count as an integer. **Default: `False`**
 
 **Returns:**
 
-- `int`: The total number of tokens in the directory.
+- `int`: The total number of tokens in the directory if `mapTokens` is `False`.
+- `OrderedDict[str, int | OrderedDict]`: An `OrderedDict` mirroring the directory structure with token counts if `mapTokens` is `True`.
 
 **Raises:**
 
@@ -853,27 +931,34 @@ Counts the number of tokens in all files within a directory.
 ```python
 import PyTokenCounter as tc
 from pathlib import Path
+from collections import OrderedDict
 
 dirPath = Path("TestDir")
 numTokensDir = tc.GetNumTokenDir(dirPath=dirPath, model="gpt-4o", recursive=True)
 print(numTokensDir)
 
+mappedNumTokensDir = tc.GetNumTokenDir(dirPath=dirPath, model="gpt-4o", recursive=True, mapTokens=True)
+print(mappedNumTokensDir)
+
 # Counting tokens in a directory using the default model
-numTokensDir = tc.GetNumTokenDir(dirPath=dirPath, recursive=True)
-print(numTokensDir)
+mappedNumTokensDirDefault = tc.GetNumTokenDir(dirPath=dirPath, recursive=True, mapTokens=True)
+print(mappedNumTokensDirDefault)
 
-numTokensDir = tc.GetNumTokenDir(dirPath=dirPath, model="gpt-4o", recursive=False)
-print(numTokensDir)
+numTokensDirNonRecursiveModel = tc.GetNumTokenDir(dirPath=dirPath, model="gpt-4o", recursive=False)
+print(numTokensDirNonRecursiveModel)
 
-numTokensDir = tc.GetNumTokenDir(dirPath=dirPath, recursive=False)
-print(numTokensDir)
+mappedNumTokensDirNonRecursiveModel = tc.GetNumTokenDir(dirPath=dirPath, model="gpt-4o", recursive=False, mapTokens=True)
+print(mappedNumTokensDirNonRecursiveModel)
+
+numTokensDirNonRecursiveDefault = tc.GetNumTokenDir(dirPath=dirPath, recursive=False)
+print(numTokensDirNonRecursiveDefault)
 ```
 
 ---
 
 ### Token Mapping
 
-#### `MapTokens(tokens: list[int] | OrderedDict[str, list[int] | OrderedDict], model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None) -> OrderedDict[str, int] | OrderedDict[str, OrderedDict[str, int] | OrderedDict]`
+#### `MapTokens(tokens: list[int] | OrderedDict[str, list[int] | OrderedDict], model: str | None = "gpt-4o", encodingName: str | None = None, encoding: tiktoken.Encoding | None = None) -> OrderedDict[str, str] | OrderedDict[str, OrderedDict[str, str] | OrderedDict]`
 
 Maps tokens to their corresponding decoded strings based on a specified encoding.
 
@@ -890,7 +975,7 @@ Maps tokens to their corresponding decoded strings based on a specified encoding
 
 **Returns:**
 
-- `OrderedDict[str, int] | OrderedDict[str, OrderedDict[str, int] | OrderedDict]`: A mapping of decoded strings to their corresponding integer tokens. If `tokens` is a nested structure, the result will maintain the same nested structure with decoded mappings.
+- `OrderedDict[str, str] | OrderedDict[str, OrderedDict[str, str] | OrderedDict]`: A mapping of decoded strings to their corresponding integer tokens. If `tokens` is a nested structure, the result will maintain the same nested structure with decoded mappings.
 
 **Raises:**
 
@@ -910,15 +995,6 @@ encoding = tiktoken.get_encoding("cl100k_base")
 tokens = [123,456,789]
 mapped = tc.MapTokens(tokens=tokens, encoding=encoding)
 print(mapped)
-
-tokens = OrderedDict({
-    "file1": [123,456,789],
-    "file2": [987,654,321],
-    "subdir": OrderedDict({
-        "file3": [246, 135, 798],
-        "file4": [951, 753, 864]
-    })
-})
 
 mapped = tc.MapTokens(tokens=tokens, encoding=encoding)
 print(mapped)
