@@ -1,4 +1,4 @@
-# cli.py
+# PyTokenCounter/cli.py
 
 """
 CLI Module for PyTokenCounter
@@ -29,7 +29,7 @@ Options:
     -e, --encoding       Encoding to use directly.
     -nr, --no-recursive  Do not tokenize files in subdirectories if a directory is given.
     -q, --quiet          Silence progress bars and minimize output.
-    -M, --mapTokens      Output mapped tokens instead of raw token integers.
+    -M, --mapTokens      Output mapped tokens (or nested structure with 'numTokens' and 'tokens' keys) instead of raw token integers.
     -o, --output         Specify an output JSON file to save the results.
     -b, --include-binary Include binary files in processing. (default: binary files are excluded)
     -H, --include-hidden Include hidden files and directories in processing. (default: hidden files and directories are skipped)
@@ -228,7 +228,7 @@ def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
         "-M",
         "--mapTokens",
         action="store_true",
-        help="Output mapped tokens instead of raw token integers.",
+        help="Output mapped tokens (or nested structure with 'numTokens' and 'tokens' keys) instead of raw token integers.",
     )
     subParser.add_argument(
         "-o",
@@ -720,6 +720,7 @@ Multiple files can be separated by spaces or commas.
                 encodingName=args.encoding,
                 encoding=encoding,
                 quiet=args.quiet,
+                mapTokens=args.mapTokens,
                 excludeBinary=not args.includeBinary,
                 includeHidden=args.includeHidden,
             )
@@ -738,6 +739,7 @@ Multiple files can be separated by spaces or commas.
                     encoding=encoding,
                     recursive=not args.no_recursive,
                     quiet=args.quiet,
+                    mapTokens=args.mapTokens,
                     excludeBinary=not args.includeBinary,
                     includeHidden=args.includeHidden,
                 )
@@ -750,6 +752,7 @@ Multiple files can be separated by spaces or commas.
                     encodingName=args.encoding,
                     encoding=encoding,
                     quiet=args.quiet,
+                    mapTokens=args.mapTokens,
                     excludeBinary=not args.includeBinary,
                     includeHidden=args.includeHidden,
                 )
@@ -764,6 +767,7 @@ Multiple files can be separated by spaces or commas.
                 encoding=encoding,
                 recursive=not args.no_recursive,
                 quiet=args.quiet,
+                mapTokens=args.mapTokens,
                 excludeBinary=not args.includeBinary,
                 includeHidden=args.includeHidden,
             )

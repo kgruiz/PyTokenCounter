@@ -4,9 +4,8 @@ import json
 import sys
 from pathlib import Path
 
-import tiktoken
-
 import PyTokenCounter as tc
+import tiktoken
 
 testInputDir = Path("./Input")
 testAnswersDir = Path("./Answers")
