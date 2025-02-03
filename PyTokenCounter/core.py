@@ -176,119 +176,6 @@ VALID_ENCODINGS = [
 VALID_MODELS_STR = "\n".join(VALID_MODELS)
 VALID_ENCODINGS_STR = "\n".join(VALID_ENCODINGS)
 
-BINARY_EXTENSIONS = {
-    # Image formats
-    ".png",
-    ".jpg",
-    ".jpeg",
-    ".gif",
-    ".bmp",
-    ".webp",
-    ".avif",
-    ".tiff",
-    ".tif",
-    ".ico",
-    ".svgz",  # Compressed SVG
-    # Video formats
-    ".mp4",
-    ".mkv",
-    ".mov",
-    ".avi",
-    ".wmv",
-    ".flv",
-    ".webm",
-    ".m4v",
-    ".mpeg",
-    ".mpg",
-    ".3gp",
-    ".3g2",
-    # Audio formats
-    ".mp3",
-    ".wav",
-    ".flac",
-    ".ogg",
-    ".aac",
-    ".m4a",
-    ".wma",
-    ".aiff",
-    ".ape",
-    ".opus",
-    # Compressed archives
-    ".zip",
-    ".rar",
-    ".7z",
-    ".tar",
-    ".gz",
-    ".bz2",
-    ".xz",
-    ".lz",
-    ".zst",  # Zstandard compression
-    ".cab",
-    ".deb",
-    ".rpm",
-    ".pkg",
-    # Disk images
-    ".iso",
-    ".dmg",
-    ".img",
-    ".vhd",
-    ".vmdk",
-    # Executables and libraries
-    ".exe",
-    ".msi",
-    ".bat",  # Batch files may be readable but executed directly
-    ".dll",
-    ".so",
-    ".bin",
-    ".o",  # Compiled object files
-    ".a",  # Static libraries
-    ".dylib",  # macOS dynamic library
-    # Fonts
-    ".ttf",
-    ".otf",
-    ".woff",
-    ".woff2",
-    ".eot",
-    # Documents
-    ".pdf",
-    ".ps",  # PostScript
-    ".eps",  # Encapsulated PostScript
-    # Design and graphics
-    ".psd",
-    ".ai",
-    ".indd",
-    ".sketch",
-    # 3D and CAD files
-    ".blend",
-    ".stl",
-    ".step",
-    ".iges",
-    ".fbx",
-    ".glb",
-    ".gltf",
-    ".3ds",
-    ".obj",
-    ".cad",
-    # Virtual machines and firmware
-    ".qcow2",
-    ".vdi",
-    ".vhdx",
-    ".rom",
-    ".bin",  # Generic binary firmware
-    ".img",
-    # Miscellaneous binary formats
-    ".dat",
-    ".pak",  # Game resource package files
-    ".sav",  # Save game files
-    ".nes",  # ROM file for NES emulator
-    ".gba",  # Game Boy Advance ROM
-    ".nds",  # Nintendo DS ROM
-    ".iso",  # CD/DVD disk image
-    ".jar",  # Java Archive (binary format)
-    ".class",  # Compiled Java class file
-    ".wasm",  # WebAssembly binary format
-}
-
 
 _progressInstance = Progress(
     TextColumn(
@@ -1814,21 +1701,6 @@ def TokenizeDir(
 
         else:
 
-            # Skip binary files if excludeBinary is True.
-
-            if excludeBinary and entry.suffix.lower() in BINARY_EXTENSIONS:
-
-                if not quiet:
-
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=1,
-                        description=f"Skipping binary file {entry.relative_to(dirPath)}",
-                        quiet=quiet,
-                    )
-
-                continue
-
             if not quiet:
 
                 _UpdateTask(
@@ -1838,14 +1710,35 @@ def TokenizeDir(
                     quiet=quiet,
                 )
 
-            tokenizedFile = TokenizeFile(
-                filePath=entry,
-                model=model,
-                encodingName=encodingName,
-                encoding=encoding,
-                quiet=quiet,
-                mapTokens=mapTokens,
-            )
+            try:
+
+                tokenizedFile = TokenizeFile(
+                    filePath=entry,
+                    model=model,
+                    encodingName=encodingName,
+                    encoding=encoding,
+                    quiet=quiet,
+                    mapTokens=mapTokens,
+                )
+
+            except UnsupportedEncodingError:
+
+                if excludeBinary:
+
+                    if not quiet:
+
+                        _UpdateTask(
+                            taskName=taskName,
+                            advance=1,
+                            description=f"Skipping binary file {entry.relative_to(dirPath)}",
+                            quiet=quiet,
+                        )
+
+                    continue
+
+                else:
+
+                    raise
 
             if mapTokens:
 
@@ -2044,19 +1937,6 @@ def GetNumTokenDir(
 
         else:
 
-            if excludeBinary and entry.suffix.lower() in BINARY_EXTENSIONS:
-
-                if not quiet:
-
-                    _UpdateTask(
-                        taskName=taskName,
-                        advance=1,
-                        description=f"Skipping binary file {entry.relative_to(dirPath)}",
-                        quiet=quiet,
-                    )
-
-                continue
-
             if not quiet:
 
                 _UpdateTask(
@@ -2066,14 +1946,35 @@ def GetNumTokenDir(
                     quiet=quiet,
                 )
 
-            count = GetNumTokenFile(
-                filePath=entry,
-                model=model,
-                encodingName=encodingName,
-                encoding=encoding,
-                quiet=quiet,
-                mapTokens=False,
-            )
+            try:
+
+                count = GetNumTokenFile(
+                    filePath=entry,
+                    model=model,
+                    encodingName=encodingName,
+                    encoding=encoding,
+                    quiet=quiet,
+                    mapTokens=False,
+                )
+
+            except UnsupportedEncodingError:
+
+                if excludeBinary:
+
+                    if not quiet:
+
+                        _UpdateTask(
+                            taskName=taskName,
+                            advance=1,
+                            description=f"Skipping binary file {entry.relative_to(dirPath)}",
+                            quiet=quiet,
+                        )
+
+                    continue
+
+                else:
+
+                    raise
 
             if mapTokens:
 
@@ -2248,19 +2149,6 @@ def TokenizeFiles(
 
             if entry.is_file():
 
-                if excludeBinary and entry.suffix.lower() in BINARY_EXTENSIONS:
-
-                    if not quiet:
-
-                        _UpdateTask(
-                            taskName="Tokenizing File/Directory List",
-                            advance=1,
-                            description=f"Skipping binary file {entry.name}",
-                            quiet=quiet,
-                        )
-
-                    continue
-
                 if not quiet:
 
                     _UpdateTask(
@@ -2269,14 +2157,35 @@ def TokenizeFiles(
                         description=f"Tokenizing file {entry.name}",
                         quiet=quiet,
                     )
-                result = TokenizeFile(
-                    filePath=entry,
-                    model=model,
-                    encodingName=encodingName,
-                    encoding=encoding,
-                    quiet=quiet,
-                    mapTokens=mapTokens,
-                )
+                try:
+
+                    result = TokenizeFile(
+                        filePath=entry,
+                        model=model,
+                        encodingName=encodingName,
+                        encoding=encoding,
+                        quiet=quiet,
+                        mapTokens=mapTokens,
+                    )
+
+                except UnsupportedEncodingError:
+
+                    if excludeBinary:
+
+                        if not quiet:
+
+                            _UpdateTask(
+                                taskName="Tokenizing File/Directory List",
+                                advance=1,
+                                description=f"Skipping binary file {entry.name}",
+                                quiet=quiet,
+                            )
+
+                        continue
+
+                    else:
+
+                        raise
 
                 if mapTokens:
 
@@ -2352,10 +2261,6 @@ def TokenizeFiles(
         if inputPath.is_file():
 
             if not includeHidden and inputPath.name.startswith("."):
-
-                return [] if not mapTokens else OrderedDict()
-
-            if excludeBinary and inputPath.suffix.lower() in BINARY_EXTENSIONS:
 
                 return [] if not mapTokens else OrderedDict()
 
@@ -2509,19 +2414,6 @@ def GetNumTokenFiles(
 
             if entry.is_file():
 
-                if excludeBinary and entry.suffix.lower() in BINARY_EXTENSIONS:
-
-                    if not quiet:
-
-                        _UpdateTask(
-                            taskName="Counting Tokens in File/Directory List",
-                            advance=1,
-                            description=f"Skipping binary file {entry.name}",
-                            quiet=quiet,
-                        )
-
-                    continue
-
                 if not quiet:
 
                     _UpdateTask(
@@ -2530,14 +2422,35 @@ def GetNumTokenFiles(
                         description=f"Counting tokens in file {entry.name}",
                         quiet=quiet,
                     )
-                count = GetNumTokenFile(
-                    filePath=entry,
-                    model=model,
-                    encodingName=encodingName,
-                    encoding=encoding,
-                    quiet=quiet,
-                    mapTokens=False,
-                )
+                try:
+
+                    count = GetNumTokenFile(
+                        filePath=entry,
+                        model=model,
+                        encodingName=encodingName,
+                        encoding=encoding,
+                        quiet=quiet,
+                        mapTokens=False,
+                    )
+
+                except UnsupportedEncodingError:
+
+                    if excludeBinary:
+
+                        if not quiet:
+
+                            _UpdateTask(
+                                taskName="Counting Tokens in File/Directory List",
+                                advance=1,
+                                description=f"Skipping binary file {entry.name}",
+                                quiet=quiet,
+                            )
+
+                        continue
+
+                    else:
+
+                        raise
 
                 if mapTokens:
 
@@ -2621,10 +2534,6 @@ def GetNumTokenFiles(
         if inputPath.is_file():
 
             if not includeHidden and inputPath.name.startswith("."):
-
-                return OrderedDict() if mapTokens else 0
-
-            if excludeBinary and inputPath.suffix.lower() in BINARY_EXTENSIONS:
 
                 return OrderedDict() if mapTokens else 0
 

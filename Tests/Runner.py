@@ -4,8 +4,10 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
 import PyTokenCounter as tc
 import tiktoken
+from PIL import Image
 
 testInputDir = Path("./Input")
 testAnswersDir = Path("./Answers")
@@ -845,7 +847,6 @@ def TestFileError(imgPath):
 
 if __name__ == "__main__":
 
-    # Existing Tests
     TestStr()
     TestFile(answerName="TestFile1.json", inputName="TestFile1.txt")
     TestFile(answerName="TestFile2.json", inputName="TestFile2.txt")
