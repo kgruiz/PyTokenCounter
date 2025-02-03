@@ -709,7 +709,14 @@ Multiple files can be separated by spaces or commas.
                 encoding=encoding,
                 quiet=args.quiet,
             )
-            print(count)
+
+            if isinstance(count, (list, dict)):
+
+                print(json.dumps(count, ensure_ascii=False, indent=4))
+
+            else:
+
+                print(count)
 
         elif args.command == "count-file":
 
@@ -724,7 +731,14 @@ Multiple files can be separated by spaces or commas.
                 excludeBinary=not args.includeBinary,
                 includeHidden=args.includeHidden,
             )
-            print(count)
+
+            if isinstance(count, (list, dict)):
+
+                print(json.dumps(count, ensure_ascii=False, indent=4))
+
+            else:
+
+                print(count)
 
         elif args.command == "count-files":
 
@@ -756,7 +770,13 @@ Multiple files can be separated by spaces or commas.
                     excludeBinary=not args.includeBinary,
                     includeHidden=args.includeHidden,
                 )
-            print(totalCount)
+            if isinstance(totalCount, (list, dict)):
+
+                print(json.dumps(totalCount, ensure_ascii=False, indent=4))
+
+            else:
+
+                print(totalCount)
 
         elif args.command == "count-dir":
 
@@ -771,12 +791,22 @@ Multiple files can be separated by spaces or commas.
                 excludeBinary=not args.includeBinary,
                 includeHidden=args.includeHidden,
             )
-            print(count)
+            if isinstance(count, (list, dict)):
+                print(json.dumps(count, ensure_ascii=False, indent=4))
+            else:
+                print(count)
 
         elif args.command == "get-model":
 
             modelName = GetModelForEncodingName(encodingName=args.encoding)
-            print(modelName)
+
+            if isinstance(modelName, (list, dict)):
+
+                print(json.dumps(modelName, ensure_ascii=False, indent=4))
+
+            else:
+
+                print(modelName)
 
         elif args.command == "get-encoding":
 
