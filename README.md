@@ -13,7 +13,6 @@ PyTokenCounter is a Python library designed to simplify text tokenization and to
   - [String Tokenization and Counting](#string-tokenization-and-counting)
   - [File and Directory Tokenization and Counting](#file-and-directory-tokenization-and-counting)
   - [Token Mapping](#token-mapping)
-- [Ignored Files](#ignored-files)
 - [Maintainers](#maintainers)
 - [Acknowledgements](#acknowledgements)
 - [Contributing](#contributing)
@@ -1032,27 +1031,6 @@ print(mapped)
 mapped = tc.MapTokens(tokens=tokens)
 print(mapped)
 ```
-
----
-
-## Ignored Files
-
-When the functions are set to exclude binary files (default behavior), the following file extensions are ignored:
-
-| Category                        | Extensions                                                                                                                                                      |
-|---------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Image formats**               | `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`, `.webp`, `.avif`, `.tiff`, `.tif`, `.ico`, `.svgz`                                                                    |
-| **Video formats**               | `.mp4`, `.mkv`, `.mov`, `.avi`, `.wmv`, `.flv`, `.webm`, `.m4v`, `.mpeg`, `.mpg`, `.3gp`, `.3g2`                                                               |
-| **Audio formats**               | `.mp3`, `.wav`, `.flac`, `.ogg`, `.aac`, `.m4a`, `.wma`, `.aiff`, `.ape`, `.opus`                                                                               |
-| **Compressed archives**         | `.zip`, `.rar`, `.7z`, `.tar`, `.gz`, `.bz2`, `.xz`, `.lz`, `.zst`, `.cab`, `.deb`, `.rpm`, `.pkg`                                                               |
-| **Disk images**                 | `.iso`, `.dmg`, `.img`, `.vhd`, `.vmdk`                                                                                                                           |
-| **Executables & Libraries**     | `.exe`, `.msi`, `.bat`, `.dll`, `.so`, `.bin`, `.o`, `.a`, `.dylib`                                                                                             |
-| **Fonts**                       | `.ttf`, `.otf`, `.woff`, `.woff2`, `.eot`                                                                                                                         |
-| **Documents**                   | `.pdf`, `.ps`, `.eps`                                                                                                                                             |
-| **Design & Graphics**           | `.psd`, `.ai`, `.indd`, `.sketch`                                                                                                                                  |
-| **3D & CAD files**              | `.blend`, `.stl`, `.step`, `.iges`, `.fbx`, `.glb`, `.gltf`, `.3ds`, `.obj`, `.cad`                                                                             |
-| **Virtual Machines & Firmware** | `.qcow2`, `.vdi`, `.vhdx`, `.rom`, `.bin`, `.img`                                                                                                               |
-| **Miscellaneous binaries**      | `.dat`, `.pak`, `.sav`, `.nes`, `.gba`, `.nds`, `.iso`, `.jar`, `.class`, `.wasm`                                                                               |
 
 ---
 
