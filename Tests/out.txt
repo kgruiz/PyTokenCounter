@@ -1,0 +1,37 @@
+{
+    "numTokens": 15124,
+    "tokens": {
+        "Runner.py": 6916,
+        "Answers": {
+            "numTokens": 7119,
+            "tokens": {
+                "TestFile2.json": 996,
+                "TestDirectory.json": 3162,
+                "TestDirectoryNoRecursion.json": 1924,
+                "TestFile1.json": 1037
+            }
+        },
+        "Input": {
+            "numTokens": 1089,
+            "tokens": {
+                "TestFile2.txt": 213,
+                "TestFile1.txt": 221,
+                "TestDirectory": {
+                    "numTokens": 655,
+                    "tokens": {
+                        "TestDir1.txt": 128,
+                        "TestDir3.txt": 140,
+                        "TestDir2.txt": 132,
+                        "TestSubDir": {
+                            "numTokens": 255,
+                            "tokens": {
+                                "TestDir5.txt": 128,
+                                "TestDir4.txt": 127
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
