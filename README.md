@@ -546,9 +546,9 @@ Counts the number of tokens in a string.
 - `string` (`str`): The string to count tokens in.
 - `model` (`str`, optional): The name of the model. **Default: `"gpt-4o"`**
 - `encodingName` (`str`, optional): The name of the encoding.
-- `encoding` (`tiktoken.Encoding`, optional): A `tiktoken.Encoding` object.
+- `encoding` (`tiktoken.Encoding`, optional): A `tiktoken.Encoding` object to use for tokenization.
 - `quiet` (`bool`, optional): If `True`, suppresses progress updates.
-- `mapTokens` (`bool`, optional): If `True`, outputs an `OrderedDict` mapping decoded strings to their token counts (which are always 1 for strings). Primarily for consistency with other functions.  **Default: `False`**
+- `mapTokens` (`bool`, optional): If `True`, outputs an `OrderedDict` mapping decoded strings to token counts (which are always 1 for strings). Primarily for consistency with other functions.  **Default: `False`**
 
 **Returns:**
 
@@ -804,7 +804,7 @@ Counts the number of tokens across multiple files or in all files within a direc
 **Returns:**
 
 - `int`: The total number of tokens in the specified files or directory if `mapTokens` is `False`.
-- `OrderedDict[str, int | OrderedDict]`: An `OrderedDict` mirroring the input structure with token counts if `mapTokens` is `True`.
+- `OrderedDict[str, int | OrderedDict]`: An `OrderedDict` mirroring the directory structure with token counts if `mapTokens` is `True`.
 
 **Raises:**
 
@@ -1053,6 +1053,8 @@ When the functions are set to exclude binary files (default behavior), the follo
 | **3D & CAD files**              | `.blend`, `.stl`, `.step`, `.iges`, `.fbx`, `.glb`, `.gltf`, `.3ds`, `.obj`, `.cad`                                                                             |
 | **Virtual Machines & Firmware** | `.qcow2`, `.vdi`, `.vhdx`, `.rom`, `.bin`, `.img`                                                                                                               |
 | **Miscellaneous binaries**      | `.dat`, `.pak`, `.sav`, `.nes`, `.gba`, `.nds`, `.iso`, `.jar`, `.class`, `.wasm`                                                                               |
+
+Along with ignoring the extensions in the exclude list to quickly bypass known files that cannot be read, the code also catches decoding errors and skips files when `excludeBinary` is `True`. This approach ensures all unreadable files are handled efficiently, combining fast extension-based checks with robust decoding error handling.
 
 ---
 
