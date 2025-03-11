@@ -99,6 +99,12 @@ def ReadTextFile(filePath: Path | str) -> str:
 
         raise FileNotFoundError(f"File not found: {file}")
 
+    fileSize = file.stat().st_size
+
+    if fileSize == 0:
+
+        return ""
+
     with file.open("rb") as binaryFile:
 
         detection = chardet.detect(binaryFile.read())
