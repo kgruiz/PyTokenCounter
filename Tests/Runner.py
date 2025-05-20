@@ -845,12 +845,39 @@ def TestFileError(imgPath):
         )
 
 
+def TestWindows1252File():
+    """Verify Windows-1252 encoded files are read correctly."""
+
+    filePath = Path(testInputDir, "TestFileWindows1252.txt")
+    expectedStr = "Café – naïve façade. “Quoted” text."
+
+    tokensFromFile = tc.TokenizeFile(
+        filePath=filePath,
+        model="gpt-4o",
+        quiet=True,
+        mapTokens=False,
+    )
+
+    tokensFromStr = tc.TokenizeStr(
+        string=expectedStr,
+        model="gpt-4o",
+        quiet=True,
+        mapTokens=False,
+    )
+
+    if tokensFromFile != tokensFromStr:
+        RaiseTestAssertion(
+            "Tokenization mismatch for Windows-1252 encoded file."
+        )
+
+
 if __name__ == "__main__":
 
     TestStr()
     TestFile(answerName="TestFile1.json", inputName="TestFile1.txt")
     TestFile(answerName="TestFile2.json", inputName="TestFile2.txt")
     TestFileError(imgPath=Path(testInputDir, "TestImg.jpg"))
+    TestWindows1252File()
 
     # Additional Tests
     TestGetModelMappings()
