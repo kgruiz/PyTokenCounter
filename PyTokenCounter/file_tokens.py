@@ -582,7 +582,9 @@ def TokenizeDir(
                     mapTokens=mapTokens,
                 )
 
-            except UnicodeDecodeError:
+            except UnicodeDecodeError as e:
+
+                encoding = e.encoding or "unknown"
 
                 if excludeBinary:
 
@@ -591,7 +593,9 @@ def TokenizeDir(
                         _UpdateTask(
                             taskName=taskName,
                             advance=1,
-                            description=f"Skipping binary file {entry.relative_to(dirPath)}",
+                            description=(
+                                f"Skipping binary file {entry.relative_to(dirPath)} (encoding: {encoding})"
+                            ),
                             quiet=quiet,
                         )
 
@@ -599,7 +603,9 @@ def TokenizeDir(
 
                 else:
 
-                    raise
+                    raise UnsupportedEncodingError(
+                        encoding=encoding, filePath=entry
+                    ) from e
 
             if mapTokens:
 
@@ -811,7 +817,9 @@ def GetNumTokenDir(
                     mapTokens=False,
                 )
 
-            except UnicodeDecodeError:
+            except UnicodeDecodeError as e:
+
+                encoding = e.encoding or "unknown"
 
                 if excludeBinary:
 
@@ -820,7 +828,9 @@ def GetNumTokenDir(
                         _UpdateTask(
                             taskName=taskName,
                             advance=1,
-                            description=f"Skipping binary file {entry.relative_to(dirPath)}",
+                            description=(
+                                f"Skipping binary file {entry.relative_to(dirPath)} (encoding: {encoding})"
+                            ),
                             quiet=quiet,
                         )
 
@@ -828,7 +838,9 @@ def GetNumTokenDir(
 
                 else:
 
-                    raise
+                    raise UnsupportedEncodingError(
+                        encoding=encoding, filePath=entry
+                    ) from e
 
             if mapTokens:
 
@@ -1051,7 +1063,9 @@ def TokenizeFiles(
                         mapTokens=mapTokens,
                     )
 
-                except UnicodeDecodeError:
+                except UnicodeDecodeError as e:
+
+                    encoding = e.encoding or "unknown"
 
                     if excludeBinary:
 
@@ -1060,7 +1074,9 @@ def TokenizeFiles(
                             _UpdateTask(
                                 taskName="Tokenizing File/Directory List",
                                 advance=1,
-                                description=f"Skipping binary file {entry.name}",
+                                description=(
+                                    f"Skipping binary file {entry.name} (encoding: {encoding})"
+                                ),
                                 quiet=quiet,
                             )
 
@@ -1068,7 +1084,9 @@ def TokenizeFiles(
 
                     else:
 
-                        raise
+                        raise UnsupportedEncodingError(
+                            encoding=encoding, filePath=entry
+                        ) from e
 
                 if mapTokens:
 
@@ -1329,7 +1347,9 @@ def GetNumTokenFiles(
                         mapTokens=False,
                     )
 
-                except UnicodeDecodeError:
+                except UnicodeDecodeError as e:
+
+                    encoding = e.encoding or "unknown"
 
                     if excludeBinary:
 
@@ -1338,7 +1358,9 @@ def GetNumTokenFiles(
                             _UpdateTask(
                                 taskName="Counting Tokens in File/Directory List",
                                 advance=1,
-                                description=f"Skipping binary file {entry.name}",
+                                description=(
+                                    f"Skipping binary file {entry.name} (encoding: {encoding})"
+                                ),
                                 quiet=quiet,
                             )
 
@@ -1346,7 +1368,9 @@ def GetNumTokenFiles(
 
                     else:
 
-                        raise
+                        raise UnsupportedEncodingError(
+                            encoding=encoding, filePath=entry
+                        ) from e
 
                 if mapTokens:
 
