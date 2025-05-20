@@ -13,6 +13,8 @@ dependencies = [
     "rich>=13.9.4",
     "chardet>=5.2.0",
     "colorlog>=6.9.0",
+    "pytest>=7.4.0",
+    "flake8>=6.1.0",
 ]
 
 classifiers = [

@@ -1070,6 +1070,16 @@ Along with ignoring the extensions in the exclude list to quickly bypass known f
 
 ---
 
+## Running Tests
+
+After installing the package's dependencies, run the test suite with `pytest`:
+
+```bash
+pytest
+```
+
+The tests rely on the sample data located in the `Tests/` directory.
+
 ## Maintainers
 
 - [Kaden Gruizenga](https://github.com/kgruiz)
