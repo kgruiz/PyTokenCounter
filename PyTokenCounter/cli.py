@@ -59,6 +59,7 @@ import json
 import logging
 import sys
 from pathlib import Path
+import glob
 
 from colorlog import ColoredFormatter
 
@@ -256,8 +257,11 @@ def AddCommonArgs(subParser: argparse.ArgumentParser) -> None:
 
 
 def ParseFiles(fileArgs: list[str]) -> list[str]:
-    """
-    Parse file arguments, allowing comma-separated values.
+    """Parse file arguments with optional wildcards and comma separation.
+
+    Each argument may include wildcard characters (``*``, ``?``, ``[]``). If a
+    wildcard is detected, the pattern is expanded using :func:`glob.glob` with
+    ``recursive=True``.
 
     Parameters
     ----------
@@ -267,30 +271,41 @@ def ParseFiles(fileArgs: list[str]) -> list[str]:
     Returns
     -------
     list[str]
-        List of file paths.
+        List of file or directory paths.
 
     Raises
     ------
     ValueError
-        If a path does not exist.
+        If a path does not exist or no matches are found for a pattern.
     """
-    files = []
+
+    files: list[str] = []
 
     for arg in fileArgs:
-
         parts = arg.split(",")
 
         for part in parts:
-
             part = part.strip()
 
-            if part:
+            if not part:
+                continue
 
+            # Expand wildcard patterns
+            if any(ch in part for ch in "*?["):
+                matches = glob.glob(part, recursive=True)
+
+                if not matches:
+                    raise ValueError(f"No files match pattern '{part}'.")
+
+                for match in matches:
+                    files.append(str(Path(match)))
+            else:
                 path = Path(part)
 
                 if not path.exists():
-
-                    raise ValueError(f"File or directory '{part}' does not exist.")
+                    raise ValueError(
+                        f"File or directory '{part}' does not exist."
+                    )
 
                 files.append(str(path))
 
@@ -407,7 +422,10 @@ def main() -> None:
     parserTokenizeFile.add_argument(
         "file",
         type=str,
-        help="Path to the file to tokenize. Multiple files can be separated by commas.",
+        help=(
+            "Path to the file to tokenize. Multiple files can be separated by "
+            "commas. Wildcard patterns (e.g., '*.txt') are supported."
+        ),
     )
 
     # Tokenize multiple files or directory
@@ -425,6 +443,7 @@ def main() -> None:
         help="""\
 Paths to the files to tokenize or a directory path.
 Multiple files can be separated by spaces or commas.
+Each path may include wildcard patterns (e.g., '*.txt').
 """,
     )
     parserTokenizeFiles.add_argument(
@@ -477,7 +496,11 @@ Multiple files can be separated by spaces or commas.
     parserCountFile.add_argument(
         "file",
         type=str,
-        help="Path to the file to count tokens for. Multiple files can be separated by commas.",
+        help=(
+            "Path to the file to count tokens for. Multiple files can be "
+            "separated by commas. Wildcard patterns (e.g., '*.txt') are "
+            "supported."
+        ),
     )
 
     # Count tokens in multiple files or directory
@@ -495,6 +518,7 @@ Multiple files can be separated by spaces or commas.
         help="""\
 Paths to the files to count tokens for or a directory path.
 Multiple files can be separated by spaces or commas.
+Each path may include wildcard patterns (e.g., '*.txt').
 """,
     )
     parserCountFiles.add_argument(

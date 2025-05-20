@@ -131,6 +131,10 @@ tc tokenize-files TestFile1.txt TestFile2.txt --model gpt-4o
 tokencount tokenize-files TestFile1.txt TestFile2.txt
 tc tokenize-files TestFile1.txt TestFile2.txt
 
+# Tokenize files using a wildcard pattern
+tokencount tokenize-files "*.txt"
+tc tokenize-files "*.txt"
+
 # Tokenize a directory of files for an LLM (non-recursive)
 tokencount tokenize-files MyDirectory --model gpt-4o --no-recursive
 tc tokenize-files MyDirectory --model gpt-4o --no-recursive
@@ -170,6 +174,10 @@ tc count-files TestFile1.txt TestFile2.txt --model gpt-4o
 # Count tokens in multiple files using the default model
 tokencount count-files TestFile1.txt TestFile2.txt
 tc count-files TestFile1.txt TestFile2.txt
+
+# Count tokens in files matching a wildcard
+tokencount count-files "*.txt"
+tc count-files "*.txt"
 
 # Count tokens in a directory for an LLM (non-recursive)
 tokencount count-files TestDir --model gpt-4o --no-recursive
@@ -240,11 +248,13 @@ The `tokencount` (or `tc`) CLI provides several subcommands for tokenizing and c
 - `tokenize-file`: Tokenizes the contents of a file.
   - `tokencount tokenize-file Path/To/Your/File.txt --model gpt-4o`
   - `tc tokenize-file Path/To/Your/File.txt --model gpt-4o`
+  - Supports wildcard patterns, e.g., `tokencount tokenize-file "*.txt"`
 - `tokenize-files`: Tokenizes the contents of multiple specified files or all files within a directory.
     - `tokencount tokenize-files Path/To/Your/File1.txt Path/To/Your/File2.txt --model gpt-4o`
     - `tc tokenize-files Path/To/Your/File1.txt Path/To/Your/File2.txt --model gpt-4o`
     - `tokencount tokenize-files Path/To/Your/Directory --model gpt-4o --no-recursive`
     - `tc tokenize-files Path/To/Your/Directory --model gpt-4o --no-recursive`
+    - Wildcards are allowed, e.g., `tokencount tokenize-files "*.txt"`
 - `tokenize-dir`: Tokenizes all files within a specified directory into lists of token IDs.
     - `tokencount tokenize-dir Path/To/Your/Directory --model gpt-4o --no-recursive`
     - `tc tokenize-dir Path/To/Your/Directory --model gpt-4o --no-recursive`
@@ -254,11 +264,13 @@ The `tokencount` (or `tc`) CLI provides several subcommands for tokenizing and c
 - `count-file`: Counts the number of tokens in a file.
   - `tokencount count-file Path/To/Your/File.txt --model gpt-4o`
   - `tc count-file Path/To/Your/File.txt --model gpt-4o`
+  - Supports wildcard patterns, e.g., `tokencount count-file "*.txt"`
 - `count-files`: Counts the number of tokens in multiple specified files or all files within a directory.
   - `tokencount count-files Path/To/Your/File1.txt Path/To/Your/File2.txt --model gpt-4o`
   - `tc count-files Path/To/Your/File1.txt Path/To/Your/File2.txt --model gpt-4o`
   - `tokencount count-files Path/To/Your/Directory --model gpt-4o --no-recursive`
   - `tc count-files Path/To/Your/Directory --model gpt-4o --no-recursive`
+  - Wildcards are allowed, e.g., `tokencount count-files "*.txt"`
 - `count-dir`: Counts the total number of tokens across all files in a specified directory.
   - `tokencount count-dir Path/To/Your/Directory --model gpt-4o --no-recursive`
   - `tc count-dir Path/To/Your/Directory --model gpt-4o --no-recursive`
