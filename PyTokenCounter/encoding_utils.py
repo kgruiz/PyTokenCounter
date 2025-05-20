@@ -105,24 +105,31 @@ def ReadTextFile(filePath: Path | str) -> str:
 
         return ""
 
-    with file.open("rb") as binaryFile:
+    rawBytes = file.read_bytes()
+    detection = chardet.detect(rawBytes)
+    detectedEncoding = detection.get("encoding")
+    confidence = detection.get("confidence", 0)
 
-        detection = chardet.detect(binaryFile.read())
-        encoding = detection["encoding"]
+    encodingsToTry: list[str] = []
+    if detectedEncoding:
+        encodingsToTry.append(detectedEncoding)
 
-    if encoding:
+    if confidence < 0.8:
+        for fallback in ["windows-1252", "utf-8", "latin-1"]:
+            if fallback not in encodingsToTry:
+                encodingsToTry.append(fallback)
 
-        actualEncoding = encoding
-        encoding = "utf-8"
-
+    for enc in encodingsToTry:
         try:
-
-            return file.read_text(encoding=encoding)
-
+            text = rawBytes.decode(enc)
+            if enc != "utf-8":
+                text = text.encode("utf-8").decode("utf-8")
+            return text
         except UnicodeDecodeError:
+            continue
 
-            raise UnsupportedEncodingError(encoding=actualEncoding, filePath=filePath)
-
-    else:
-
-        raise UnsupportedEncodingError(encoding=encoding, filePath=filePath)
+    raise UnsupportedEncodingError(
+        encoding=detectedEncoding,
+        filePath=filePath,
+        message=f"Failed to decode using encodings: {', '.join(encodingsToTry)}",
+    )

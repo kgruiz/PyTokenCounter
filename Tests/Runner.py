@@ -4,8 +4,8 @@ import json
 import sys
 from pathlib import Path
 
-import numpy as np
 import PyTokenCounter as tc
+from PyTokenCounter.encoding_utils import ReadTextFile
 import tiktoken
 from PIL import Image
 from PyTokenCounter.cli import ParseFiles
@@ -748,6 +748,19 @@ def TestParseFilesGlobRecursive():
         )
 
 
+def TestReadTextFileWindows1252():
+    """Ensure Windows-1252 encoded files are read correctly."""
+
+    filePath = Path(testInputDir, "TestFile1252.txt")
+    expected = "Café – résumé naïve fiancé"
+    result = ReadTextFile(filePath)
+
+    if result != expected:
+        RaiseTestAssertion(
+            f"Windows-1252 file was not read correctly.\nExpected: '{expected}'\nGot: '{result}'"
+        )
+
+
 def TestStr():
     """
     Test string tokenization.
@@ -909,5 +922,6 @@ if __name__ == "__main__":
     TestTokenizeFileErrorType()
     TestParseFilesGlob()
     TestParseFilesGlobRecursive()
+    TestReadTextFileWindows1252()
 
     print("All tests passed successfully!")
