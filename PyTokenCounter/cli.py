@@ -67,13 +67,15 @@ from .core import (
     VALID_MODELS,
     GetEncoding,
     GetModelForEncodingName,
-    GetNumTokenDir,
-    GetNumTokenFiles,
     GetNumTokenStr,
     MapTokens,
+    TokenizeStr,
+)
+from .file_tokens import (
+    GetNumTokenDir,
+    GetNumTokenFiles,
     TokenizeDir,
     TokenizeFiles,
-    TokenizeStr,
 )
 
 # Configure logging
