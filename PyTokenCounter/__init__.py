@@ -26,7 +26,7 @@ Key Functions
 - ``GetNumTokenDir`` : Count the number of tokens within a directory.
 """
 
-from PyTokenCounter._utils import UnsupportedEncodingError
+from PyTokenCounter.encoding_utils import UnsupportedEncodingError
 from PyTokenCounter.core import (
     GetEncoding,
     GetEncodingForModel,
@@ -34,16 +34,18 @@ from PyTokenCounter.core import (
     GetModelForEncoding,
     GetModelForEncodingName,
     GetModelMappings,
-    GetNumTokenDir,
-    GetNumTokenFile,
-    GetNumTokenFiles,
     GetNumTokenStr,
     GetValidEncodings,
     GetValidModels,
+    TokenizeStr,
+)
+from PyTokenCounter.file_tokens import (
+    GetNumTokenDir,
+    GetNumTokenFile,
+    GetNumTokenFiles,
     TokenizeDir,
     TokenizeFile,
     TokenizeFiles,
-    TokenizeStr,
 )
 
 # Define the public API of the package
