@@ -8,6 +8,7 @@ import numpy as np
 import PyTokenCounter as tc
 import tiktoken
 from PIL import Image
+from PyTokenCounter.cli import ParseFiles
 
 testInputDir = Path("./Input")
 testAnswersDir = Path("./Answers")
@@ -708,6 +709,45 @@ def TestTokenizeFileErrorType():
         )
 
 
+def TestParseFilesGlob():
+    """Test ParseFiles with wildcard patterns."""
+
+    pattern = "Input/TestFile*.txt"
+    expected = {
+        "Input/TestFile1.txt",
+        "Input/TestFile2.txt",
+    }
+
+    result = set(ParseFiles([pattern]))
+
+    if result != expected:
+        RaiseTestAssertion(
+            f"ParseFiles wildcard expansion failed.\nExpected: {sorted(expected)}\nGot: {sorted(result)}"
+        )
+
+
+def TestParseFilesGlobRecursive():
+    """Test ParseFiles with recursive wildcard patterns."""
+
+    pattern = "Input/**/*.txt"
+    expected = {
+        "Input/TestFile1.txt",
+        "Input/TestFile2.txt",
+        "Input/TestDirectory/TestDir1.txt",
+        "Input/TestDirectory/TestDir2.txt",
+        "Input/TestDirectory/TestDir3.txt",
+        "Input/TestDirectory/TestSubDir/TestDir4.txt",
+        "Input/TestDirectory/TestSubDir/TestDir5.txt",
+    }
+
+    result = set(ParseFiles([pattern]))
+
+    if result != expected:
+        RaiseTestAssertion(
+            f"ParseFiles recursive wildcard failed.\nExpected: {sorted(expected)}\nGot: {sorted(result)}"
+        )
+
+
 def TestStr():
     """
     Test string tokenization.
@@ -867,5 +907,7 @@ if __name__ == "__main__":
     TestTokenizeFilesListQuietFalse()
     TestTokenizeFileWithUnsupportedEncoding()
     TestTokenizeFileErrorType()
+    TestParseFilesGlob()
+    TestParseFilesGlobRecursive()
 
     print("All tests passed successfully!")
