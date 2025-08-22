@@ -31,7 +31,7 @@ from collections import OrderedDict
 
 import tiktoken
 
-from .progress import _InitializeTask, _UpdateTask, _tasks
+from .progress import _InitializeTask, _tasks, _UpdateTask
 
 MODEL_MAPPINGS = {
     "gpt-4o": "o200k_base",
@@ -281,8 +281,6 @@ BINARY_EXTENSIONS = {
 }
 
 
-
-
 def GetModelMappings() -> OrderedDict:
     """
     Get the mappings between models and their encodings.
@@ -301,6 +299,9 @@ def GetModelMappings() -> OrderedDict:
             return sorted(modelMatches)
 
     """
+
+    return OrderedDict(MODEL_MAPPINGS)
+
 
 def GetModelForEncodingName(encodingName: str) -> list[str] | str:
     """
@@ -352,6 +353,13 @@ def GetModelForEncodingName(encodingName: str) -> list[str] | str:
         else:
 
             return sorted(modelMatches)
+
+
+def GetModelForEncoding(encodingName: str) -> list[str] | str:
+    """
+    Alias of GetModelForEncodingName for backward compatibility.
+    """
+    return GetModelForEncodingName(encodingName)
 
 
 def GetEncodingForModel(modelName: str, quiet: bool = False) -> tiktoken.Encoding:
@@ -434,6 +442,26 @@ def GetEncodingNameForModel(modelName: str, quiet: bool = False) -> str:
     else:
 
         return MODEL_MAPPINGS[modelName]
+
+
+def GetValidModels() -> list[str]:
+    """
+    List all valid model names.
+    """
+    return list(VALID_MODELS)
+
+
+def GetValidEncodings() -> list[str]:
+    """
+    List all unique valid encoding names.
+    """
+    seen: set[str] = set()
+    unique: list[str] = []
+    for enc in VALID_ENCODINGS:
+        if enc not in seen:
+            seen.add(enc)
+            unique.append(enc)
+    return unique
 
 
 def GetEncoding(
@@ -1081,5 +1109,3 @@ def GetNumTokenStr(
         )
 
     return len(tokens)
-
-
