@@ -54,8 +54,11 @@ def _UpdateTask(
     if quiet:
         return
 
+    # If the task was cleared (e.g., due to nested operations finishing a
+    # different task and stopping the progress), treat this update as a no-op
+    # to avoid crashing callers that still hold the original task name.
     if taskName not in _tasks:
-        raise ValueError(f"Task '{taskName}' not found.")
+        return
 
     currentTask = _progressInstance.tasks[_tasks[taskName]]
     currentDescription = currentTask.description if currentTask.description else ""
