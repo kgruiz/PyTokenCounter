@@ -66,6 +66,13 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 exclude = ["Tests"]
 
-[project.optional-dependencies.test]
-numpy = "*"
-Pillow = "*"
+[project.optional-dependencies]
+test = [
+    "pytest>=7.4.0",
+    "flake8>=6.1.0",
+]
+
+[tool.pytest.ini_options]
+addopts = "--cov=PyTokenCounter --cov-report=term-missing"
+testpaths = ["Tests"]
+pythonpath = ["PyTokenCounter"]
