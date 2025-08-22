@@ -65,3 +65,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 exclude = ["Tests"]
+
+[project.optional-dependencies.test]
+numpy = "*"
+Pillow = "*"

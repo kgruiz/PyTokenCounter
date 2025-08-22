@@ -33,6 +33,12 @@ Install PyTokenCounter using `pip`:
 pip install PyTokenCounter
 ```
 
+To run the project's test suite, install the optional test dependencies:
+
+```bash
+pip install "PyTokenCounter[test]"
+```
+
 ## Usage
 
 Here are a few examples to get you started with PyTokenCounter, especially in the context of **LLMs**:
