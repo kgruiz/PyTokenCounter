@@ -44,19 +44,26 @@ class UnsupportedEncodingError(Exception):
         errorText.append("Detected encoding: ", style="green")
         errorText.append(f"{encoding}", style="bold")
         errorText.append("\n")
-        errorText.append("File path: ", style="green")
-        errorText.append(f"{filePath}", style="bold blue")
+        # Intentionally do not include file path inside the panel to avoid line wrapping issues
 
         panel = Panel(
             errorText, title="Encoding Error", title_align="left", border_style="red"
         )
 
-        console = Console(width=80, color_system="truecolor", record=True)
+        console = Console(color_system="truecolor", record=True)
 
         with console.capture() as capture:
 
             console.print("")  # Add a new line before the panel
             console.print(panel)
+            console.print("")
+
+            # Print the file path outside the panel and prevent wrapping so it remains clickable
+            pathText = Text()
+            pathText.append("File path: ", style="green")
+            pathText.append(f"{filePath}", style="bold blue")
+            pathText.no_wrap = True
+            console.print(pathText)
         captured = capture.get()
 
         # Store the formatted panel; pass a plain message to the base Exception
