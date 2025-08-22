@@ -4,8 +4,8 @@ import json
 import sys
 from pathlib import Path
 
-import numpy as np
 import PyTokenCounter as tc
+from PyTokenCounter.encoding_utils import ReadTextFile
 import tiktoken
 from PIL import Image
 from PyTokenCounter.cli import ParseFiles
@@ -171,6 +171,7 @@ def TestTokenizeFilesMultiple():
     """
     inputFiles = [
         Path(testInputDir, "TestFile1.txt"),
+        Path(testInputDir, "TestImg.jpg"),
         Path(testInputDir, "TestFile2.txt"),
     ]
     answerFiles = [
@@ -179,7 +180,7 @@ def TestTokenizeFilesMultiple():
     ]
 
     expectedTokenLists = {}
-    for inputFile, answerFile in zip(inputFiles, answerFiles):
+    for inputFile, answerFile in zip([inputFiles[0], inputFiles[2]], answerFiles):
         with answerFile.open("r") as file:
             answer = json.load(file)
             expectedTokenLists[inputFile.name] = answer["tokens"]
@@ -302,6 +303,7 @@ def TestTokenizeFilesListQuietFalse():
     """
     inputFiles = [
         Path(testInputDir, "TestFile1.txt"),
+        Path(testInputDir, "TestImg.jpg"),
         Path(testInputDir, "TestFile2.txt"),
     ]
     answerFiles = [
@@ -310,7 +312,7 @@ def TestTokenizeFilesListQuietFalse():
     ]
 
     expectedTokenLists = {}
-    for inputFile, answerFile in zip(inputFiles, answerFiles):
+    for inputFile, answerFile in zip([inputFiles[0], inputFiles[2]], answerFiles):
         with answerFile.open("r") as file:
             answer = json.load(file)
             expectedTokenLists[inputFile.name] = answer["tokens"]
@@ -327,9 +329,9 @@ def TestTokenizeFilesListQuietFalse():
 
     # Check if any progress messages were printed
     output = capturedOutput.getvalue()
-    if not output.strip():
+    if "Skipping binary file TestImg.jpg" not in output:
         RaiseTestAssertion(
-            "Expected progress messages to be printed when quiet=False, but no output was captured."
+            "Expected skip message for binary file was not printed when quiet=False."
         )
 
     # Verify tokenization results
@@ -674,8 +676,12 @@ def TestTokenizeFileWithUnsupportedEncoding():
 
     try:
         tc.TokenizeFile(filePath=unsupportedFilePath, model="gpt-4o", quiet=True)
-    except tc.UnsupportedEncodingError:
-        pass  # Expected exception
+    except tc.UnsupportedEncodingError as e:
+        message = str(e)
+        if str(unsupportedFilePath) not in message or "encoding" not in message:
+            RaiseTestAssertion(
+                "Error message did not include file path and encoding information"
+            )
     except Exception as e:
         RaiseTestAssertion(
             f"Test Failed: Unexpected error type raised for file '{unsupportedFilePath}' - {type(e).__name__}"
@@ -745,6 +751,19 @@ def TestParseFilesGlobRecursive():
     if result != expected:
         RaiseTestAssertion(
             f"ParseFiles recursive wildcard failed.\nExpected: {sorted(expected)}\nGot: {sorted(result)}"
+        )
+
+
+def TestReadTextFileWindows1252():
+    """Ensure Windows-1252 encoded files are read correctly."""
+
+    filePath = Path(testInputDir, "TestFile1252.txt")
+    expected = "Café – résumé naïve fiancé"
+    result = ReadTextFile(filePath)
+
+    if result != expected:
+        RaiseTestAssertion(
+            f"Windows-1252 file was not read correctly.\nExpected: '{expected}'\nGot: '{result}'"
         )
 
 
@@ -909,5 +928,6 @@ if __name__ == "__main__":
     TestTokenizeFileErrorType()
     TestParseFilesGlob()
     TestParseFilesGlobRecursive()
+    TestReadTextFileWindows1252()
 
     print("All tests passed successfully!")

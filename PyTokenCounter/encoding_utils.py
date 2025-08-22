@@ -44,19 +44,26 @@ class UnsupportedEncodingError(Exception):
         errorText.append("Detected encoding: ", style="green")
         errorText.append(f"{encoding}", style="bold")
         errorText.append("\n")
-        errorText.append("File path: ", style="green")
-        errorText.append(f"{filePath}", style="bold blue")
+        # Intentionally do not include file path inside the panel to avoid line wrapping issues
 
         panel = Panel(
             errorText, title="Encoding Error", title_align="left", border_style="red"
         )
 
-        console = Console(width=80, color_system="truecolor", record=True)
+        console = Console(color_system="truecolor", record=True)
 
         with console.capture() as capture:
 
             console.print("")  # Add a new line before the panel
             console.print(panel)
+            console.print("")
+
+            # Print the file path outside the panel and prevent wrapping so it remains clickable
+            pathText = Text()
+            pathText.append("File path: ", style="green")
+            pathText.append(f"{filePath}", style="bold blue")
+            pathText.no_wrap = True
+            console.print(pathText)
         captured = capture.get()
 
         # Store the formatted panel; pass a plain message to the base Exception
@@ -105,24 +112,31 @@ def ReadTextFile(filePath: Path | str) -> str:
 
         return ""
 
-    with file.open("rb") as binaryFile:
+    rawBytes = file.read_bytes()
+    detection = chardet.detect(rawBytes)
+    detectedEncoding = detection.get("encoding")
+    confidence = detection.get("confidence", 0)
 
-        detection = chardet.detect(binaryFile.read())
-        encoding = detection["encoding"]
+    encodingsToTry: list[str] = []
+    if detectedEncoding:
+        encodingsToTry.append(detectedEncoding)
 
-    if encoding:
+    if confidence < 0.8:
+        for fallback in ["windows-1252", "utf-8", "latin-1"]:
+            if fallback not in encodingsToTry:
+                encodingsToTry.append(fallback)
 
-        actualEncoding = encoding
-        encoding = "utf-8"
-
+    for enc in encodingsToTry:
         try:
-
-            return file.read_text(encoding=encoding)
-
+            text = rawBytes.decode(enc)
+            if enc != "utf-8":
+                text = text.encode("utf-8").decode("utf-8")
+            return text
         except UnicodeDecodeError:
+            continue
 
-            raise UnsupportedEncodingError(encoding=actualEncoding, filePath=filePath)
-
-    else:
-
-        raise UnsupportedEncodingError(encoding=encoding, filePath=filePath)
+    raise UnsupportedEncodingError(
+        encoding=detectedEncoding,
+        filePath=filePath,
+        message=f"Failed to decode using encodings: {', '.join(encodingsToTry)}",
+    )

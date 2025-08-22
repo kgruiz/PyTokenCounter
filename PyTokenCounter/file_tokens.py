@@ -7,7 +7,13 @@ from .encoding_utils import ReadTextFile, UnsupportedEncodingError
 from .progress import _InitializeTask, _UpdateTask, _tasks
 from .core import BINARY_EXTENSIONS, TokenizeStr
 
-def _CountDirFiles(dirPath: Path, recursive: bool = True) -> int:
+def _CountDirFiles(
+    dirPath: Path,
+    recursive: bool = True,
+    *,
+    includeHidden: bool = False,
+    excludeBinary: bool = True,
+) -> int:
     """
     Count the number of files in a directory.
 
@@ -20,6 +26,10 @@ def _CountDirFiles(dirPath: Path, recursive: bool = True) -> int:
         The path to the directory in which to count files.
     recursive : bool, optional
         Whether to count files in subdirectories recursively (default is True).
+    includeHidden : bool, optional
+        Whether to include hidden files and directories (default is False).
+    excludeBinary : bool, optional
+        Whether to exclude binary files based on extension (default is True).
 
     Returns
     -------
@@ -42,17 +52,33 @@ def _CountDirFiles(dirPath: Path, recursive: bool = True) -> int:
 
         for entry in dirPath.iterdir():
 
-            if entry.is_dir():
+            # Skip hidden files and directories entirely if not including hidden
+            if not includeHidden and entry.name.startswith("."):
+                continue
 
-                numFiles += _CountDirFiles(entry, recursive=recursive)
+            if entry.is_dir():
+                # Recurse into subdirectories (respect hidden handling)
+                numFiles += _CountDirFiles(
+                    entry,
+                    recursive=recursive,
+                    includeHidden=includeHidden,
+                    excludeBinary=excludeBinary,
+                )
 
             else:
-
+                # Optionally skip binary files
+                if excludeBinary and entry.suffix.lower() in BINARY_EXTENSIONS:
+                    continue
                 numFiles += 1
 
     else:
-
-        numFiles = sum(1 for entry in dirPath.iterdir() if entry.is_file())
+        for entry in dirPath.iterdir():
+            if entry.is_file():
+                if not includeHidden and entry.name.startswith("."):
+                    continue
+                if excludeBinary and entry.suffix.lower() in BINARY_EXTENSIONS:
+                    continue
+                numFiles += 1
 
     return numFiles
 
@@ -519,7 +545,12 @@ def TokenizeDir(
 
         raise ValueError(f'Given directory path "{dirPath}" is not a directory.')
 
-    numFiles = _CountDirFiles(dirPath=dirPath, recursive=recursive)
+    numFiles = _CountDirFiles(
+        dirPath=dirPath,
+        recursive=recursive,
+        includeHidden=includeHidden,
+        excludeBinary=excludeBinary,
+    )
 
     if not quiet:
 
@@ -582,7 +613,9 @@ def TokenizeDir(
                     mapTokens=mapTokens,
                 )
 
-            except UnicodeDecodeError:
+            except UnicodeDecodeError as e:
+
+                encoding = e.encoding or "unknown"
 
                 if excludeBinary:
 
@@ -591,7 +624,9 @@ def TokenizeDir(
                         _UpdateTask(
                             taskName=taskName,
                             advance=1,
-                            description=f"Skipping binary file {entry.relative_to(dirPath)}",
+                            description=(
+                                f"Skipping binary file {entry.relative_to(dirPath)} (encoding: {encoding})"
+                            ),
                             quiet=quiet,
                         )
 
@@ -599,7 +634,9 @@ def TokenizeDir(
 
                 else:
 
-                    raise
+                    raise UnsupportedEncodingError(
+                        encoding=encoding, filePath=entry
+                    ) from e
 
             if mapTokens:
 
@@ -742,7 +779,12 @@ def GetNumTokenDir(
 
         raise ValueError(f'Given path "{dirPath}" is not a directory.')
 
-    numFiles = _CountDirFiles(dirPath=dirPath, recursive=recursive)
+    numFiles = _CountDirFiles(
+        dirPath=dirPath,
+        recursive=recursive,
+        includeHidden=includeHidden,
+        excludeBinary=excludeBinary,
+    )
 
     if not quiet:
 
@@ -811,7 +853,9 @@ def GetNumTokenDir(
                     mapTokens=False,
                 )
 
-            except UnicodeDecodeError:
+            except UnicodeDecodeError as e:
+
+                encoding = e.encoding or "unknown"
 
                 if excludeBinary:
 
@@ -820,7 +864,9 @@ def GetNumTokenDir(
                         _UpdateTask(
                             taskName=taskName,
                             advance=1,
-                            description=f"Skipping binary file {entry.relative_to(dirPath)}",
+                            description=(
+                                f"Skipping binary file {entry.relative_to(dirPath)} (encoding: {encoding})"
+                            ),
                             quiet=quiet,
                         )
 
@@ -828,7 +874,9 @@ def GetNumTokenDir(
 
                 else:
 
-                    raise
+                    raise UnsupportedEncodingError(
+                        encoding=encoding, filePath=entry
+                    ) from e
 
             if mapTokens:
 
@@ -1051,7 +1099,9 @@ def TokenizeFiles(
                         mapTokens=mapTokens,
                     )
 
-                except UnicodeDecodeError:
+                except UnicodeDecodeError as e:
+
+                    encoding = e.encoding or "unknown"
 
                     if excludeBinary:
 
@@ -1060,7 +1110,9 @@ def TokenizeFiles(
                             _UpdateTask(
                                 taskName="Tokenizing File/Directory List",
                                 advance=1,
-                                description=f"Skipping binary file {entry.name}",
+                                description=(
+                                    f"Skipping binary file {entry.name} (encoding: {encoding})"
+                                ),
                                 quiet=quiet,
                             )
 
@@ -1068,7 +1120,9 @@ def TokenizeFiles(
 
                     else:
 
-                        raise
+                        raise UnsupportedEncodingError(
+                            encoding=encoding, filePath=entry
+                        ) from e
 
                 if mapTokens:
 
@@ -1329,7 +1383,9 @@ def GetNumTokenFiles(
                         mapTokens=False,
                     )
 
-                except UnicodeDecodeError:
+                except UnicodeDecodeError as e:
+
+                    encoding = e.encoding or "unknown"
 
                     if excludeBinary:
 
@@ -1338,7 +1394,9 @@ def GetNumTokenFiles(
                             _UpdateTask(
                                 taskName="Counting Tokens in File/Directory List",
                                 advance=1,
-                                description=f"Skipping binary file {entry.name}",
+                                description=(
+                                    f"Skipping binary file {entry.name} (encoding: {encoding})"
+                                ),
                                 quiet=quiet,
                             )
 
@@ -1346,7 +1404,9 @@ def GetNumTokenFiles(
 
                     else:
 
-                        raise
+                        raise UnsupportedEncodingError(
+                            encoding=encoding, filePath=entry
+                        ) from e
 
                 if mapTokens:
 
@@ -1454,4 +1514,3 @@ def GetNumTokenFiles(
             raise RuntimeError(
                 f'Unexpected error. Given inputPath "{inputPath}" is neither a file, a directory, nor a list.'
             )
-
