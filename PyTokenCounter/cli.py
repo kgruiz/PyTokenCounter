@@ -8,7 +8,7 @@ This module provides a Command-Line Interface (CLI) for tokenizing strings, file
 using specified models or encodings. It leverages the functionality defined in the "core.py" module.
 
 Usage:
-    After installing the package, use the "tokencount" command followed by the desired subcommand
+    After installing the package, use the "pytokencount" command followed by the desired subcommand
     and options.
 
 Subcommands:
@@ -36,22 +36,22 @@ Options:
 
 For detailed help on each subcommand, use:
 
-    tokencount <subcommand> -h
+    pytokencount <subcommand> -h
 
 Example:
-    tokencount tokenize-str "Hello, world!" -m gpt-4o
-    tokencount tokenize-files ./file1.txt ./file2.txt -m gpt-4o
-    tokencount tokenize-files ./myDirectory -m gpt-4o -nr
-    tokencount tokenize-dir ./myDirectory -m gpt-4o -nr
-    tokencount count-files ./myDirectory -m gpt-4o
-    tokencount count-dir ./myDirectory -m gpt-4o
-    tokencount get-model cl100k_base
-    tokencount get-encoding gpt-4o
-    tokencount map-tokens 123 456 789 -m gpt-4o
-    tokencount map-tokens 123,456,789 -m gpt-4o
-    tokencount map-tokens 123,456 789 -m gpt-4o
-    tokencount tokenize-files ./file1.txt,./file2.txt -m gpt-4o -o tokens.json
-    tokencount map-tokens 123,456,789 -m gpt-4o -o mappedTokens.json
+    pytokencount tokenize-str "Hello, world!" -m gpt-4o
+    pytokencount tokenize-files ./file1.txt ./file2.txt -m gpt-4o
+    pytokencount tokenize-files ./myDirectory -m gpt-4o -nr
+    pytokencount tokenize-dir ./myDirectory -m gpt-4o -nr
+    pytokencount count-files ./myDirectory -m gpt-4o
+    pytokencount count-dir ./myDirectory -m gpt-4o
+    pytokencount get-model cl100k_base
+    pytokencount get-encoding gpt-4o
+    pytokencount map-tokens 123 456 789 -m gpt-4o
+    pytokencount map-tokens 123,456,789 -m gpt-4o
+    pytokencount map-tokens 123,456 789 -m gpt-4o
+    pytokencount tokenize-files ./file1.txt,./file2.txt -m gpt-4o -o tokens.json
+    pytokencount map-tokens 123,456,789 -m gpt-4o -o mappedTokens.json
 """
 
 import argparse

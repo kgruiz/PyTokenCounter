@@ -1,6 +1,6 @@
 [project]
 name = "PyTokenCounter"
-version = "1.8.2"
+version = "1.9.0"
 description = "A Python library for tokenizing text and counting tokens using various encoding schemes."
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.11"
@@ -56,8 +56,7 @@ documentation = "https://github.com/kgruiz/PyTokenCounter#readme"
 bug_tracker = "https://github.com/kgruiz/PyTokenCounter/issues"
 
 [project.scripts]
-tokencount = "PyTokenCounter.cli:main"
-tc = "PyTokenCounter.cli:main"
+pytokencount = "PyTokenCounter.cli:main"
 
 [build-system]
 requires = ["setuptools>=43.0.0", "wheel"]
